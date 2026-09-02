@@ -1,0 +1,28 @@
+{
+  "name": "agy-in-obsidian",
+  "version": "1.0.0",
+  "description": "Native Obsidian chat sidebar connected to Antigravity CLI (agy) powered by Google AI Pro",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "antigravity",
+    "gemini",
+    "ai",
+    "chat"
+  ],
+  "author": "Andrey",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "0.21.5",
+    "obsidian": "latest",
+    "tslib": "2.6.3",
+    "typescript": "5.5.2"
+  }
+}
