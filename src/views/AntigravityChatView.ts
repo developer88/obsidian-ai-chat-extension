@@ -191,24 +191,24 @@ export class AntigravityChatView extends ItemView {
 		this.modelOptions = models && models.length > 0 ? models : ANTIGRAVITY_2_MODELS;
 		this.modelSelectEl.empty();
 
-		const currentModel = this.getSettings().selectedModel || this.modelOptions[0].id;
-		let found = false;
+		const settings = this.getSettings();
+		const currentSelected = settings.selectedModel;
+		let matchingModel = this.modelOptions.find(m => m.id === currentSelected || currentSelected?.startsWith(m.id));
+
+		if (!matchingModel && this.modelOptions.length > 0) {
+			matchingModel = this.modelOptions[0];
+			settings.selectedModel = matchingModel.id;
+			this.saveSettings(settings);
+		}
 
 		for (const model of this.modelOptions) {
 			const option = this.modelSelectEl.createEl('option', {
 				value: model.id,
 				text: model.label
 			});
-			if (model.id === currentModel) {
+			if (matchingModel && model.id === matchingModel.id) {
 				option.selected = true;
-				found = true;
 			}
-		}
-
-		if (!found && this.modelOptions.length > 0) {
-			this.modelSelectEl.value = this.modelOptions[0].id;
-			this.getSettings().selectedModel = this.modelOptions[0].id;
-			this.saveSettings(this.getSettings());
 		}
 
 		this.updateEffortDropdownForSelectedModel();
@@ -218,8 +218,8 @@ export class AntigravityChatView extends ItemView {
 		const currentModelId = this.modelSelectEl.value;
 		const model = this.modelOptions.find(m => m.id === currentModelId);
 
-		// Hide effort selector by default unless the model has selectable efforts
-		if (!model || !model.efforts || model.efforts.length === 0) {
+		// Hide effort selector if model has 0 or 1 effort option
+		if (!model || !model.efforts || model.efforts.length <= 1) {
 			this.effortGroupEl.style.display = 'none';
 			return;
 		}
@@ -229,7 +229,7 @@ export class AntigravityChatView extends ItemView {
 		this.effortSelectEl.empty();
 
 		const settings = this.getSettings();
-		const savedEffort = settings.modelEfforts?.[currentModelId] || 'Medium';
+		const savedEffort = settings.modelEfforts?.[currentModelId] || model.defaultEffort || 'Medium';
 
 		for (const effort of model.efforts) {
 			const opt = this.effortSelectEl.createEl('option', {

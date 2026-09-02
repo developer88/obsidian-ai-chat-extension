@@ -82,9 +82,7 @@ export class AgyCliService {
 
 	public async fetchAvailableModels(): Promise<ModelDefinition[]> {
 		const settings = this.getSettings();
-		const fallbackList = settings.cachedModels && settings.cachedModels.length > 0
-			? settings.cachedModels
-			: ANTIGRAVITY_2_MODELS;
+		const fallbackList = ANTIGRAVITY_2_MODELS;
 
 		const vaultPath = this.getVaultBasePath();
 		const args: string[] = [];
@@ -112,7 +110,7 @@ export class AgyCliService {
 				}
 			};
 
-			// Strict timeout of 2.5 seconds to prevent indefinite spinning
+			// Strict timeout of 3.5 seconds
 			const timer = setTimeout(() => {
 				if (!resolved) {
 					try {
@@ -124,7 +122,7 @@ export class AgyCliService {
 					}
 					finish(fallbackList);
 				}
-			}, 2500);
+			}, 3500);
 
 			let child: ChildProcess;
 			try {
@@ -165,57 +163,82 @@ export class AgyCliService {
 		});
 	}
 
-	private parseModelsOutput(rawText: string): ModelDefinition[] {
+	public parseModelsOutput(rawText: string): ModelDefinition[] {
 		const lines = rawText.split('\n');
-		const models: ModelDefinition[] = [];
-		const seen = new Set<string>();
+		const groupedMap = new Map<string, ModelDefinition>();
 
 		for (let line of lines) {
 			line = line.trim();
-			if (!line || line.startsWith('#') || line.toLowerCase().includes('available models:')) {
+			if (!line || line.startsWith('#') || line.toLowerCase().includes('fetching available models')) {
 				continue;
 			}
 
-			// Strip bullet points and leading symbols
-			let cleanLine = line.replace(/^[\*\->\•\s\d\.\)]+/, '').trim();
-			if (!cleanLine) continue;
+			// Split line into ID and display label (tab or multiple spaces)
+			const parts = line.split(/\t+|\s{2,}/);
+			const rawId = parts[0]?.trim();
+			const rawDisplayName = (parts[1] || parts[0] || '').trim();
 
-			// Remove noisy effort tags from model title (e.g. "(High)", "(Medium)", "(Low)", "(Fast)")
-			let cleanLabel = cleanLine.replace(/\((High|Medium|Low|Fast)\)/gi, '').trim();
-			// Remove noisy leading effort words (e.g. "high Gemini 3.1 Pro" -> "Gemini 3.1 Pro")
-			cleanLabel = cleanLabel.replace(/^(high|medium|low|fast)\s+/i, '').trim();
+			if (!rawId) continue;
 
-			// Extract ID
-			let id = cleanLine.toLowerCase().replace(/[^a-z0-9\-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-			
-			// Match with known Antigravity models if available
-			const known = ANTIGRAVITY_2_MODELS.find(m =>
-				cleanLabel.toLowerCase().includes(m.label.toLowerCase()) ||
-				m.id.toLowerCase().includes(id) ||
-				id.includes(m.id.toLowerCase())
-			);
+			// Check for effort suffix in ID (e.g. "gemini-3.8-flash-medium" or "gemini-3.1-pro-low")
+			const effortMatch = rawId.match(/^(.+)-(low|medium|high|max)$/i);
 
-			if (known) {
-				id = known.id;
-				cleanLabel = known.label;
+			let baseId = rawId;
+			let effortName: string | null = null;
+
+			if (effortMatch) {
+				baseId = effortMatch[1];
+				const rawEffort = effortMatch[2].toLowerCase();
+				effortName = rawEffort.charAt(0).toUpperCase() + rawEffort.slice(1);
 			}
 
-			if (id && !seen.has(id)) {
-				seen.add(id);
+			// Clean display name by stripping "(High)", "(Medium)", "(Low)", etc.
+			let cleanLabel = rawDisplayName.replace(/\((High|Medium|Low|Max|Fast)\)/gi, '').trim();
+			if (!cleanLabel) {
+				// Format base ID into Title Case
+				cleanLabel = baseId
+					.split('-')
+					.map(s => s.charAt(0).toUpperCase() + s.slice(1))
+					.join(' ');
+			}
 
-				const efforts = known ? known.efforts : (id.includes('claude') ? [] : ['Low', 'Medium', 'High']);
-				const defaultEffort = 'Medium';
-
-				models.push({
-					id,
-					label: cleanLabel || id,
-					efforts,
-					defaultEffort
+			if (!groupedMap.has(baseId)) {
+				groupedMap.set(baseId, {
+					id: baseId,
+					label: cleanLabel,
+					efforts: effortName ? [effortName] : [],
+					defaultEffort: 'Medium',
+					effortModelMap: effortName ? { [effortName.toLowerCase()]: rawId } : {}
 				});
+			} else {
+				const existing = groupedMap.get(baseId)!;
+				if (effortName && !existing.efforts.includes(effortName)) {
+					existing.efforts.push(effortName);
+					if (!existing.effortModelMap) {
+						existing.effortModelMap = {};
+					}
+					existing.effortModelMap[effortName.toLowerCase()] = rawId;
+				}
 			}
 		}
 
-		return models.length > 0 ? models : ANTIGRAVITY_2_MODELS;
+		// Sort efforts consistently: Low -> Medium -> High -> Max
+		const effortOrder = ['Low', 'Medium', 'High', 'Max'];
+		const result: ModelDefinition[] = [];
+
+		for (const model of groupedMap.values()) {
+			if (model.efforts.length > 0) {
+				model.efforts.sort((a, b) => {
+					const idxA = effortOrder.indexOf(a);
+					const idxB = effortOrder.indexOf(b);
+					return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+				});
+				model.defaultEffort = model.efforts.includes('Medium') ? 'Medium' : model.efforts[0];
+			}
+			result.push(model);
+		}
+
+		return result.length > 0 ? result : ANTIGRAVITY_2_MODELS;
 	}
 
 	public async sendPrompt(
@@ -245,16 +268,20 @@ export class AgyCliService {
 
 		// Model selection
 		if (settings.selectedModel) {
-			args.push('--model', settings.selectedModel);
+			const models = settings.cachedModels && settings.cachedModels.length > 0
+				? settings.cachedModels
+				: ANTIGRAVITY_2_MODELS;
 
-			// Check if this model has a selected effort
-			const modelEffort = settings.modelEfforts?.[settings.selectedModel] || 'Medium';
-			const currentModelDef = (settings.cachedModels || ANTIGRAVITY_2_MODELS).find(m => m.id === settings.selectedModel);
-			
-			// Only pass effort flag if model supports effort
-			if (currentModelDef && currentModelDef.efforts && currentModelDef.efforts.length > 0) {
-				args.push('--effort', modelEffort.toLowerCase());
+			const modelDef = models.find(m => m.id === settings.selectedModel);
+			const selectedEffort = (settings.modelEfforts?.[settings.selectedModel] || modelDef?.defaultEffort || 'Medium').toLowerCase();
+
+			let exactCliModelId = settings.selectedModel;
+
+			if (modelDef && modelDef.effortModelMap && modelDef.effortModelMap[selectedEffort]) {
+				exactCliModelId = modelDef.effortModelMap[selectedEffort];
 			}
+
+			args.push('--model', exactCliModelId);
 		}
 
 		// Resume session if active conversation exists
