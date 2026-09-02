@@ -1,4 +1,4 @@
-/* Antigravity AI Plugin Styles */
+/* Antigravity AI - Premium Native Obsidian Styling */
 
 .agy-chat-root {
 	display: flex;
@@ -10,6 +10,7 @@
 	color: var(--text-normal);
 	box-sizing: border-box;
 	font-family: var(--font-interface);
+	overflow: hidden;
 }
 
 /* Header */
@@ -18,85 +19,110 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 8px 12px;
-	border-bottom: 1px solid var(--background-modifier-border);
-	background-color: var(--background-secondary);
+	border-bottom: 1px solid var(--divider-color);
+	background-color: var(--background-primary);
+	min-height: 40px;
 }
 
 .agy-title-group {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
+	min-width: 0;
 }
 
 .agy-title-icon {
 	display: flex;
 	align-items: center;
-	color: var(--interactive-accent);
+	color: var(--text-muted);
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
 }
 
 .agy-title-text {
-	margin: 0;
-	font-size: 13.5px;
+	font-size: 12.5px;
 	font-weight: 600;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .agy-session-badge {
 	font-size: 10px;
 	padding: 1px 5px;
 	border-radius: var(--radius-s);
-	background-color: var(--background-modifier-border);
-	color: var(--text-muted);
+	background-color: var(--background-modifier-form-field);
+	border: 1px solid var(--divider-color);
+	color: var(--text-faint);
+	font-family: var(--font-monospace);
 	font-weight: 500;
 }
 
 .agy-header-actions {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 4px;
+	flex-shrink: 0;
 }
 
-/* Interactive "New Session" Button */
-.agy-new-session-btn {
+.agy-btn {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	font-size: 11px;
-	font-weight: 500;
+	font-size: 11.5px;
 	padding: 3px 8px;
 	border-radius: var(--radius-s);
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
+	border: 1px solid var(--divider-color);
+	background-color: var(--background-secondary);
 	color: var(--text-normal);
 	cursor: pointer;
-	transition: all 0.15s ease;
-	height: 24px;
+	line-height: 1.2;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.agy-new-session-btn:hover {
+.agy-btn:hover {
 	background-color: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-	color: var(--interactive-accent);
+	color: var(--text-accent);
 }
 
-.agy-new-session-btn:active {
-	transform: scale(0.97);
+.agy-btn:active {
+	background-color: var(--background-modifier-active-hover);
 }
 
-.agy-new-session-btn .agy-btn-icon {
+.agy-btn .agy-btn-icon {
 	display: flex;
 	align-items: center;
 	width: 12px;
 	height: 12px;
 }
 
-/* Sub-header Toolbar / Model & Effort Selectors */
+.agy-icon-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.agy-icon-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+/* Toolbar (Model & Effort selectors) */
 .agy-toolbar {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 	padding: 6px 10px;
-	background-color: var(--background-secondary-alt, var(--background-secondary));
-	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	border-bottom: 1px solid var(--divider-color);
 	font-size: 11.5px;
 }
 
@@ -108,41 +134,36 @@
 
 .agy-toolbar-group.is-model-group {
 	flex: 1 1 auto;
-	min-width: 140px;
+	min-width: 0;
 }
 
 .agy-toolbar-group.is-effort-group {
-	flex: 0 0 95px;
+	flex: 0 0 auto;
+	min-width: 90px;
 }
 
-.agy-toolbar-icon {
-	display: flex;
-	align-items: center;
-	color: var(--interactive-accent);
-	width: 14px;
-	height: 14px;
-	flex-shrink: 0;
+.agy-select-wrapper {
+	flex: 1;
+	min-width: 0;
 }
 
-.agy-model-select,
-.agy-effort-select {
+.agy-select {
 	width: 100%;
-	font-size: 11px;
-	padding: 2px 6px;
+	font-size: 11.5px;
+	padding: 3px 6px;
+	height: 26px;
 	border-radius: var(--radius-s);
-	border: 1px solid var(--background-modifier-border);
+	border: 1px solid var(--divider-color);
 	background-color: var(--background-primary);
 	color: var(--text-normal);
 	cursor: pointer;
 	outline: none;
-	transition: border-color 0.15s ease;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
 }
 
-.agy-model-select:focus,
-.agy-effort-select:focus,
-.agy-model-select:hover,
-.agy-effort-select:hover {
+.agy-select:focus {
 	border-color: var(--interactive-accent);
 }
 
@@ -150,16 +171,18 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	cursor: pointer;
-	padding: 2px;
+	width: 24px;
+	height: 24px;
+	padding: 0;
 	border-radius: var(--radius-s);
 	color: var(--text-muted);
-	transition: color 0.15s ease, transform 0.2s ease;
 	flex-shrink: 0;
+	cursor: pointer;
 }
 
 .agy-refresh-btn:hover {
-	color: var(--interactive-accent);
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
 }
 
 .agy-refresh-btn.is-spinning svg {
@@ -171,14 +194,14 @@
 	to { transform: rotate(360deg); }
 }
 
-/* Messages List */
+/* Messages Area */
 .agy-messages-container {
 	flex: 1;
 	overflow-y: auto;
-	padding: 14px;
+	padding: 12px 14px;
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 14px;
 }
 
 /* Empty State */
@@ -189,233 +212,251 @@
 	justify-content: center;
 	text-align: center;
 	margin: auto 0;
-	padding: 20px 10px;
+	padding: 24px 16px;
 	color: var(--text-muted);
 }
 
 .agy-empty-icon {
-	width: 48px;
-	height: 48px;
-	margin-bottom: 12px;
-	color: var(--interactive-accent);
-	opacity: 0.85;
+	width: 32px;
+	height: 32px;
+	margin-bottom: 10px;
+	color: var(--text-faint);
 }
 
-.agy-empty-state h3 {
-	margin: 0 0 8px 0;
-	font-size: 16px;
+.agy-empty-title {
+	font-size: 13.5px;
+	font-weight: 600;
 	color: var(--text-normal);
+	margin-bottom: 4px;
 }
 
-.agy-empty-desc {
-	font-size: 12px;
-	line-height: 1.5;
-	max-width: 280px;
+.agy-empty-subtitle {
+	font-size: 11.5px;
+	line-height: 1.4;
+	max-width: 260px;
 	margin: 0 0 16px 0;
+	color: var(--text-muted);
 }
 
-.agy-tips-list {
+.agy-empty-guide {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	text-align: left;
-	font-size: 12px;
+	gap: 6px;
+	font-size: 11px;
 	background-color: var(--background-secondary);
-	padding: 12px;
-	border-radius: var(--radius-m);
-	border: 1px solid var(--background-modifier-border);
+	padding: 10px 14px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--divider-color);
+	color: var(--text-muted);
+	text-align: left;
 }
 
-.agy-tip-item {
+.agy-guide-row {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 4px;
+}
+
+.agy-guide-row kbd {
+	background-color: var(--background-primary);
+	border: 1px solid var(--divider-color);
+	border-radius: var(--radius-s);
+	padding: 1px 4px;
+	font-size: 10px;
+	font-family: var(--font-monospace);
+	color: var(--text-normal);
 }
 
 /* Message Rows */
-.agy-message-row {
+.agy-message {
 	display: flex;
-	gap: 10px;
+	flex-direction: column;
+	gap: 4px;
 	width: 100%;
 }
 
-.agy-message-row.is-user {
-	flex-direction: row-reverse;
-}
-
-.agy-avatar {
-	width: 28px;
-	height: 28px;
-	border-radius: 50%;
+.agy-msg-meta {
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	flex-shrink: 0;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	color: var(--text-muted);
-}
-
-.agy-message-row.is-user .agy-avatar {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: transparent;
-}
-
-.agy-bubble {
-	max-width: 86%;
-	padding: 10px 14px;
-	border-radius: var(--radius-m);
-	font-size: 13.5px;
-	line-height: 1.5;
-	word-break: break-word;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-}
-
-.agy-message-row.is-user .agy-bubble {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: transparent;
-	border-bottom-right-radius: 2px;
-}
-
-.agy-message-row.is-user .agy-markdown-content p {
-	color: var(--text-on-accent);
-}
-
-.agy-message-row.is-assistant .agy-bubble {
-	border-bottom-left-radius: 2px;
-}
-
-.agy-message-row.is-error .agy-bubble {
-	border-color: var(--text-error);
-	background-color: var(--background-primary-alt);
-}
-
-/* Context Badge on User Message */
-.agy-msg-context-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	font-size: 11px;
-	padding: 2px 6px;
-	margin-bottom: 6px;
-	border-radius: var(--radius-s);
-	background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Markdown Content Styling in Bubbles */
-.agy-markdown-content p:first-child {
-	margin-top: 0;
-}
-
-.agy-markdown-content p:last-child {
-	margin-bottom: 0;
-}
-
-/* Quick Actions Bar */
-.agy-quick-actions {
-	display: flex;
 	gap: 6px;
-	padding: 6px 12px;
-	overflow-x: auto;
-	white-space: nowrap;
-	background-color: var(--background-secondary);
-	border-top: 1px solid var(--background-modifier-border);
-}
-
-.agy-quick-btn {
 	font-size: 11px;
-	padding: 4px 8px;
-	border-radius: var(--radius-s);
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
 	color: var(--text-muted);
-	cursor: pointer;
-	transition: all 0.15s ease;
-	flex-shrink: 0;
+	margin-bottom: 2px;
 }
 
-.agy-quick-btn:hover {
-	background-color: var(--background-modifier-hover);
+.agy-msg-author {
+	font-weight: 600;
 	color: var(--text-normal);
 }
 
-/* Context Pill Container */
-.agy-context-pill-container {
-	padding: 6px 12px 0 12px;
-	background-color: var(--background-secondary);
-}
-
-.agy-context-pill {
+.agy-msg-doc-ref {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	font-size: 11px;
-	padding: 3px 8px;
+	gap: 3px;
+	font-size: 10.5px;
+	color: var(--text-accent);
+	background-color: var(--background-secondary);
+	padding: 1px 6px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--divider-color);
+}
+
+.agy-msg-doc-ref svg {
+	width: 11px;
+	height: 11px;
+}
+
+/* User Message Box */
+.agy-message.is-user .agy-user-content {
+	background-color: var(--background-secondary);
+	border: 1px solid var(--divider-color);
 	border-radius: var(--radius-m);
-	background-color: var(--background-modifier-form-field);
-	border: 1px solid var(--background-modifier-border);
+	padding: 8px 12px;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--text-normal);
+	word-break: break-word;
+	white-space: pre-wrap;
+}
+
+/* Assistant Message Box */
+.agy-message.is-assistant .agy-assistant-content {
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--text-normal);
+	word-break: break-word;
+	padding: 2px 0;
+}
+
+.agy-message.is-assistant .agy-assistant-content p {
+	margin: 0.5em 0;
+}
+
+.agy-message.is-assistant .agy-assistant-content p:first-child {
+	margin-top: 0;
+}
+
+.agy-message.is-assistant .agy-assistant-content p:last-child {
+	margin-bottom: 0;
+}
+
+.agy-message.is-error .agy-assistant-content {
+	color: var(--text-error);
+	background-color: var(--background-primary-alt);
+	border: 1px solid var(--text-error);
+	border-radius: var(--radius-s);
+	padding: 8px 12px;
+}
+
+/* Quick Action Chips */
+.agy-quick-actions {
+	display: flex;
+	gap: 6px;
+	padding: 6px 10px;
+	overflow-x: auto;
+	white-space: nowrap;
+	background-color: var(--background-primary);
+	border-top: 1px solid var(--divider-color);
+}
+
+.agy-action-chip {
+	font-size: 11px;
+	font-weight: 500;
+	padding: 3px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--divider-color);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+	flex-shrink: 0;
+}
+
+.agy-action-chip:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+	border-color: var(--interactive-accent);
+}
+
+/* Active Context Document Badge */
+.agy-context-container {
+	padding: 4px 10px 0 10px;
+	background-color: var(--background-primary);
+}
+
+.agy-context-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 11px;
+	padding: 2px 7px;
+	border-radius: var(--radius-s);
+	background-color: var(--background-secondary);
+	border: 1px solid var(--divider-color);
 	color: var(--text-muted);
 	max-width: 100%;
 }
 
-.agy-context-pill.is-detached {
+.agy-context-badge.is-detached {
 	cursor: pointer;
 	border-style: dashed;
-	opacity: 0.7;
+	opacity: 0.75;
 }
 
-.agy-context-pill.is-detached:hover {
+.agy-context-badge.is-detached:hover {
 	opacity: 1;
-	color: var(--interactive-accent);
+	color: var(--text-accent);
+	border-color: var(--text-accent);
 }
 
-.agy-pill-icon {
+.agy-badge-icon {
 	display: flex;
 	align-items: center;
-	color: var(--interactive-accent);
+	color: var(--text-muted);
+	width: 12px;
+	height: 12px;
 }
 
-.agy-pill-text {
+.agy-badge-title {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	color: var(--text-normal);
 }
 
-.agy-pill-close {
+.agy-badge-dismiss {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	cursor: pointer;
-	opacity: 0.7;
+	color: var(--text-faint);
+	width: 14px;
+	height: 14px;
 	margin-left: 2px;
 }
 
-.agy-pill-close:hover {
-	opacity: 1;
+.agy-badge-dismiss:hover {
 	color: var(--text-error);
 }
 
 /* Input Section */
 .agy-input-section {
-	padding: 8px 12px 12px 12px;
-	background-color: var(--background-secondary);
-	border-top: 1px solid transparent;
+	padding: 8px 10px 10px 10px;
+	background-color: var(--background-primary);
 }
 
-.agy-input-wrapper {
+.agy-input-container {
 	display: flex;
 	align-items: flex-end;
-	gap: 8px;
-	background-color: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
+	gap: 6px;
+	background-color: var(--background-modifier-form-field);
+	border: 1px solid var(--divider-color);
 	border-radius: var(--radius-m);
 	padding: 6px 8px;
 	transition: border-color 0.15s ease;
 }
 
-.agy-input-wrapper:focus-within {
+.agy-input-container:focus-within {
 	border-color: var(--interactive-accent);
 }
 
@@ -428,19 +469,23 @@
 	font-size: 13px;
 	font-family: inherit;
 	color: var(--text-normal);
-	padding: 4px 0;
-	min-height: 24px;
-	max-height: 160px;
-	line-height: 1.4;
+	padding: 2px 0;
+	min-height: 22px;
+	max-height: 180px;
+	line-height: 1.45;
 }
 
-.agy-send-btn {
+.agy-textarea::placeholder {
+	color: var(--text-faint);
+}
+
+.agy-submit-btn {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border: none;
 	border-radius: var(--radius-s);
-	width: 28px;
-	height: 28px;
+	width: 26px;
+	height: 26px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -449,36 +494,38 @@
 	transition: opacity 0.15s ease;
 }
 
-.agy-send-btn:hover {
+.agy-submit-btn:hover {
 	opacity: 0.9;
 }
 
-.agy-send-btn.is-stopping {
+.agy-submit-btn.is-stopping {
 	background-color: var(--text-error);
 }
 
-/* Code Block Enhancements */
-.agy-markdown-content pre {
+/* Code Block Toolbar */
+.agy-assistant-content pre {
 	position: relative;
-	padding-bottom: 28px;
+	border-radius: var(--radius-s);
+	padding-bottom: 26px;
 }
 
-.agy-code-actions {
+.agy-code-toolbar {
 	position: absolute;
 	right: 6px;
 	bottom: 6px;
 	display: flex;
-	gap: 6px;
+	gap: 4px;
 }
 
 .agy-code-btn {
 	font-size: 10px;
 	padding: 2px 6px;
 	border-radius: var(--radius-s);
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	border: 1px solid var(--divider-color);
 	color: var(--text-muted);
 	cursor: pointer;
+	line-height: 1.2;
 }
 
 .agy-code-btn:hover {

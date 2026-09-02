@@ -93,8 +93,8 @@ export class AntigravityChatView extends ItemView {
 
 		const titleGroup = header.createDiv({ cls: 'agy-title-group' });
 		const titleIcon = titleGroup.createSpan({ cls: 'agy-title-icon' });
-		setIcon(titleIcon, 'sparkles');
-		titleGroup.createEl('h4', { text: 'Antigravity AI', cls: 'agy-title-text' });
+		setIcon(titleIcon, 'cpu');
+		titleGroup.createEl('span', { text: 'Antigravity AI', cls: 'agy-title-text' });
 
 		// Subtle conversation ID indicator
 		const convId = this.cliService.getConversationId();
@@ -108,55 +108,57 @@ export class AntigravityChatView extends ItemView {
 
 		const actionsGroup = header.createDiv({ cls: 'agy-header-actions' });
 
-		// Explicit interactive "New Session" Button
+		// "New Session" Button
 		const newSessionBtn = actionsGroup.createEl('button', {
-			cls: 'agy-new-session-btn',
-			attr: { 'aria-label': 'Start a clean session' }
+			cls: 'agy-btn agy-btn-secondary',
+			attr: { 'aria-label': 'Start new conversation session' }
 		});
 		const btnIcon = newSessionBtn.createSpan({ cls: 'agy-btn-icon' });
 		setIcon(btnIcon, 'rotate-ccw');
 		newSessionBtn.createSpan({ text: 'New Session' });
 		newSessionBtn.addEventListener('click', () => this.restartSession());
 
-		// Clear Messages Button
-		new ExtraButtonComponent(actionsGroup)
-			.setIcon('trash-2')
-			.setTooltip('Clear Chat Messages')
-			.onClick(() => this.clearMessages());
+		// Clear Messages Action
+		const clearBtn = actionsGroup.createEl('div', {
+			cls: 'clickable-icon agy-icon-btn',
+			attr: { 'aria-label': 'Clear chat' }
+		});
+		setIcon(clearBtn, 'trash-2');
+		clearBtn.addEventListener('click', () => this.clearMessages());
 
-		// Settings Button
-		new ExtraButtonComponent(actionsGroup)
-			.setIcon('settings')
-			.setTooltip('Antigravity Settings')
-			.onClick(() => this.openSettingsTab());
+		// Settings Action
+		const settingsBtn = actionsGroup.createEl('div', {
+			cls: 'clickable-icon agy-icon-btn',
+			attr: { 'aria-label': 'Antigravity settings' }
+		});
+		setIcon(settingsBtn, 'settings');
+		settingsBtn.addEventListener('click', () => this.openSettingsTab());
 	}
 
 	private buildToolbar(parent: HTMLElement): void {
 		const toolbar = parent.createDiv({ cls: 'agy-toolbar' });
 
-		// Model Selector Group
+		// Model Selector
 		const modelGroup = toolbar.createDiv({ cls: 'agy-toolbar-group is-model-group' });
-		const brainIcon = modelGroup.createSpan({ cls: 'agy-toolbar-icon' });
-		setIcon(brainIcon, 'cpu');
-
-		this.modelSelectEl = modelGroup.createEl('select', { cls: 'agy-model-select' });
+		const modelSelectWrapper = modelGroup.createDiv({ cls: 'agy-select-wrapper' });
+		this.modelSelectEl = modelSelectWrapper.createEl('select', { cls: 'dropdown agy-select' });
 
 		// Refresh models button
-		this.refreshModelsBtn = modelGroup.createSpan({ cls: 'agy-refresh-btn' });
+		this.refreshModelsBtn = modelGroup.createDiv({
+			cls: 'clickable-icon agy-refresh-btn',
+			attr: { 'aria-label': 'Refresh models from CLI' }
+		});
 		setIcon(this.refreshModelsBtn, 'refresh-cw');
-		this.refreshModelsBtn.setAttribute('aria-label', 'Refresh models from CLI');
 		this.refreshModelsBtn.addEventListener('click', () => this.refreshAvailableModels(true));
 
 		// Reasoning / Thinking Effort Selector Group (hidden by default)
 		this.effortGroupEl = toolbar.createDiv({ cls: 'agy-toolbar-group is-effort-group' });
-		this.effortGroupEl.style.display = 'none'; // hidden by default
+		this.effortGroupEl.style.display = 'none';
 
-		const zapIcon = this.effortGroupEl.createSpan({ cls: 'agy-toolbar-icon' });
-		setIcon(zapIcon, 'zap');
+		const effortSelectWrapper = this.effortGroupEl.createDiv({ cls: 'agy-select-wrapper' });
+		this.effortSelectEl = effortSelectWrapper.createEl('select', { cls: 'dropdown agy-select agy-effort-select' });
 
-		this.effortSelectEl = this.effortGroupEl.createEl('select', { cls: 'agy-effort-select' });
-
-		// Populate models and bind event handlers
+		// Populate models and bind handlers
 		this.populateModelOptions(this.modelOptions);
 
 		this.modelSelectEl.addEventListener('change', async () => {
@@ -218,13 +220,12 @@ export class AntigravityChatView extends ItemView {
 		const currentModelId = this.modelSelectEl.value;
 		const model = this.modelOptions.find(m => m.id === currentModelId);
 
-		// Hide effort selector if model has 0 or 1 effort option
+		// Hide effort selector if model has <= 1 effort option
 		if (!model || !model.efforts || model.efforts.length <= 1) {
 			this.effortGroupEl.style.display = 'none';
 			return;
 		}
 
-		// Show effort selector and populate options with 'Medium' as default
 		this.effortGroupEl.style.display = 'flex';
 		this.effortSelectEl.empty();
 
@@ -234,7 +235,7 @@ export class AntigravityChatView extends ItemView {
 		for (const effort of model.efforts) {
 			const opt = this.effortSelectEl.createEl('option', {
 				value: effort,
-				text: effort
+				text: `${effort} effort`
 			});
 			if (effort.toLowerCase() === savedEffort.toLowerCase()) {
 				opt.selected = true;
@@ -254,7 +255,7 @@ export class AntigravityChatView extends ItemView {
 			}
 		} catch (e) {
 			if (showNotice) {
-				new Notice('Could not refresh models from CLI; using defaults.');
+				new Notice('Could not refresh models from CLI.');
 			}
 		} finally {
 			this.refreshModelsBtn.removeClass('is-spinning');
@@ -271,35 +272,41 @@ export class AntigravityChatView extends ItemView {
 		const emptyEl = this.messagesContainerEl.createDiv({ cls: 'agy-empty-state' });
 		
 		const iconEl = emptyEl.createDiv({ cls: 'agy-empty-icon' });
-		setIcon(iconEl, 'bot');
+		setIcon(iconEl, 'terminal');
 
-		emptyEl.createEl('h3', { text: 'How can I assist your thinking?' });
+		emptyEl.createEl('div', { text: 'Antigravity Session', cls: 'agy-empty-title' });
 		emptyEl.createEl('p', {
-			text: 'Connected directly to Antigravity CLI with your Google AI Pro subscription. Vault notes and selections are linked automatically.',
-			cls: 'agy-empty-desc'
+			text: 'Connected to local Antigravity CLI via Google AI Pro subscription.',
+			cls: 'agy-empty-subtitle'
 		});
 
-		const tips = emptyEl.createDiv({ cls: 'agy-tips-list' });
-		tips.createDiv({ text: '📄 Active note context attaches automatically', cls: 'agy-tip-item' });
-		tips.createDiv({ text: '🧠 Select model & reasoning effort in top bar', cls: 'agy-tip-item' });
-		tips.createDiv({ text: '🔄 Click "New Session" anytime to reset memory', cls: 'agy-tip-item' });
-		tips.createDiv({ text: '📥 Insert AI code snippets directly into your note', cls: 'agy-tip-item' });
+		const guideBox = emptyEl.createDiv({ cls: 'agy-empty-guide' });
+		const row1 = guideBox.createDiv({ cls: 'agy-guide-row' });
+		const kbd1 = row1.createEl('kbd', { text: 'Enter' });
+		row1.createSpan({ text: ' to send prompt' });
+
+		const row2 = guideBox.createDiv({ cls: 'agy-guide-row' });
+		const kbd2 = row2.createEl('kbd', { text: 'Shift+Enter' });
+		row2.createSpan({ text: ' for new line' });
+
+		const row3 = guideBox.createDiv({ cls: 'agy-guide-row' });
+		row3.createSpan({ text: 'Active vault note links automatically below' });
 	}
 
 	private buildQuickActions(parent: HTMLElement): void {
 		const quickBar = parent.createDiv({ cls: 'agy-quick-actions' });
 
 		const actions = [
-			{ label: '⚡ Summarize', prompt: 'Provide a concise, structured summary with key takeaways of this note.' },
-			{ label: '✍️ Polish', prompt: 'Review and refine the writing in this note for clarity, flow, and tone while preserving its core meaning.' },
-			{ label: '🔍 Tasks', prompt: 'Extract all action items, todos, and open questions from this note.' },
-			{ label: '❓ Key Concepts', prompt: 'Explain the core concepts discussed in this note and suggest related ideas.' },
+			{ label: 'Summarize', prompt: 'Provide a concise, structured summary with key takeaways of this note.' },
+			{ label: 'Polish writing', prompt: 'Review and refine the writing in this note for clarity, flow, and tone while preserving its core meaning.' },
+			{ label: 'Extract tasks', prompt: 'Extract all action items, todos, and open questions from this note.' },
+			{ label: 'Explain concepts', prompt: 'Explain the core concepts discussed in this note and suggest related ideas.' },
 		];
 
 		for (const action of actions) {
 			const btn = quickBar.createEl('button', {
 				text: action.label,
-				cls: 'agy-quick-btn'
+				cls: 'agy-action-chip'
 			});
 			btn.addEventListener('click', () => {
 				this.sendQuickPrompt(action.prompt);
@@ -308,7 +315,7 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	private buildContextPill(parent: HTMLElement): void {
-		this.contextPillEl = parent.createDiv({ cls: 'agy-context-pill-container' });
+		this.contextPillEl = parent.createDiv({ cls: 'agy-context-container' });
 		this.renderContextPill();
 	}
 
@@ -316,10 +323,10 @@ export class AntigravityChatView extends ItemView {
 		this.contextPillEl.empty();
 
 		if (!this.includeActiveNote || !this.currentActiveContext) {
-			const detachedPill = this.contextPillEl.createDiv({ cls: 'agy-context-pill is-detached' });
-			const icon = detachedPill.createSpan({ cls: 'agy-pill-icon' });
+			const detachedPill = this.contextPillEl.createDiv({ cls: 'agy-context-badge is-detached' });
+			const icon = detachedPill.createSpan({ cls: 'agy-badge-icon' });
 			setIcon(icon, 'file-text');
-			detachedPill.createSpan({ text: 'No note attached (click to attach)' });
+			detachedPill.createSpan({ text: 'Note detached (click to link active note)' });
 			detachedPill.addEventListener('click', () => {
 				this.includeActiveNote = true;
 				this.updateActiveDocumentContext();
@@ -327,21 +334,24 @@ export class AntigravityChatView extends ItemView {
 			return;
 		}
 
-		const pill = this.contextPillEl.createDiv({ cls: 'agy-context-pill' });
-		const fileIcon = pill.createSpan({ cls: 'agy-pill-icon' });
+		const badge = this.contextPillEl.createDiv({ cls: 'agy-context-badge' });
+		const fileIcon = badge.createSpan({ cls: 'agy-badge-icon' });
 		setIcon(fileIcon, 'file-text');
 
 		const title = this.currentActiveContext.title;
 		const selectionText = this.currentActiveContext.selection
-			? ` (${this.currentActiveContext.selection.split('\n').length} lines selected)`
+			? ` (${this.currentActiveContext.selection.split('\n').length} lines)`
 			: '';
 
-		pill.createSpan({
+		badge.createSpan({
 			text: `${title}${selectionText}`,
-			cls: 'agy-pill-text'
+			cls: 'agy-badge-title'
 		});
 
-		const closeBtn = pill.createSpan({ cls: 'agy-pill-close' });
+		const closeBtn = badge.createDiv({
+			cls: 'clickable-icon agy-badge-dismiss',
+			attr: { 'aria-label': 'Detach document' }
+		});
 		setIcon(closeBtn, 'x');
 		closeBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
@@ -353,12 +363,12 @@ export class AntigravityChatView extends ItemView {
 	private buildInputArea(parent: HTMLElement): void {
 		const inputSection = parent.createDiv({ cls: 'agy-input-section' });
 
-		const inputWrapper = inputSection.createDiv({ cls: 'agy-input-wrapper' });
+		const inputWrapper = inputSection.createDiv({ cls: 'agy-input-container' });
 
 		this.inputEl = inputWrapper.createEl('textarea', {
 			cls: 'agy-textarea',
 			attr: {
-				placeholder: 'Ask Antigravity anything... (Enter to send, Shift+Enter for newline)',
+				placeholder: 'Ask Antigravity... (Enter to send, Shift+Enter for newline)',
 				rows: '1'
 			}
 		});
@@ -366,7 +376,7 @@ export class AntigravityChatView extends ItemView {
 		// Auto-expand textarea
 		this.inputEl.addEventListener('input', () => {
 			this.inputEl.style.height = 'auto';
-			this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 160) + 'px';
+			this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 180) + 'px';
 		});
 
 		// Keydown handlers
@@ -378,10 +388,10 @@ export class AntigravityChatView extends ItemView {
 		});
 
 		this.sendBtnEl = inputWrapper.createEl('button', {
-			cls: 'agy-send-btn',
-			attr: { 'aria-label': 'Send Message' }
+			cls: 'clickable-icon agy-submit-btn',
+			attr: { 'aria-label': 'Send prompt' }
 		});
-		setIcon(this.sendBtnEl, 'send');
+		setIcon(this.sendBtnEl, 'arrow-up');
 		this.sendBtnEl.addEventListener('click', () => this.handleSend());
 	}
 
@@ -414,7 +424,7 @@ export class AntigravityChatView extends ItemView {
 		this.messages = [];
 		this.renderEmptyState();
 		this.updateSessionBadge('');
-		new Notice('Antigravity session restarted.');
+		new Notice('Session reset.');
 	}
 
 	public clearMessages(): void {
@@ -543,12 +553,12 @@ export class AntigravityChatView extends ItemView {
 	private setSendButtonState(streaming: boolean): void {
 		if (streaming) {
 			this.sendBtnEl.addClass('is-stopping');
-			this.sendBtnEl.setAttribute('aria-label', 'Stop Generation');
+			this.sendBtnEl.setAttribute('aria-label', 'Stop generation');
 			setIcon(this.sendBtnEl, 'square');
 		} else {
 			this.sendBtnEl.removeClass('is-stopping');
-			this.sendBtnEl.setAttribute('aria-label', 'Send Message');
-			setIcon(this.sendBtnEl, 'send');
+			this.sendBtnEl.setAttribute('aria-label', 'Send prompt');
+			setIcon(this.sendBtnEl, 'arrow-up');
 		}
 	}
 
@@ -559,35 +569,41 @@ export class AntigravityChatView extends ItemView {
 		this.messages.push(msg);
 
 		const msgRow = this.messagesContainerEl.createDiv({
-			cls: `agy-message-row is-${msg.role}`
+			cls: `agy-message is-${msg.role}`
 		});
 
-		const avatar = msgRow.createDiv({ cls: 'agy-avatar' });
-		setIcon(avatar, msg.role === 'user' ? 'user' : 'bot');
+		// Header for user message
+		if (msg.role === 'user') {
+			const metaRow = msgRow.createDiv({ cls: 'agy-msg-meta' });
+			metaRow.createSpan({ text: 'You', cls: 'agy-msg-author' });
 
-		const bubble = msgRow.createDiv({ cls: 'agy-bubble' });
+			if (msg.attachedNotePath) {
+				const contextBadge = metaRow.createSpan({ cls: 'agy-msg-doc-ref' });
+				const icon = contextBadge.createSpan();
+				setIcon(icon, 'file-text');
+				contextBadge.createSpan({
+					text: msg.attachedSelection
+						? `${msg.attachedNotePath} (selection)`
+						: msg.attachedNotePath
+				});
+			}
 
-		// Attached context badge on user message
-		if (msg.role === 'user' && msg.attachedNotePath) {
-			const contextBadge = bubble.createDiv({ cls: 'agy-msg-context-badge' });
-			const icon = contextBadge.createSpan();
-			setIcon(icon, 'file-text');
-			contextBadge.createSpan({
-				text: msg.attachedSelection
-					? `${msg.attachedNotePath} (selection)`
-					: msg.attachedNotePath
-			});
+			const contentDiv = msgRow.createDiv({ cls: 'agy-user-content' });
+			contentDiv.setText(msg.content);
+		} else {
+			const metaRow = msgRow.createDiv({ cls: 'agy-msg-meta' });
+			metaRow.createSpan({ text: 'Antigravity', cls: 'agy-msg-author' });
+
+			const contentDiv = msgRow.createDiv({ cls: 'agy-assistant-content markdown-rendered' });
+			this.renderMarkdownTo(contentDiv, msg.content);
 		}
-
-		const contentDiv = bubble.createDiv({ cls: 'agy-markdown-content' });
-		this.renderMarkdownTo(contentDiv, msg.content);
 
 		this.scrollToBottom();
 		return msgRow;
 	}
 
 	private updateAssistantMessageContent(msgRow: HTMLElement, content: string, isFinal = false): void {
-		const contentDiv = msgRow.querySelector('.agy-markdown-content') as HTMLElement;
+		const contentDiv = msgRow.querySelector('.agy-assistant-content') as HTMLElement;
 		if (!contentDiv) return;
 
 		contentDiv.empty();
@@ -611,10 +627,10 @@ export class AntigravityChatView extends ItemView {
 	private attachCodeBlockActions(container: HTMLElement): void {
 		const preElements = container.querySelectorAll('pre');
 		preElements.forEach((pre) => {
-			if (pre.querySelector('.agy-code-actions')) return;
+			if (pre.querySelector('.agy-code-toolbar')) return;
 
 			const actionsBar = document.createElement('div');
-			actionsBar.className = 'agy-code-actions';
+			actionsBar.className = 'agy-code-toolbar';
 
 			// Copy button
 			const copyBtn = actionsBar.createEl('button', {
@@ -625,13 +641,13 @@ export class AntigravityChatView extends ItemView {
 				e.stopPropagation();
 				const code = pre.querySelector('code')?.innerText || pre.innerText;
 				navigator.clipboard.writeText(code);
-				copyBtn.setText('Copied!');
+				copyBtn.setText('Copied');
 				setTimeout(() => copyBtn.setText('Copy'), 2000);
 			});
 
-			// Insert into Active Note Button
+			// Insert into Note button
 			const insertBtn = actionsBar.createEl('button', {
-				text: 'Insert into Note',
+				text: 'Insert into note',
 				cls: 'agy-code-btn'
 			});
 			insertBtn.addEventListener('click', (e) => {
@@ -647,14 +663,14 @@ export class AntigravityChatView extends ItemView {
 	public insertTextIntoActiveNote(textToInsert: string): void {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!activeView || !activeView.editor) {
-			new Notice('No active note editor found to insert text.');
+			new Notice('No active note editor found.');
 			return;
 		}
 
 		const editor = activeView.editor;
 		const cursor = editor.getCursor();
 		editor.replaceRange(`\n${textToInsert}\n`, cursor);
-		new Notice('Inserted into note!');
+		new Notice('Inserted into note');
 	}
 
 	private scrollToBottom(): void {
