@@ -88,7 +88,8 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 | **CLI Command / Path** | `agy` | Path to the Antigravity CLI binary (e.g. `agy`, `agy.exe`, `/usr/local/bin/agy`). |
 | **Use WSL** | `false` | Enable if your `agy` is installed inside Ubuntu / WSL on Windows. |
 | **Auto-Attach Active Note** | `true` | Automatically includes the active note file reference and selection in prompts. |
-| **Auto-Scroll Chat** | `true` | Automatically scrolls chat to bottom during streaming responses. |
+| **Auto-Scroll Chat** | 	rue | Automatically scrolls chat to bottom during streaming responses. |
+| **Show Status Bar Item** | 	rue | Toggles the active model & effort widget in Obsidian's bottom status bar. |
 | **Extra CLI Flags** | *(empty)* | Optional extra command-line flags to pass to `agy` (e.g. `--mode=plan`). |
 
 ---
@@ -106,3 +107,4 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 ## 📄 License
 
 This plugin is licensed under the [MIT License](LICENSE).
+

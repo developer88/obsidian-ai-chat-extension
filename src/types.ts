@@ -84,6 +84,7 @@ export interface AntigravityPluginSettings {
 	defaultMode: string;
 	extraCliFlags: string;
 	autoScrollChat: boolean;
+	showStatusBarItem: boolean;
 	conversationId: string | null;
 }
 
@@ -104,6 +105,7 @@ export const DEFAULT_SETTINGS: AntigravityPluginSettings = {
 	defaultMode: '',
 	extraCliFlags: '',
 	autoScrollChat: true,
+	showStatusBarItem: true,
 	conversationId: null,
 };
 
@@ -135,4 +137,5 @@ export interface CliStreamCallbacks {
 	onComplete?: (fullText: string, conversationId?: string) => void;
 	onError?: (error: string) => void;
 }
+
 

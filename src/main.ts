@@ -97,6 +97,13 @@ export default class AntigravityPlugin extends Plugin {
 	public updateStatusBar(): void {
 		if (!this.statusBarItemEl) return;
 
+		if (!this.settings.showStatusBarItem) {
+			this.statusBarItemEl.style.display = 'none';
+			return;
+		}
+
+		this.statusBarItemEl.style.display = '';
+
 		const models = (this.settings.cachedModels && this.settings.cachedModels.length > 0)
 			? this.settings.cachedModels
 			: ANTIGRAVITY_2_MODELS;
@@ -187,3 +194,4 @@ export default class AntigravityPlugin extends Plugin {
 		}
 	}
 }
+
