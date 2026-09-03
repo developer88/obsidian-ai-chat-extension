@@ -277,7 +277,7 @@ export class AntigravityChatView extends ItemView {
 
 		emptyEl.createEl('div', { text: 'Antigravity Session', cls: 'agy-empty-title' });
 		emptyEl.createEl('p', {
-			text: 'Connected to local Antigravity CLI via Google AI Pro subscription.',
+			text: 'Connected to local Antigravity CLI via Google AI subscription.',
 			cls: 'agy-empty-subtitle'
 		});
 
@@ -687,3 +687,4 @@ export class AntigravityChatView extends ItemView {
 		this.cliService.abort();
 	}
 }
+

@@ -16,7 +16,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', { text: 'Antigravity AI Settings' });
 		containerEl.createEl('p', {
-			text: 'Connects directly to your local Antigravity CLI (agy) using your Google AI Pro subscription without an API token.',
+			text: 'Connects directly to your local Antigravity CLI (agy) using your Google AI subscription without an API token.',
 			cls: 'setting-item-description'
 		});
 
@@ -159,3 +159,4 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				}));
 	}
 }
+

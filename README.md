@@ -1,12 +1,12 @@
 # Antigravity AI for Obsidian (`agy-in-obsidian`)
 
-An OS-agnostic Obsidian plugin that embeds a native AI chat sidebar connected to the **Antigravity CLI** (`agy`), powered by your **Google AI Pro** subscription without needing an API token.
+An OS-agnostic Obsidian plugin that embeds a native AI chat sidebar connected to the **Antigravity CLI** (`agy`), powered by your **Google AI subscription** subscription without needing an API token.
 
 ---
 
 ## ✨ Features
 
-- 🔐 **Zero API Keys Required**: Connects directly to your local `agy` CLI session, utilizing your existing Google AI Pro quota and models.
+- 🔐 **Zero API Keys Required**: Connects directly to your local `agy` CLI session, utilizing your existing Google AI subscription quota and models.
 - 🌐 **OS-Agnostic**: Works across **macOS**, **Linux**, and **Windows** (including native Windows and WSL `wsl agy`).
 - 📄 **Active Document Awareness**: Automatically tracks your currently opened note and active text selection in Obsidian, linking them into prompts without copying and pasting.
 - ⚡ **Quick Action Bar**: One-click buttons to **Summarize**, **Polish & Edit**, **Extract Tasks**, and **Explain Key Concepts** for the active note.
@@ -50,3 +50,5 @@ In Obsidian **Settings -> Antigravity AI Settings**:
 
 ## 📄 License
 MIT
+
+
