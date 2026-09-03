@@ -260,11 +260,14 @@ export class AgyCliService {
 			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', settings.cliCommand || 'agy');
 		}
 
-		// Read prompt from stdin via '-p -' to avoid command line length limits
-		args.push('-p', '-');
+		// Prompt mode flag with clean reference prompt
+		args.push('-p', prompt);
 
 		// Output format: stream text
 		args.push('--output-format', 'text');
+
+		// Auto approve tool calls (e.g. reading vault notes) in non-interactive mode
+		args.push('--dangerously-skip-permissions');
 
 		// Model selection
 		if (settings.selectedModel) {
@@ -312,21 +315,10 @@ export class AgyCliService {
 					PAGER: 'cat',
 					CI: '1',
 				},
-				shell: !settings.useWsl && isWindows,
-				stdio: ['pipe', 'pipe', 'pipe']
+				shell: !settings.useWsl && isWindows
 			});
 
 			this.activeProcess = child;
-
-			// Write prompt to stdin and close stdin stream
-			if (child.stdin) {
-				child.stdin.write(prompt, 'utf8', (err) => {
-					if (err) {
-						console.error('[Antigravity] Stdin write error:', err);
-					}
-					child.stdin.end();
-				});
-			}
 
 			child.stdout.on('data', (data: Buffer) => {
 				const chunk = this.stripAnsi(data.toString('utf8'));
