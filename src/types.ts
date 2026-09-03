@@ -118,6 +118,8 @@ export interface ChatMessage {
 	timestamp: number;
 	attachedNotePath?: string;
 	attachedSelection?: string;
+	modelLabel?: string;
+	effort?: string;
 	isStreaming?: boolean;
 }
 
@@ -137,5 +139,6 @@ export interface CliStreamCallbacks {
 	onComplete?: (fullText: string, conversationId?: string) => void;
 	onError?: (error: string) => void;
 }
+
 
 

@@ -514,12 +514,23 @@ export class AntigravityChatView extends ItemView {
 		};
 		this.appendMessage(userMsg);
 
+		// Model used for this assistant response
+		const settings = this.getSettings();
+		const currentModelId = settings.selectedModel || 'gemini-3.8-flash';
+		const modelDef = this.modelOptions.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
+		const currentModelLabel = modelDef ? modelDef.label : currentModelId;
+		const currentEffort = (modelDef && modelDef.efforts && modelDef.efforts.length > 1)
+			? (settings.modelEfforts?.[currentModelId] || modelDef.defaultEffort || 'Medium')
+			: undefined;
+
 		// Prepare assistant streaming message
 		const assistantMsg: ChatMessage = {
 			id: String(Date.now() + 1),
 			role: 'assistant',
 			content: '',
 			timestamp: Date.now(),
+			modelLabel: currentModelLabel,
+			effort: currentEffort,
 			isStreaming: true
 		};
 		const assistantMsgEl = this.appendMessage(assistantMsg);
@@ -605,6 +616,12 @@ export class AntigravityChatView extends ItemView {
 		} else {
 			const metaRow = msgRow.createDiv({ cls: 'agy-msg-meta' });
 			metaRow.createSpan({ text: 'Antigravity', cls: 'agy-msg-author' });
+
+			if (msg.modelLabel) {
+				const modelBadge = metaRow.createSpan({ cls: 'agy-msg-model-badge' });
+				const effortStr = msg.effort ? (" (" + msg.effort + ")") : "";
+				modelBadge.setText(msg.modelLabel + effortStr);
+			}
 
 			const contentDiv = msgRow.createDiv({ cls: 'agy-assistant-content markdown-rendered' });
 			this.renderMarkdownTo(contentDiv, msg.content);
@@ -695,5 +712,7 @@ export class AntigravityChatView extends ItemView {
 		this.cliService.abort();
 	}
 }
+
+
 
 

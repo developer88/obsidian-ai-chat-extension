@@ -108,3 +108,4 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 
 This plugin is licensed under the [MIT License](LICENSE).
 
+
