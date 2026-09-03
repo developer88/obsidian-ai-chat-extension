@@ -6,6 +6,7 @@ import {
 	setIcon,
 	Notice,
 	TFile,
+	FileSystemAdapter,
 	ExtraButtonComponent
 } from 'obsidian';
 import {
@@ -410,8 +411,19 @@ export class AntigravityChatView extends ItemView {
 			selection = activeView.editor.getSelection();
 		}
 
+		let fullPath = activeFile.path;
+		const adapter = this.app.vault.adapter;
+		if (adapter instanceof FileSystemAdapter) {
+			fullPath = adapter.getFullPath(activeFile.path);
+		}
+
+		if (this.getSettings().useWsl) {
+			fullPath = this.cliService.toWslPath(fullPath);
+		}
+
 		this.currentActiveContext = {
 			path: activeFile.path,
+			fullPath: fullPath,
 			title: activeFile.basename,
 			selection: selection.trim() || undefined
 		};
@@ -460,19 +472,20 @@ export class AntigravityChatView extends ItemView {
 		const userText = this.inputEl.value.trim();
 		if (!userText) return;
 
-		// Attach active document reference to prompt
+		// Attach active document full file path to prompt
 		let noteContextPrefix = '';
 		let attachedNotePath: string | undefined;
 		let attachedSelection: string | undefined;
 
 		if (this.includeActiveNote && this.currentActiveContext) {
+			const targetFilePath = this.currentActiveContext.fullPath || this.currentActiveContext.path;
 			attachedNotePath = this.currentActiveContext.path;
 			attachedSelection = this.currentActiveContext.selection;
 
 			if (attachedSelection) {
-				noteContextPrefix = `Regarding selected text in note "${attachedNotePath}":\n"""\n${attachedSelection}\n"""\n\n`;
+				noteContextPrefix = `Regarding the selected text in file "${targetFilePath}":\n"""\n${attachedSelection}\n"""\n\n`;
 			} else {
-				noteContextPrefix = `Regarding note "${attachedNotePath}":\n`;
+				noteContextPrefix = `Please read and analyze the file "${targetFilePath}":\n\n`;
 			}
 		}
 
@@ -674,4 +687,3 @@ export class AntigravityChatView extends ItemView {
 		this.cliService.abort();
 	}
 }
-

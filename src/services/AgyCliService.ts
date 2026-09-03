@@ -64,7 +64,7 @@ export class AgyCliService {
 		return process.cwd();
 	}
 
-	private toWslPath(windowsPath: string): string {
+	public toWslPath(windowsPath: string): string {
 		const match = windowsPath.match(/^([a-zA-Z]):\\(.*)$/);
 		if (match) {
 			const drive = match[1].toLowerCase();
@@ -373,3 +373,4 @@ export class AgyCliService {
 		}
 	}
 }
+

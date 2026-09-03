@@ -121,6 +121,7 @@ export interface ChatMessage {
 
 export interface ActiveNoteContext {
 	path: string;
+	fullPath?: string;
 	title: string;
 	content?: string;
 	selection?: string;
@@ -134,3 +135,4 @@ export interface CliStreamCallbacks {
 	onComplete?: (fullText: string, conversationId?: string) => void;
 	onError?: (error: string) => void;
 }
+
