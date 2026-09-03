@@ -91,7 +91,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		// Use WSL
 		new Setting(containerEl)
 			.setName('Use WSL (Windows Subsystem for Linux)')
-			.setDesc('Enable if your Antigravity CLI is installed inside WSL (executes via "wsl agy").')
+			.setDesc('Run the Antigravity CLI inside WSL (e.g. "wsl agy"). Enable this if your CLI is installed in Ubuntu/WSL on Windows.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.useWsl)
 				.onChange(async (value) => {
@@ -102,7 +102,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		// Auto-Attach Active Note
 		new Setting(containerEl)
 			.setName('Auto-Attach Active Note')
-			.setDesc('Automatically include the currently opened note in the chat context.')
+			.setDesc('Automatically link the active vault document and text selection to the chat context.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoAttachActiveNote)
 				.onChange(async (value) => {
@@ -110,12 +110,12 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		// Default Execution Mode
+		// Execution Mode
 		new Setting(containerEl)
-			.setName('Default Execution Mode')
-			.setDesc('Optional mode passed to the CLI (e.g. "plan", "fast", or leave blank for default).')
+			.setName('Default Mode')
+			.setDesc('Optional agent execution mode (e.g. "accept-edits" or "plan"). Leave empty for standard mode.')
 			.addText(text => text
-				.setPlaceholder('default')
+				.setPlaceholder('e.g. plan (optional)')
 				.setValue(this.plugin.settings.defaultMode)
 				.onChange(async (value) => {
 					this.plugin.settings.defaultMode = value.trim();
@@ -145,6 +145,18 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		// Show Status Bar Item
+		new Setting(containerEl)
+			.setName('Show Status Bar Item')
+			.setDesc('Display the active AI model and reasoning effort widget in the bottom status bar.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showStatusBarItem)
+				.onChange(async (value) => {
+					this.plugin.settings.showStatusBarItem = value;
+					await this.plugin.saveSettings();
+					this.plugin.updateStatusBar();
+				}));
+
 		// Reset Session
 		new Setting(containerEl)
 			.setName('Reset Conversation Memory')
@@ -159,5 +171,3 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				}));
 	}
 }
-
-
