@@ -470,9 +470,9 @@ export class AntigravityChatView extends ItemView {
 			attachedSelection = this.currentActiveContext.selection;
 
 			if (attachedSelection) {
-				noteContextPrefix = `Regarding selected text in @${attachedNotePath}:\n"""\n${attachedSelection}\n"""\n\n`;
+				noteContextPrefix = `Regarding selected text in note "${attachedNotePath}":\n"""\n${attachedSelection}\n"""\n\n`;
 			} else {
-				noteContextPrefix = `Regarding @${attachedNotePath}:\n`;
+				noteContextPrefix = `Regarding note "${attachedNotePath}":\n`;
 			}
 		}
 
@@ -674,3 +674,4 @@ export class AntigravityChatView extends ItemView {
 		this.cliService.abort();
 	}
 }
+

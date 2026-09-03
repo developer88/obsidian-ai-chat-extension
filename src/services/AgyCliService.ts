@@ -94,6 +94,8 @@ export class AgyCliService {
 			command = 'wsl';
 			const wslVaultPath = this.toWslPath(vaultPath);
 			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', settings.cliCommand || 'agy');
+		} else if (process.platform === 'win32' && !command.toLowerCase().endsWith('.exe') && !command.includes('\\') && !command.includes('/')) {
+			command = `${command}.exe`;
 		}
 
 		args.push('models');
@@ -126,7 +128,6 @@ export class AgyCliService {
 
 			let child: ChildProcess;
 			try {
-				const isWindows = process.platform === 'win32';
 				child = spawn(command, args, {
 					cwd: settings.useWsl ? undefined : spawnCwd,
 					env: {
@@ -134,7 +135,7 @@ export class AgyCliService {
 						PAGER: 'cat',
 						CI: '1',
 					},
-					shell: !settings.useWsl && isWindows,
+					shell: false
 				});
 
 				child.stdout?.on('data', (data: Buffer) => {
@@ -258,9 +259,11 @@ export class AgyCliService {
 			command = 'wsl';
 			const wslVaultPath = this.toWslPath(vaultPath);
 			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', settings.cliCommand || 'agy');
+		} else if (process.platform === 'win32' && !command.toLowerCase().endsWith('.exe') && !command.includes('\\') && !command.includes('/')) {
+			command = `${command}.exe`;
 		}
 
-		// Prompt mode flag with clean reference prompt
+		// Prompt mode flag
 		args.push('-p', prompt);
 
 		// Output format: stream text
@@ -307,7 +310,6 @@ export class AgyCliService {
 		let errorOutput = '';
 
 		try {
-			const isWindows = process.platform === 'win32';
 			const child = spawn(command, args, {
 				cwd: settings.useWsl ? undefined : spawnCwd,
 				env: {
@@ -315,7 +317,7 @@ export class AgyCliService {
 					PAGER: 'cat',
 					CI: '1',
 				},
-				shell: !settings.useWsl && isWindows
+				shell: false
 			});
 
 			this.activeProcess = child;
