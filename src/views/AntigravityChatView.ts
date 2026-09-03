@@ -280,7 +280,7 @@ export class AntigravityChatView extends ItemView {
 			cls: 'agy-empty-subtitle'
 		});
 
-		const guideBox = emptyEl.createDiv({ cls: 'agy-empty-guide' });
+		const guideBox = emptyEl.createDiv({ cls: 'agy-guide-box' });
 		const row1 = guideBox.createDiv({ cls: 'agy-guide-row' });
 		const kbd1 = row1.createEl('kbd', { text: 'Enter' });
 		row1.createSpan({ text: ' to send prompt' });
@@ -460,7 +460,7 @@ export class AntigravityChatView extends ItemView {
 		const userText = this.inputEl.value.trim();
 		if (!userText) return;
 
-		// Read current note content if attached
+		// Attach active document reference to prompt
 		let noteContextPrefix = '';
 		let attachedNotePath: string | undefined;
 		let attachedSelection: string | undefined;
@@ -469,19 +469,10 @@ export class AntigravityChatView extends ItemView {
 			attachedNotePath = this.currentActiveContext.path;
 			attachedSelection = this.currentActiveContext.selection;
 
-			const file = this.app.vault.getAbstractFileByPath(this.currentActiveContext.path);
-			if (file instanceof TFile) {
-				try {
-					const content = await this.app.vault.read(file);
-					if (attachedSelection) {
-						noteContextPrefix = `[Context from Note: ${file.path}]\n[Selected Text]:\n${attachedSelection}\n\n`;
-					} else {
-						noteContextPrefix = `[Context from Note: ${file.path}]\n--- Document Content ---\n${content}\n-----------------------\n\n`;
-					}
-				} catch (err) {
-					console.warn('Could not read active note content:', err);
-					noteContextPrefix = `[Active Note Path: ${file.path}]\n\n`;
-				}
+			if (attachedSelection) {
+				noteContextPrefix = `Regarding selected text in @${attachedNotePath}:\n"""\n${attachedSelection}\n"""\n\n`;
+			} else {
+				noteContextPrefix = `Regarding @${attachedNotePath}:\n`;
 			}
 		}
 
