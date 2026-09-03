@@ -217,6 +217,14 @@ export class AntigravityChatView extends ItemView {
 		this.updateEffortDropdownForSelectedModel();
 	}
 
+	public updateModelSelectionFromSettings(): void {
+		const settings = this.getSettings();
+		if (this.modelSelectEl) {
+			this.modelSelectEl.value = settings.selectedModel;
+			this.updateEffortDropdownForSelectedModel();
+		}
+	}
+
 	private updateEffortDropdownForSelectedModel(): void {
 		const currentModelId = this.modelSelectEl.value;
 		const model = this.modelOptions.find(m => m.id === currentModelId);
@@ -687,4 +695,5 @@ export class AntigravityChatView extends ItemView {
 		this.cliService.abort();
 	}
 }
+
 

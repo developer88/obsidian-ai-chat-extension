@@ -559,3 +559,30 @@
 	background-color: var(--background-modifier-hover);
 	color: var(--text-normal);
 }
+
+/* Status Bar Item */
+.agy-status-bar-item {
+	cursor: pointer;
+	color: var(--text-muted);
+	transition: color 0.15s ease;
+}
+
+.agy-status-bar-item:hover {
+	color: var(--text-normal);
+}
+
+/* Modal Suggestion Items */
+.agy-modal-suggestion-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.agy-modal-active-badge {
+	font-size: 10.5px;
+	padding: 2px 7px;
+	border-radius: var(--radius-s);
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-weight: 600;
+}
