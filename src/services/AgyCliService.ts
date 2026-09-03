@@ -260,8 +260,8 @@ export class AgyCliService {
 			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', settings.cliCommand || 'agy');
 		}
 
-		// Prompt mode flag
-		args.push('-p', prompt);
+		// Read prompt from stdin via '-p -' to avoid command line length limits
+		args.push('-p', '-');
 
 		// Output format: stream text
 		args.push('--output-format', 'text');
@@ -313,9 +313,20 @@ export class AgyCliService {
 					CI: '1',
 				},
 				shell: !settings.useWsl && isWindows,
+				stdio: ['pipe', 'pipe', 'pipe']
 			});
 
 			this.activeProcess = child;
+
+			// Write prompt to stdin and close stdin stream
+			if (child.stdin) {
+				child.stdin.write(prompt, 'utf8', (err) => {
+					if (err) {
+						console.error('[Antigravity] Stdin write error:', err);
+					}
+					child.stdin.end();
+				});
+			}
 
 			child.stdout.on('data', (data: Buffer) => {
 				const chunk = this.stripAnsi(data.toString('utf8'));
