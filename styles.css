@@ -139,7 +139,7 @@
 
 .agy-toolbar-group.is-effort-group {
 	flex: 0 0 auto;
-	min-width: 90px;
+	min-width: 68px;
 }
 
 .agy-select-wrapper {
@@ -161,6 +161,12 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	overflow: hidden;
+}
+
+.agy-select.agy-effort-select {
+	padding: 3px 18px 3px 8px;
+	width: auto;
+	min-width: 68px;
 }
 
 .agy-select:focus {

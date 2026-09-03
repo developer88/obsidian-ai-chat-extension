@@ -235,7 +235,7 @@ export class AntigravityChatView extends ItemView {
 		for (const effort of model.efforts) {
 			const opt = this.effortSelectEl.createEl('option', {
 				value: effort,
-				text: `${effort} effort`
+				text: effort
 			});
 			if (effort.toLowerCase() === savedEffort.toLowerCase()) {
 				opt.selected = true;
