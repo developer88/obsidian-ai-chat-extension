@@ -1,6 +1,12 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import type AntigravityPlugin from './main';
-import { ANTIGRAVITY_2_MODELS } from './types';
+import {
+	AiProviderId,
+	ANTIGRAVITY_MODELS,
+	COPILOT_MODELS,
+	PROVIDER_METADATA
+} from './types';
+import { ModelSuggestModal } from './modals/ModelSuggestModal';
 
 export class AntigravitySettingTab extends PluginSettingTab {
 	plugin: AntigravityPlugin;
@@ -14,34 +20,59 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Antigravity AI Settings' });
+		containerEl.createEl('h2', { text: 'AI Chat Settings' });
 		containerEl.createEl('p', {
-			text: 'Connects directly to your local Antigravity CLI (agy) using your Google AI subscription without an API token.',
+			text: 'Connects directly to your local AI CLI binaries (Google Antigravity & GitHub Copilot) without API tokens.',
 			cls: 'setting-item-description'
 		});
 
-		const models = this.plugin.settings.cachedModels && this.plugin.settings.cachedModels.length > 0
-			? this.plugin.settings.cachedModels
-			: ANTIGRAVITY_2_MODELS;
+		const activeProvId = this.plugin.settings.activeProvider || 'antigravity';
+		const provConfig = this.plugin.settings.providers?.[activeProvId];
 
-		// Model Selection
+		// Active AI Provider Selector
 		new Setting(containerEl)
-			.setName('AI Model')
-			.setDesc('Select the model to use for chat sessions.')
+			.setName('Active AI Provider')
+			.setDesc('Select which AI CLI provider powers your chat sessions.')
 			.addDropdown(dropdown => {
-				for (const model of models) {
-					dropdown.addOption(model.id, model.label);
-				}
-				dropdown.setValue(this.plugin.settings.selectedModel || models[0].id);
-				dropdown.onChange(async (value) => {
-					this.plugin.settings.selectedModel = value;
+				dropdown.addOption('antigravity', 'Google Antigravity (agy)');
+				dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
+				dropdown.setValue(activeProvId);
+				dropdown.onChange(async (value: string) => {
+					this.plugin.settings.activeProvider = value as AiProviderId;
 					await this.plugin.saveSettings();
-					this.display(); // Re-render to update model-specific effort
+					this.plugin.updateStatusBar();
+					this.display();
 				});
-			})
+			});
+
+		// Unified Model & Reasoning Effort Switcher Button
+		const models = (provConfig?.cachedModels && provConfig.cachedModels.length > 0)
+			? provConfig.cachedModels
+			: (activeProvId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
+		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
+		const currentModelObj = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
+		const currentModelLabel = currentModelObj ? currentModelObj.label : currentModelId;
+
+		let currentEffortStr = '';
+		if (currentModelObj && currentModelObj.efforts && currentModelObj.efforts.length > 1) {
+			const effort = provConfig?.modelEfforts?.[currentModelObj.id] || currentModelObj.defaultEffort || 'Medium';
+			currentEffortStr = ` (${effort} effort)`;
+		}
+
+		const provName = PROVIDER_METADATA[activeProvId]?.name || activeProvId;
+
+		new Setting(containerEl)
+			.setName('Active Model & Reasoning Effort')
+			.setDesc(`Currently: ${provName} • ${currentModelLabel}${currentEffortStr}`)
+			.addButton(button => button
+				.setButtonText('Select Model & Effort...')
+				.setCta()
+				.onClick(() => {
+					new ModelSuggestModal(this.app, this.plugin).open();
+				}))
 			.addButton(button => button
 				.setButtonText('Refresh from CLI')
-				.setTooltip('Query `agy models` to update the model list')
+				.setTooltip('Query CLI for updated models')
 				.onClick(async () => {
 					button.setButtonText('Querying...');
 					button.setDisabled(true);
@@ -50,54 +81,51 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					this.display();
 				}));
 
-		// Current Model Effort Setting
-		const currentModelId = this.plugin.settings.selectedModel || models[0].id;
-		const currentModelObj = models.find(m => m.id === currentModelId);
+		containerEl.createEl('h3', { text: `${provName} Configuration` });
 
-		if (currentModelObj && currentModelObj.efforts && currentModelObj.efforts.length > 0) {
-			new Setting(containerEl)
-				.setName(`Reasoning Effort for ${currentModelObj.label}`)
-				.setDesc('Select the reasoning effort level (Low, Medium, High) for this model.')
-				.addDropdown(dropdown => {
-					for (const effort of currentModelObj.efforts) {
-						dropdown.addOption(effort, effort);
-					}
-					const saved = this.plugin.settings.modelEfforts?.[currentModelId]
-						|| currentModelObj.defaultEffort
-						|| currentModelObj.efforts[0];
-					dropdown.setValue(saved);
-					dropdown.onChange(async (value) => {
-						if (!this.plugin.settings.modelEfforts) {
-							this.plugin.settings.modelEfforts = {};
-						}
-						this.plugin.settings.modelEfforts[currentModelId] = value;
-						await this.plugin.saveSettings();
-					});
-				});
-		}
-
-		// CLI Command / Path
+		// CLI Command / Path for Active Provider
 		new Setting(containerEl)
-			.setName('Antigravity CLI Command / Path')
-			.setDesc('The command or full path to the agy executable (e.g. "agy", "/usr/local/bin/agy", or "agy.cmd").')
+			.setName(`${provName} CLI Command / Path`)
+			.setDesc(`The command or full path to the executable (e.g. "${activeProvId === 'copilot' ? 'copilot' : 'agy'}").`)
 			.addText(text => text
-				.setPlaceholder('agy')
-				.setValue(this.plugin.settings.cliCommand)
+				.setPlaceholder(activeProvId === 'copilot' ? 'copilot' : 'agy')
+				.setValue(provConfig?.cliCommand || (activeProvId === 'copilot' ? 'copilot' : 'agy'))
 				.onChange(async (value) => {
-					this.plugin.settings.cliCommand = value.trim() || 'agy';
-					await this.plugin.saveSettings();
+					if (provConfig) {
+						provConfig.cliCommand = value.trim() || (activeProvId === 'copilot' ? 'copilot' : 'agy');
+						await this.plugin.saveSettings();
+					}
 				}));
 
-		// Use WSL
+		// Use WSL for Active Provider
 		new Setting(containerEl)
-			.setName('Use WSL (Windows Subsystem for Linux)')
-			.setDesc('Run the Antigravity CLI inside WSL (e.g. "wsl agy"). Enable this if your CLI is installed in Ubuntu/WSL on Windows.')
+			.setName(`Run ${provName} in WSL`)
+			.setDesc(`Execute via Windows Subsystem for Linux (e.g. "wsl ${activeProvId === 'copilot' ? 'copilot' : 'agy'}"). Enable if installed in Ubuntu/WSL.`)
 			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useWsl)
+				.setValue(provConfig?.useWsl || false)
 				.onChange(async (value) => {
-					this.plugin.settings.useWsl = value;
-					await this.plugin.saveSettings();
+					if (provConfig) {
+						provConfig.useWsl = value;
+						await this.plugin.saveSettings();
+					}
 				}));
+
+		// Extra Flags for Active Provider
+		new Setting(containerEl)
+			.setName(`Extra CLI Flags for ${provName}`)
+			.setDesc('Additional flags passed on each invocation (e.g. "--allow-all-tools" or "--dangerously-skip-permissions").')
+			.addText(text => text
+				.setPlaceholder(activeProvId === 'copilot' ? '--allow-all-tools' : '--dangerously-skip-permissions')
+				.setValue(provConfig?.extraCliFlags || '')
+				.onChange(async (value) => {
+					if (provConfig) {
+						provConfig.extraCliFlags = value.trim();
+						await this.plugin.saveSettings();
+					}
+				}));
+
+		// General Chat Settings Section
+		containerEl.createEl('h3', { text: 'General Chat Options' });
 
 		// Auto-Attach Active Note
 		new Setting(containerEl)
@@ -107,30 +135,6 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.autoAttachActiveNote)
 				.onChange(async (value) => {
 					this.plugin.settings.autoAttachActiveNote = value;
-					await this.plugin.saveSettings();
-				}));
-
-		// Execution Mode
-		new Setting(containerEl)
-			.setName('Default Mode')
-			.setDesc('Optional agent execution mode (e.g. "accept-edits" or "plan"). Leave empty for standard mode.')
-			.addText(text => text
-				.setPlaceholder('e.g. plan (optional)')
-				.setValue(this.plugin.settings.defaultMode)
-				.onChange(async (value) => {
-					this.plugin.settings.defaultMode = value.trim();
-					await this.plugin.saveSettings();
-				}));
-
-		// Extra Flags
-		new Setting(containerEl)
-			.setName('Extra CLI Flags')
-			.setDesc('Additional CLI flags to pass on each invocation (e.g. "--dangerously-skip-permissions").')
-			.addText(text => text
-				.setPlaceholder('--dangerously-skip-permissions')
-				.setValue(this.plugin.settings.extraCliFlags)
-				.onChange(async (value) => {
-					this.plugin.settings.extraCliFlags = value.trim();
 					await this.plugin.saveSettings();
 				}));
 
@@ -148,7 +152,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		// Show Status Bar Item
 		new Setting(containerEl)
 			.setName('Show Status Bar Item')
-			.setDesc('Display the active AI model and reasoning effort widget in the bottom status bar.')
+			.setDesc('Display the active AI provider, model, and reasoning effort in Obsidian\'s bottom status bar.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showStatusBarItem)
 				.onChange(async (value) => {
@@ -157,10 +161,10 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					this.plugin.updateStatusBar();
 				}));
 
-		// Reset Session
+		// Reset Active Session
 		new Setting(containerEl)
 			.setName('Reset Conversation Memory')
-			.setDesc('Forget active session history and start fresh on the next prompt.')
+			.setDesc(`Clear session history for ${provName} and start fresh on the next prompt.`)
 			.addButton(button => button
 				.setButtonText('Reset Active Session')
 				.setWarning()

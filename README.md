@@ -1,47 +1,52 @@
-# Antigravity AI for Obsidian
+# AI Chat for Obsidian
 
 [![Obsidian](https://img.shields.io/badge/Obsidian-v1.0.0+-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/Version-v2.0.0-blue)](https://github.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20WSL-brightgreen)](#)
 
-A native, privacy-first AI companion for **[Obsidian](https://obsidian.md)** powered by your local **[Antigravity CLI](https://antigravity.google)** (`agy`) and **Google AI subscriptions**—with **zero API keys or per-token charges required**.
+A native, privacy-first AI chat companion for **[Obsidian](https://obsidian.md)** powered by your local AI CLI providers—including **Google Antigravity** (`agy`) and **GitHub Copilot** (`copilot`)—with **zero API keys or per-token charges required**.
 
 ---
 
-## ✨ Why Antigravity in Obsidian?
+## ✨ Why AI Chat?
 
-Most AI plugins for Obsidian require you to manage paid third-party API tokens, configure proxies, or paste your API keys into plugin settings. 
+Most AI plugins for Obsidian require you to manage paid third-party API tokens, configure proxies, or paste secret keys into plugin settings.
 
-**Antigravity AI** connects directly to your authenticated local `agy` command-line session on your machine. It utilizes your existing Google AI subscription quota (Google One AI Premium, Gemini Advanced, Workspace, etc.) and provides a native, seamless chat sidebar that follows your vault workflow.
+**AI Chat** connects directly to authenticated local command-line tools already installed on your machine. It utilizes your existing subscriptions (such as **Google AI subscriptions** or **GitHub Copilot**) and provides a native, unified chat sidebar that integrates directly with your vault workflow.
 
 ---
 
 ## 🚀 Key Features
 
-* 🔐 **Zero API Keys Needed**: Seamlessly connects to your authenticated local `agy` binary.
-* 🌐 **100% OS-Agnostic**: Full native support for **Windows**, **macOS**, **Linux**, and **WSL** (`wsl agy`).
-* 📄 **Active Note & Selection Tracking**: Automatically links the file path and active highlighted text of whatever note you are working on.
-* 🧠 **Dynamic Model & Thinking Effort Selection**:
-  * Autodiscovers available models (`Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Claude Sonnet 4.6`, `Claude Opus 4.6`, `GPT-OSS 120B`, etc.).
-  * Dedicated Reasoning / Thinking Effort selector (`Low`, `Medium`, `High`) that dynamically shows only for supported models.
-* ⚡ **Status Bar Switcher Widget**: Quick-switch active models and reasoning effort from Obsidian's bottom status bar tray or via Command Palette (`Ctrl/Cmd + P`).
-* 🔘 **Quick Action Bar**: One-click chips to **Summarize**, **Polish writing**, **Extract tasks**, and **Explain concepts** from the active note.
+* 🔌 **Multi-Provider Support (v2.0)**:
+  * **Google Antigravity** (`agy`): Powered by your Google AI subscription (Gemini 3.8 Flash, 3.7 Flash, 3.1 Pro, Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B).
+  * **GitHub Copilot** (`copilot`): Powered by your GitHub Copilot subscription (GPT-5.2, GPT-5, Claude 3.7 Sonnet, Claude 3.5 Sonnet, OpenAI o1, OpenAI o3-mini).
+  * Modular architecture ready for future providers (Claude CLI, Ollama, etc.).
+* 🔐 **Zero API Keys Needed**: Connects directly to authenticated local binaries via CLI execution.
+* 🌐 **100% OS-Agnostic**: Native support for **Windows**, **macOS**, **Linux**, and **WSL** (`wsl agy` / `wsl copilot`).
+* 🎯 **Unified Model & Reasoning Effort Switcher**:
+  * Clean, searchable fuzzy modal used across the **Chat Toolbar**, **Bottom Status Bar widget**, and **Settings tab**.
+  * Switch providers, models, and reasoning efforts (`Low`, `Medium`, `High`) in a single click.
+* 📄 **Active Note & Selection Tracking**: Automatically links the file path and active highlighted text of your current note without manual copy-pasting.
+* 🏷️ **Clear Attribution**: Assistant responses display the exact provider, model, and effort used to generate the output.
+* 🔘 **Quick Action Bar**: One-click prompt chips to **Summarize**, **Polish writing**, **Extract tasks**, and **Explain concepts** from your active note.
 * 🔄 **Session Management**: Dedicated *New Session* button to clear conversation memory and restart context on demand.
-* 📋 **Code Snippet Actions**: One-click buttons to *Copy* or *Insert into note at cursor* for generated code and text snippets.
-* 🎨 **Obsidian Native Design System**: Adheres strictly to Obsidian theme tokens in both Dark and Light modes (no generic AI glows or clunky styling).
+* 📋 **Code Snippet Actions**: One-click buttons to *Copy* or *Insert into note at cursor* on all generated snippets.
+* 🎨 **Obsidian Native Design System**: Adheres strictly to Obsidian theme tokens in both Dark and Light modes.
 
 ---
 
 ## 📦 Installation
 
-### Option 1: Obsidian BRAT (Quick Beta Install)
+### Option 1: Obsidian BRAT (Recommended for Beta)
 1. Install the **[BRAT](https://github.com/TfTHacker/obsidian42-brat)** plugin from Obsidian Community Plugins.
 2. Open **Command Palette** (`Ctrl/Cmd + P`) and run `BRAT: Add a beta plugin for testing`.
 3. Enter the repository URL:
    ```text
    https://github.com/<your-username>/agy-in-obsidian
    ```
-4. Enable **Antigravity AI** in Settings → Community Plugins.
+4. Enable **AI Chat** in Settings → Community Plugins.
 
 ---
 
@@ -52,7 +57,7 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
    <Your-Vault>/.obsidian/plugins/agy-in-obsidian/
    ```
 3. Copy the 3 downloaded files into that folder.
-4. Reload plugins in Obsidian **Settings → Community Plugins** and toggle on **Antigravity AI**.
+4. Reload plugins in Obsidian **Settings → Community Plugins** and toggle on **AI Chat**.
 
 ---
 
@@ -72,12 +77,25 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 
 ## 🔧 Prerequisites & Setup
 
-1. Make sure you have **Antigravity CLI (`agy`)** installed on your system.
-2. Sign in to your Google AI account once in your terminal:
+### For Google Antigravity
+1. Install the `agy` CLI binary.
+2. Sign in once in your terminal:
    ```bash
    agy
    ```
-3. Open Obsidian, click the **Antigravity AI** robot icon in the ribbon (or press `Ctrl/Cmd + P` and search for `Open Antigravity Chat Sidebar`).
+
+### For GitHub Copilot
+1. Install the GitHub Copilot CLI (`copilot`):
+   ```bash
+   # Windows (via WinGet)
+   winget install GitHub.Copilot
+
+   # Or via npm/homebrew/official installer
+   ```
+2. Authenticate in your terminal:
+   ```bash
+   copilot login
+   ```
 
 ---
 
@@ -85,12 +103,14 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 
 | Setting | Default | Description |
 | :--- | :--- | :--- |
-| **CLI Command / Path** | `agy` | Path to the Antigravity CLI binary (e.g. `agy`, `agy.exe`, `/usr/local/bin/agy`). |
-| **Use WSL** | `false` | Enable if your `agy` is installed inside Ubuntu / WSL on Windows. |
+| **Active AI Provider** | `Google Antigravity` | Choose between `Google Antigravity` and `GitHub Copilot`. |
+| **Active Model & Effort** | *(Dynamic)* | Opens the unified fuzzy modal to switch provider, model, and reasoning effort. |
+| **Provider CLI Command** | `agy` / `copilot` | Executable path for the selected provider. |
+| **Run in WSL** | `false` | Enable if the provider CLI is installed inside Ubuntu/WSL on Windows. |
+| **Extra CLI Flags** | *(empty)* | Optional extra command-line flags per provider. |
 | **Auto-Attach Active Note** | `true` | Automatically includes the active note file reference and selection in prompts. |
-| **Auto-Scroll Chat** | 	rue | Automatically scrolls chat to bottom during streaming responses. |
-| **Show Status Bar Item** | 	rue | Toggles the active model & effort widget in Obsidian's bottom status bar. |
-| **Extra CLI Flags** | *(empty)* | Optional extra command-line flags to pass to `agy` (e.g. `--mode=plan`). |
+| **Auto-Scroll Chat** | `true` | Automatically scrolls chat to bottom during streaming responses. |
+| **Show Status Bar Item** | `true` | Toggles the active provider/model widget in Obsidian's bottom status bar. |
 
 ---
 
@@ -98,14 +118,12 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 
 | Command | Action |
 | :--- | :--- |
-| `Antigravity: Open Antigravity Chat Sidebar` | Opens or reveals the AI chat sidebar view. |
-| `Antigravity: Switch Model & Reasoning Effort` | Opens the fuzzy search modal to switch models and effort. |
-| `Antigravity: Restart Antigravity Session (New Chat)` | Resets the conversation context and starts fresh. |
+| `AI Chat: Open AI Chat Sidebar` | Opens or reveals the AI chat sidebar view. |
+| `AI Chat: Switch Model, Provider & Effort` | Opens the fuzzy search modal to switch models and effort. |
+| `AI Chat: Restart Session (New Chat)` | Resets the conversation context and starts fresh. |
 
 ---
 
 ## 📄 License
 
 This plugin is licensed under the [MIT License](LICENSE).
-
-

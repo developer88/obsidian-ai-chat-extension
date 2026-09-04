@@ -1,3 +1,5 @@
+export type AiProviderId = 'antigravity' | 'copilot';
+
 export interface ModelDefinition {
 	id: string;
 	label: string;
@@ -6,7 +8,20 @@ export interface ModelDefinition {
 	effortModelMap?: Record<string, string>; // e.g. { 'low': 'gemini-3.8-flash-low', 'medium': 'gemini-3.8-flash-medium' }
 }
 
-export const ANTIGRAVITY_2_MODELS: ModelDefinition[] = [
+export interface ProviderConfig {
+	id: AiProviderId;
+	name: string;
+	cliCommand: string;
+	useWsl: boolean;
+	extraCliFlags: string;
+	selectedModel: string;
+	modelEfforts: Record<string, string>;
+	cachedModels: ModelDefinition[];
+	defaultMode: string;
+	conversationId: string | null;
+}
+
+export const ANTIGRAVITY_MODELS: ModelDefinition[] = [
 	{
 		id: 'gemini-3.8-flash',
 		label: 'Gemini 3.8 Flash',
@@ -73,40 +88,119 @@ export const ANTIGRAVITY_2_MODELS: ModelDefinition[] = [
 	}
 ];
 
-export interface AntigravityPluginSettings {
-	cliCommand: string;
-	useWsl: boolean;
+export const COPILOT_MODELS: ModelDefinition[] = [
+	{
+		id: 'gpt-5.2',
+		label: 'GPT-5.2',
+		efforts: [],
+		defaultEffort: undefined
+	},
+	{
+		id: 'gpt-5',
+		label: 'GPT-5',
+		efforts: [],
+		defaultEffort: undefined
+	},
+	{
+		id: 'claude-3.7-sonnet',
+		label: 'Claude 3.7 Sonnet',
+		efforts: ['Low', 'Medium', 'High'],
+		defaultEffort: 'Medium'
+	},
+	{
+		id: 'claude-3.5-sonnet',
+		label: 'Claude 3.5 Sonnet',
+		efforts: [],
+		defaultEffort: undefined
+	},
+	{
+		id: 'o1',
+		label: 'OpenAI o1',
+		efforts: ['Low', 'Medium', 'High'],
+		defaultEffort: 'Medium'
+	},
+	{
+		id: 'o3-mini',
+		label: 'OpenAI o3-mini',
+		efforts: ['Low', 'Medium', 'High'],
+		defaultEffort: 'Medium'
+	}
+];
+
+export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd: string }> = {
+	antigravity: {
+		name: 'Google Antigravity',
+		defaultCmd: 'agy'
+	},
+	copilot: {
+		name: 'GitHub Copilot',
+		defaultCmd: 'copilot'
+	}
+};
+
+export interface AiChatPluginSettings {
+	activeProvider: AiProviderId;
+	providers: Record<AiProviderId, ProviderConfig>;
 	autoAttachActiveNote: boolean;
 	autoIncludeSelection: boolean;
-	selectedModel: string;
-	modelEfforts: Record<string, string>; // Remembers effort per model
-	cachedModels: ModelDefinition[];
-	defaultMode: string;
-	extraCliFlags: string;
 	autoScrollChat: boolean;
 	showStatusBarItem: boolean;
-	conversationId: string | null;
+
+	// Legacy backward-compatibility fields (migrated to active provider)
+	cliCommand?: string;
+	useWsl?: boolean;
+	selectedModel?: string;
+	modelEfforts?: Record<string, string>;
+	cachedModels?: ModelDefinition[];
+	defaultMode?: string;
+	extraCliFlags?: string;
+	conversationId?: string | null;
 }
 
-export const DEFAULT_SETTINGS: AntigravityPluginSettings = {
-	cliCommand: 'agy',
-	useWsl: false,
+export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
+	antigravity: {
+		id: 'antigravity',
+		name: 'Google Antigravity',
+		cliCommand: 'agy',
+		useWsl: false,
+		extraCliFlags: '',
+		selectedModel: 'gemini-3.8-flash',
+		modelEfforts: {
+			'gemini-3.8-flash': 'Medium',
+			'gemini-3.7-flash': 'Medium',
+			'gemini-3.6-flash': 'Medium',
+			'gemini-3.1-pro': 'Low',
+			'gpt-oss-120b': 'Medium'
+		},
+		cachedModels: ANTIGRAVITY_MODELS,
+		defaultMode: '',
+		conversationId: null
+	},
+	copilot: {
+		id: 'copilot',
+		name: 'GitHub Copilot',
+		cliCommand: 'copilot',
+		useWsl: false,
+		extraCliFlags: '',
+		selectedModel: 'gpt-5.2',
+		modelEfforts: {
+			'claude-3.7-sonnet': 'Medium',
+			'o1': 'Medium',
+			'o3-mini': 'Medium'
+		},
+		cachedModels: COPILOT_MODELS,
+		defaultMode: '',
+		conversationId: null
+	}
+};
+
+export const DEFAULT_SETTINGS: AiChatPluginSettings = {
+	activeProvider: 'antigravity',
+	providers: DEFAULT_PROVIDER_CONFIGS,
 	autoAttachActiveNote: true,
 	autoIncludeSelection: true,
-	selectedModel: 'gemini-3.8-flash',
-	modelEfforts: {
-		'gemini-3.8-flash': 'Medium',
-		'gemini-3.7-flash': 'Medium',
-		'gemini-3.6-flash': 'Medium',
-		'gemini-3.1-pro': 'Low',
-		'gpt-oss-120b': 'Medium'
-	},
-	cachedModels: ANTIGRAVITY_2_MODELS,
-	defaultMode: '',
-	extraCliFlags: '',
 	autoScrollChat: true,
-	showStatusBarItem: true,
-	conversationId: null,
+	showStatusBarItem: true
 };
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'error';
@@ -118,6 +212,8 @@ export interface ChatMessage {
 	timestamp: number;
 	attachedNotePath?: string;
 	attachedSelection?: string;
+	providerId?: AiProviderId;
+	providerName?: string;
 	modelLabel?: string;
 	effort?: string;
 	isStreaming?: boolean;
@@ -139,6 +235,3 @@ export interface CliStreamCallbacks {
 	onComplete?: (fullText: string, conversationId?: string) => void;
 	onError?: (error: string) => void;
 }
-
-
-

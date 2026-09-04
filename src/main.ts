@@ -1,12 +1,20 @@
 import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
-import { AntigravityPluginSettings, DEFAULT_SETTINGS, ANTIGRAVITY_2_MODELS } from './types';
+import {
+	AiChatPluginSettings,
+	DEFAULT_SETTINGS,
+	AiProviderId,
+	ANTIGRAVITY_MODELS,
+	COPILOT_MODELS,
+	PROVIDER_METADATA,
+	DEFAULT_PROVIDER_CONFIGS
+} from './types';
 import { AgyCliService } from './services/AgyCliService';
 import { AntigravityChatView, ANTIGRAVITY_CHAT_VIEW_TYPE } from './views/AntigravityChatView';
 import { AntigravitySettingTab } from './settings';
 import { ModelSuggestModal } from './modals/ModelSuggestModal';
 
 export default class AntigravityPlugin extends Plugin {
-	settings: AntigravityPluginSettings = DEFAULT_SETTINGS;
+	settings: AiChatPluginSettings = DEFAULT_SETTINGS;
 	cliService!: AgyCliService;
 	private statusBarItemEl: HTMLElement | null = null;
 
@@ -48,19 +56,22 @@ export default class AntigravityPlugin extends Plugin {
 					this.app.setting.open();
 					// @ts-ignore
 					this.app.setting.openTabById(this.manifest.id);
+				},
+				() => {
+					new ModelSuggestModal(this.app, this).open();
 				}
 			)
 		);
 
 		// Add Ribbon Icon
-		this.addRibbonIcon('bot', 'Antigravity AI Chat', async () => {
+		this.addRibbonIcon('bot', 'AI Chat', async () => {
 			await this.activateView();
 		});
 
 		// Command: Open Chat Sidebar
 		this.addCommand({
 			id: 'open-antigravity-chat',
-			name: 'Open Antigravity Chat Sidebar',
+			name: 'Open AI Chat Sidebar',
 			callback: async () => {
 				await this.activateView();
 			},
@@ -69,7 +80,7 @@ export default class AntigravityPlugin extends Plugin {
 		// Command: Switch Model & Effort
 		this.addCommand({
 			id: 'switch-antigravity-model',
-			name: 'Switch Model & Reasoning Effort',
+			name: 'Switch Model, Provider & Effort',
 			callback: () => {
 				new ModelSuggestModal(this.app, this).open();
 			},
@@ -78,7 +89,7 @@ export default class AntigravityPlugin extends Plugin {
 		// Command: Restart Session
 		this.addCommand({
 			id: 'restart-antigravity-session',
-			name: 'Restart Antigravity Session (New Chat)',
+			name: 'Restart Session (New Chat)',
 			callback: () => {
 				this.cliService.resetSession();
 				const leaves = this.app.workspace.getLeavesOfType(ANTIGRAVITY_CHAT_VIEW_TYPE);
@@ -104,38 +115,52 @@ export default class AntigravityPlugin extends Plugin {
 
 		this.statusBarItemEl.style.display = '';
 
-		const models = (this.settings.cachedModels && this.settings.cachedModels.length > 0)
-			? this.settings.cachedModels
-			: ANTIGRAVITY_2_MODELS;
+		const provId = this.settings.activeProvider || 'antigravity';
+		const provConfig = this.settings.providers?.[provId];
+		const models = (provConfig?.cachedModels && provConfig.cachedModels.length > 0)
+			? provConfig.cachedModels
+			: (provId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
 
-		const currentId = this.settings.selectedModel || 'gemini-3.8-flash';
+		const currentId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentId || currentId.startsWith(m.id));
 
+		const provShort = provId === 'copilot' ? 'Copilot' : 'AGY';
 		const label = modelDef ? modelDef.label : currentId;
 		let effortSuffix = '';
 
 		if (modelDef && modelDef.efforts && modelDef.efforts.length > 1) {
-			const effort = this.settings.modelEfforts?.[modelDef.id] || modelDef.defaultEffort || 'Medium';
+			const effort = provConfig?.modelEfforts?.[modelDef.id] || modelDef.defaultEffort || 'Medium';
 			effortSuffix = ` (${effort})`;
 		}
 
-		this.statusBarItemEl.setText(`⚡ ${label}${effortSuffix}`);
-		this.statusBarItemEl.setAttribute('aria-label', `Antigravity Model: ${label}${effortSuffix} (Click to switch)`);
+		this.statusBarItemEl.setText(`⚡ [${provShort}] ${label}${effortSuffix}`);
+		this.statusBarItemEl.setAttribute('aria-label', `AI Chat: [${provShort}] ${label}${effortSuffix} (Click to switch)`);
 	}
 
-	public async switchModel(modelId: string, effort?: string): Promise<void> {
-		this.settings.selectedModel = modelId;
+	public async switchProviderAndModel(providerId: AiProviderId, modelId: string, effort?: string): Promise<void> {
+		this.settings.activeProvider = providerId;
+
+		if (!this.settings.providers) {
+			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS));
+		}
+		if (!this.settings.providers[providerId]) {
+			this.settings.providers[providerId] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[providerId]));
+		}
+
+		const provConfig = this.settings.providers[providerId];
+		provConfig.selectedModel = modelId;
+
 		if (effort) {
-			if (!this.settings.modelEfforts) {
-				this.settings.modelEfforts = {};
+			if (!provConfig.modelEfforts) {
+				provConfig.modelEfforts = {};
 			}
-			this.settings.modelEfforts[modelId] = effort;
+			provConfig.modelEfforts[modelId] = effort;
 		}
 
 		await this.saveData(this.settings);
 		this.updateStatusBar();
 
-		// Notify open chat views to update dropdown
+		// Notify open chat views to update toolbar button in real time
 		const leaves = this.app.workspace.getLeavesOfType(ANTIGRAVITY_CHAT_VIEW_TYPE);
 		leaves.forEach((leaf) => {
 			if (leaf.view instanceof AntigravityChatView) {
@@ -143,14 +168,15 @@ export default class AntigravityPlugin extends Plugin {
 			}
 		});
 
-		const models = (this.settings.cachedModels && this.settings.cachedModels.length > 0)
-			? this.settings.cachedModels
-			: ANTIGRAVITY_2_MODELS;
+		const provName = PROVIDER_METADATA[providerId]?.name || providerId;
+		const models = (provConfig.cachedModels && provConfig.cachedModels.length > 0)
+			? provConfig.cachedModels
+			: (providerId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
 		const modelDef = models.find(m => m.id === modelId);
 		const label = modelDef ? modelDef.label : modelId;
 		const effortStr = effort ? ` (${effort})` : '';
 
-		new Notice(`Antigravity: ${label}${effortStr}`);
+		new Notice(`Switched to: ${provName} • ${label}${effortStr}`);
 	}
 
 	async activateView(): Promise<void> {
@@ -180,7 +206,37 @@ export default class AntigravityPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = await this.loadData();
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+
+		// Auto-migrate legacy settings if upgrading from v1.0
+		if (!this.settings.providers) {
+			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS));
+		}
+		if (data?.cliCommand && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.cliCommand = data.cliCommand;
+		}
+		if (data?.useWsl !== undefined && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.useWsl = data.useWsl;
+		}
+		if (data?.selectedModel && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.selectedModel = data.selectedModel;
+		}
+		if (data?.modelEfforts && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.modelEfforts = Object.assign({}, this.settings.providers.antigravity.modelEfforts, data.modelEfforts);
+		}
+		if (data?.cachedModels && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.cachedModels = data.cachedModels;
+		}
+		if (data?.extraCliFlags && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.extraCliFlags = data.extraCliFlags;
+		}
+		if (data?.defaultMode && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.defaultMode = data.defaultMode;
+		}
+		if (data?.conversationId && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.conversationId = data.conversationId;
+		}
 	}
 
 	async saveSettings(): Promise<void> {
@@ -194,4 +250,3 @@ export default class AntigravityPlugin extends Plugin {
 		}
 	}
 }
-

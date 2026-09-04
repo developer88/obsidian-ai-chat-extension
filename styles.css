@@ -600,3 +600,60 @@
 	font-weight: 600;
 }
 
+
+/* Unified Model Trigger Button */
+.agy-model-trigger-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+	height: 28px;
+	padding: 3px 8px;
+	background-color: var(--background-primary);
+	border: 1px solid var(--divider-color);
+	border-radius: var(--radius-s);
+	color: var(--text-normal);
+	font-size: 11.5px;
+	cursor: pointer;
+	text-align: left;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+	min-width: 0;
+}
+
+.agy-model-trigger-btn:hover {
+	border-color: var(--interactive-accent);
+	background-color: var(--background-modifier-hover);
+}
+
+.agy-model-trigger-icon {
+	display: inline-flex;
+	align-items: center;
+	color: var(--text-accent);
+	flex-shrink: 0;
+}
+
+.agy-model-trigger-icon svg {
+	width: 13px;
+	height: 13px;
+}
+
+.agy-model-trigger-label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-weight: 500;
+}
+
+.agy-model-trigger-chevron {
+	display: inline-flex;
+	align-items: center;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.agy-model-trigger-chevron svg {
+	width: 12px;
+	height: 12px;
+}

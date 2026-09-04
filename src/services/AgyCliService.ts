@@ -1,34 +1,46 @@
 import { spawn, ChildProcess } from 'child_process';
 import { App, FileSystemAdapter, Notice } from 'obsidian';
 import {
-	AntigravityPluginSettings,
+	AiChatPluginSettings,
 	CliStreamCallbacks,
 	ModelDefinition,
-	ANTIGRAVITY_2_MODELS
+	AiProviderId,
+	ProviderConfig,
+	ANTIGRAVITY_MODELS,
+	COPILOT_MODELS,
+	DEFAULT_PROVIDER_CONFIGS
 } from '../types';
 
 export class AgyCliService {
 	private activeProcess: ChildProcess | null = null;
-	private currentConversationId: string | null = null;
 
 	constructor(
 		private app: App,
-		private getSettings: () => AntigravityPluginSettings,
-		private saveSettings: (settings: AntigravityPluginSettings) => Promise<void>
-	) {
+		private getSettings: () => AiChatPluginSettings,
+		private saveSettings: (settings: AiChatPluginSettings) => Promise<void>
+	) {}
+
+	public getActiveProviderConfig(): ProviderConfig {
 		const settings = this.getSettings();
-		this.currentConversationId = settings.conversationId || null;
+		const providerId = settings.activeProvider || 'antigravity';
+		if (!settings.providers || !settings.providers[providerId]) {
+			return DEFAULT_PROVIDER_CONFIGS[providerId] || DEFAULT_PROVIDER_CONFIGS.antigravity;
+		}
+		return settings.providers[providerId];
 	}
 
 	public getConversationId(): string | null {
-		return this.currentConversationId;
+		const config = this.getActiveProviderConfig();
+		return config.conversationId || null;
 	}
 
 	public setConversationId(id: string | null): void {
-		this.currentConversationId = id;
 		const settings = this.getSettings();
-		settings.conversationId = id;
-		this.saveSettings(settings);
+		const providerId = settings.activeProvider || 'antigravity';
+		if (settings.providers && settings.providers[providerId]) {
+			settings.providers[providerId].conversationId = id;
+			this.saveSettings(settings);
+		}
 	}
 
 	public isRunning(): boolean {
@@ -45,7 +57,7 @@ export class AgyCliService {
 					}
 				}, 400);
 			} catch (e) {
-				console.error('[Antigravity] Error killing process:', e);
+				console.error('[AI Chat] Error killing process:', e);
 			}
 		}
 		this.activeProcess = null;
@@ -64,182 +76,167 @@ export class AgyCliService {
 		return process.cwd();
 	}
 
-	public toWslPath(windowsPath: string): string {
-		const match = windowsPath.match(/^([a-zA-Z]):\\(.*)$/);
+	public toWslPath(winPath: string): string {
+		const match = winPath.match(/^([a-zA-Z]):[\\/](.*)$/);
 		if (match) {
 			const drive = match[1].toLowerCase();
 			const rest = match[2].replace(/\\/g, '/');
 			return `/mnt/${drive}/${rest}`;
 		}
-		return windowsPath.replace(/\\/g, '/');
+		return winPath.replace(/\\/g, '/');
 	}
 
-	private stripAnsi(text: string): string {
-		// Remove ANSI escape codes
-		// eslint-disable-next-line no-control-regex
-		return text.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
-	}
-
-	public async fetchAvailableModels(): Promise<ModelDefinition[]> {
+	public async checkCliInstalled(providerId?: AiProviderId): Promise<boolean> {
 		const settings = this.getSettings();
-		const fallbackList = ANTIGRAVITY_2_MODELS;
+		const targetProvider = providerId || settings.activeProvider || 'antigravity';
+		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 
-		const vaultPath = this.getVaultBasePath();
-		const args: string[] = [];
+		return new Promise((resolve) => {
+			let cmd = config.cliCommand || (targetProvider === 'copilot' ? 'copilot' : 'agy');
+			let args = ['--version'];
 
-		let command = settings.cliCommand || 'agy';
-		let spawnCwd = vaultPath;
+			if (config.useWsl) {
+				args = ['-d', 'Ubuntu', '--', cmd, '--version'];
+				cmd = 'wsl';
+			} else if (process.platform === 'win32' && !cmd.toLowerCase().endsWith('.exe') && !cmd.includes('\\') && !cmd.includes('/')) {
+				cmd = `${cmd}.exe`;
+			}
 
-		if (settings.useWsl) {
-			command = 'wsl';
-			const wslVaultPath = this.toWslPath(vaultPath);
-			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', settings.cliCommand || 'agy');
-		} else if (process.platform === 'win32' && !command.toLowerCase().endsWith('.exe') && !command.includes('\\') && !command.includes('/')) {
-			command = `${command}.exe`;
-		}
-
-		args.push('models');
-
-		return new Promise<ModelDefinition[]>((resolve) => {
-			let output = '';
-			let resolved = false;
-
-			const finish = (result: ModelDefinition[]) => {
-				if (!resolved) {
-					resolved = true;
-					clearTimeout(timer);
-					resolve(result);
-				}
-			};
-
-			// Strict timeout of 3.5 seconds
-			const timer = setTimeout(() => {
-				if (!resolved) {
-					try {
-						if (child && !child.killed) {
-							child.kill();
-						}
-					} catch (e) {
-						// ignore
-					}
-					finish(fallbackList);
-				}
-			}, 3500);
-
-			let child: ChildProcess;
 			try {
-				child = spawn(command, args, {
-					cwd: settings.useWsl ? undefined : spawnCwd,
-					env: {
-						...process.env,
-						PAGER: 'cat',
-						CI: '1',
-					},
-					shell: false
+				const child = spawn(cmd, args, {
+					shell: false,
+					timeout: 5000
 				});
-
-				child.stdout?.on('data', (data: Buffer) => {
-					output += this.stripAnsi(data.toString('utf8'));
-				});
-
-				child.on('error', () => {
-					finish(fallbackList);
-				});
-
-				child.on('close', async (code: number) => {
-					if (code === 0 && output.trim().length > 0) {
-						const parsed = this.parseModelsOutput(output);
-						if (parsed.length > 0) {
-							settings.cachedModels = parsed;
-							await this.saveSettings(settings);
-							finish(parsed);
-							return;
-						}
-					}
-					finish(fallbackList);
-				});
-			} catch (e) {
-				finish(fallbackList);
+				child.on('error', () => resolve(false));
+				child.on('close', (code) => resolve(code === 0));
+			} catch {
+				resolve(false);
 			}
 		});
 	}
 
-	public parseModelsOutput(rawText: string): ModelDefinition[] {
-		const lines = rawText.split('\n');
-		const groupedMap = new Map<string, ModelDefinition>();
+	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDefinition[]> {
+		const settings = this.getSettings();
+		const targetProvider = providerId || settings.activeProvider || 'antigravity';
+		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 
-		for (let line of lines) {
-			line = line.trim();
-			if (!line || line.startsWith('#') || line.toLowerCase().includes('fetching available models')) {
+		// For Copilot, return built-in curated Copilot models
+		if (targetProvider === 'copilot') {
+			return config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : COPILOT_MODELS;
+		}
+
+		// For Antigravity, query `agy models`
+		let cmd = config.cliCommand || 'agy';
+		let args = ['models'];
+
+		if (config.useWsl) {
+			args = ['-d', 'Ubuntu', '--', cmd, 'models'];
+			cmd = 'wsl';
+		} else if (process.platform === 'win32' && !cmd.toLowerCase().endsWith('.exe') && !cmd.includes('\\') && !cmd.includes('/')) {
+			cmd = `${cmd}.exe`;
+		}
+
+		return new Promise((resolve) => {
+			let output = '';
+			let error = '';
+
+			try {
+				const child = spawn(cmd, args, {
+					shell: false,
+					timeout: 7000
+				});
+
+				child.stdout?.on('data', (data) => {
+					output += data.toString();
+				});
+
+				child.stderr?.on('data', (data) => {
+					error += data.toString();
+				});
+
+				child.on('error', (err) => {
+					console.warn('[AI Chat] Could not query agy models:', err);
+					resolve(config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS);
+				});
+
+				child.on('close', async (code) => {
+					if (code === 0 && output.trim()) {
+						const parsed = this.parseAntigravityModels(output);
+						if (parsed.length > 0) {
+							if (settings.providers && settings.providers.antigravity) {
+								settings.providers.antigravity.cachedModels = parsed;
+								await this.saveSettings(settings);
+							}
+							resolve(parsed);
+							return;
+						}
+					}
+					resolve(config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS);
+				});
+			} catch {
+				resolve(config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS);
+			}
+		});
+	}
+
+	private parseAntigravityModels(rawOutput: string): ModelDefinition[] {
+		const lines = rawOutput.split('\n');
+		const grouped = new Map<string, { label: string; efforts: string[]; map: Record<string, string> }>();
+
+		for (const rawLine of lines) {
+			const line = rawLine.trim();
+			if (!line || line.startsWith('Available') || line.startsWith('---') || line.startsWith('ID')) {
 				continue;
 			}
 
-			// Split line into ID and display label (tab or multiple spaces)
-			const parts = line.split(/\t+|\s{2,}/);
-			const rawId = parts[0]?.trim();
-			const rawDisplayName = (parts[1] || parts[0] || '').trim();
+			const parts = line.split(/\s{2,}|\t/);
+			const id = parts[0]?.trim();
+			const label = parts[1]?.trim() || id;
 
-			if (!rawId) continue;
+			if (!id) continue;
 
-			// Check for effort suffix in ID (e.g. "gemini-3.8-flash-medium" or "gemini-3.1-pro-low")
-			const effortMatch = rawId.match(/^(.+)-(low|medium|high|max)$/i);
-
-			let baseId = rawId;
-			let effortName: string | null = null;
-
+			const effortMatch = id.match(/^(.*?)-(low|medium|high|max)$/i);
 			if (effortMatch) {
-				baseId = effortMatch[1];
-				const rawEffort = effortMatch[2].toLowerCase();
-				effortName = rawEffort.charAt(0).toUpperCase() + rawEffort.slice(1);
-			}
+				const baseId = effortMatch[1];
+				const effortRaw = effortMatch[2].toLowerCase();
+				const effortTitle = effortRaw.charAt(0).toUpperCase() + effortRaw.slice(1);
 
-			// Clean display name by stripping "(High)", "(Medium)", "(Low)", etc.
-			let cleanLabel = rawDisplayName.replace(/\((High|Medium|Low|Max|Fast)\)/gi, '').trim();
-			if (!cleanLabel) {
-				// Format base ID into Title Case
-				cleanLabel = baseId
-					.split('-')
-					.map(s => s.charAt(0).toUpperCase() + s.slice(1))
-					.join(' ');
-			}
-
-			if (!groupedMap.has(baseId)) {
-				groupedMap.set(baseId, {
-					id: baseId,
-					label: cleanLabel,
-					efforts: effortName ? [effortName] : [],
-					defaultEffort: 'Medium',
-					effortModelMap: effortName ? { [effortName.toLowerCase()]: rawId } : {}
-				});
+				if (!grouped.has(baseId)) {
+					const baseLabel = label.replace(/\s*\((low|medium|high|max)\)/i, '').trim();
+					grouped.set(baseId, {
+						label: baseLabel,
+						efforts: [],
+						map: {}
+					});
+				}
+				const entry = grouped.get(baseId)!;
+				if (!entry.efforts.includes(effortTitle)) {
+					entry.efforts.push(effortTitle);
+				}
+				entry.map[effortRaw] = id;
 			} else {
-				const existing = groupedMap.get(baseId)!;
-				if (effortName && !existing.efforts.includes(effortName)) {
-					existing.efforts.push(effortName);
-					if (!existing.effortModelMap) {
-						existing.effortModelMap = {};
-					}
-					existing.effortModelMap[effortName.toLowerCase()] = rawId;
+				if (!grouped.has(id)) {
+					grouped.set(id, {
+						label,
+						efforts: [],
+						map: {}
+					});
 				}
 			}
 		}
 
-		// Sort efforts consistently: Low -> Medium -> High -> Max
-		const effortOrder = ['Low', 'Medium', 'High', 'Max'];
 		const result: ModelDefinition[] = [];
-
-		for (const model of groupedMap.values()) {
-			if (model.efforts.length > 0) {
-				model.efforts.sort((a, b) => {
-					const idxA = effortOrder.indexOf(a);
-					const idxB = effortOrder.indexOf(b);
-					return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-				});
-				model.defaultEffort = model.efforts.includes('Medium') ? 'Medium' : model.efforts[0];
-			}
-			result.push(model);
+		for (const [id, data] of grouped.entries()) {
+			result.push({
+				id,
+				label: data.label,
+				efforts: data.efforts,
+				defaultEffort: data.efforts.includes('Medium') ? 'Medium' : (data.efforts[0] || undefined),
+				effortModelMap: Object.keys(data.map).length > 0 ? data.map : undefined
+			});
 		}
 
-		return result.length > 0 ? result : ANTIGRAVITY_2_MODELS;
+		return result.length > 0 ? result : ANTIGRAVITY_MODELS;
 	}
 
 	public async sendPrompt(
@@ -249,60 +246,71 @@ export class AgyCliService {
 		this.abort();
 
 		const settings = this.getSettings();
+		const providerId = settings.activeProvider || 'antigravity';
+		const config = this.getActiveProviderConfig();
 		const vaultPath = this.getVaultBasePath();
 		const args: string[] = [];
 
-		let command = settings.cliCommand || 'agy';
+		let command = config.cliCommand || (providerId === 'copilot' ? 'copilot' : 'agy');
 		let spawnCwd = vaultPath;
 
-		if (settings.useWsl) {
+		if (config.useWsl) {
 			command = 'wsl';
 			const wslVaultPath = this.toWslPath(vaultPath);
-			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', settings.cliCommand || 'agy');
+			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', config.cliCommand || (providerId === 'copilot' ? 'copilot' : 'agy'));
 		} else if (process.platform === 'win32' && !command.toLowerCase().endsWith('.exe') && !command.includes('\\') && !command.includes('/')) {
 			command = `${command}.exe`;
 		}
 
-		// Prompt mode flag
+		// Prompt argument
 		args.push('-p', prompt);
 
-		// Output format: stream text
-		args.push('--output-format', 'text');
+		if (providerId === 'copilot') {
+			// Copilot CLI flags
+			args.push('-s'); // Silent mode (only response)
+			args.push('--allow-all-tools'); // Allow tools non-interactively
+			args.push('--output-format', 'text');
 
-		// Auto approve tool calls (e.g. reading vault notes) in non-interactive mode
-		args.push('--dangerously-skip-permissions');
-
-		// Model selection
-		if (settings.selectedModel) {
-			const models = settings.cachedModels && settings.cachedModels.length > 0
-				? settings.cachedModels
-				: ANTIGRAVITY_2_MODELS;
-
-			const modelDef = models.find(m => m.id === settings.selectedModel);
-			const selectedEffort = (settings.modelEfforts?.[settings.selectedModel] || modelDef?.defaultEffort || 'Medium').toLowerCase();
-
-			let exactCliModelId = settings.selectedModel;
-
-			if (modelDef && modelDef.effortModelMap && modelDef.effortModelMap[selectedEffort]) {
-				exactCliModelId = modelDef.effortModelMap[selectedEffort];
+			if (config.selectedModel) {
+				args.push('--model', config.selectedModel);
 			}
 
-			args.push('--model', exactCliModelId);
-		}
+			// Resume session if exists
+			if (config.conversationId) {
+				args.push(`--resume=${config.conversationId}`);
+			}
+		} else {
+			// Antigravity CLI flags
+			args.push('--output-format', 'text');
+			args.push('--dangerously-skip-permissions');
 
-		// Resume session if active conversation exists
-		if (this.currentConversationId) {
-			args.push('--conversation', this.currentConversationId);
+			if (config.selectedModel) {
+				const models = config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS;
+				const modelDef = models.find(m => m.id === config.selectedModel);
+				const selectedEffort = (config.modelEfforts?.[config.selectedModel] || modelDef?.defaultEffort || 'Medium').toLowerCase();
+
+				let exactCliModelId = config.selectedModel;
+				if (modelDef && modelDef.effortModelMap && modelDef.effortModelMap[selectedEffort]) {
+					exactCliModelId = modelDef.effortModelMap[selectedEffort];
+				}
+
+				args.push('--model', exactCliModelId);
+			}
+
+			// Resume session if exists
+			if (config.conversationId) {
+				args.push('--conversation', config.conversationId);
+			}
 		}
 
 		// Execution mode if specified
-		if (settings.defaultMode && settings.defaultMode.trim()) {
-			args.push(`--mode=${settings.defaultMode.trim()}`);
+		if (config.defaultMode && config.defaultMode.trim()) {
+			args.push(`--mode=${config.defaultMode.trim()}`);
 		}
 
 		// Extra user flags
-		if (settings.extraCliFlags && settings.extraCliFlags.trim()) {
-			const extra = settings.extraCliFlags.trim().split(/\s+/);
+		if (config.extraCliFlags && config.extraCliFlags.trim()) {
+			const extra = config.extraCliFlags.trim().split(/\s+/);
 			args.push(...extra);
 		}
 
@@ -311,7 +319,7 @@ export class AgyCliService {
 
 		try {
 			const child = spawn(command, args, {
-				cwd: settings.useWsl ? undefined : spawnCwd,
+				cwd: config.useWsl ? undefined : spawnCwd,
 				env: {
 					...process.env,
 					PAGER: 'cat',
@@ -322,55 +330,58 @@ export class AgyCliService {
 
 			this.activeProcess = child;
 
-			child.stdout.on('data', (data: Buffer) => {
-				const chunk = this.stripAnsi(data.toString('utf8'));
+			child.stdout?.on('data', (data: Buffer) => {
+				const chunk = data.toString();
 				fullResponse += chunk;
 
-				const convMatch = chunk.match(/conversation[:\s]+([a-f0-9-]{8,})/i) ||
-					chunk.match(/--conversation\s+([a-f0-9-]{8,})/i);
-				if (convMatch && convMatch[1]) {
-					this.setConversationId(convMatch[1]);
-					callbacks.onConversationId?.(convMatch[1]);
+				// Try to extract conversation/session ID if present in output
+				const match = chunk.match(/conversation[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
+					chunk.match(/session[:\s]+([a-zA-Z0-9_-]{8,})/i);
+				if (match && match[1]) {
+					this.setConversationId(match[1]);
+					callbacks.onConversationId?.(match[1]);
 				}
 
 				callbacks.onToken?.(chunk);
 			});
 
-			child.stderr.on('data', (data: Buffer) => {
-				const errChunk = this.stripAnsi(data.toString('utf8'));
-				errorOutput += errChunk;
-
-				const convMatch = errChunk.match(/conversation[:\s]+([a-f0-9-]{8,})/i) ||
-					errChunk.match(/--conversation\s+([a-f0-9-]{8,})/i);
-				if (convMatch && convMatch[1]) {
-					this.setConversationId(convMatch[1]);
-					callbacks.onConversationId?.(convMatch[1]);
-				}
+			child.stderr?.on('data', (data: Buffer) => {
+				const chunk = data.toString();
+				errorOutput += chunk;
 			});
 
 			child.on('error', (err: Error) => {
-				console.error('[Antigravity CLI Error]', err);
 				this.activeProcess = null;
-				new Notice(`Antigravity CLI failed to start: ${err.message}`);
-				callbacks.onError?.(`Failed to execute CLI command (${command}): ${err.message}. Please check plugin settings.`);
+				const msg = `Failed to spawn "${command}": ${err.message}. Ensure "${config.cliCommand}" is installed and on your PATH.`;
+				callbacks.onError?.(msg);
 			});
 
-			child.on('close', (code: number) => {
+			child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
 				this.activeProcess = null;
 
-				if (code === 0 || fullResponse.trim().length > 0) {
-					callbacks.onComplete?.(fullResponse.trim(), this.currentConversationId || undefined);
+				if (signal === 'SIGINT' || signal === 'SIGTERM') {
+					callbacks.onComplete?.(fullResponse + '\n\n*(Generation stopped)*', this.getConversationId() || undefined);
+					return;
+				}
+
+				if (code === 0) {
+					callbacks.onComplete?.(fullResponse, this.getConversationId() || undefined);
 				} else {
-					const msg = errorOutput.trim() || `CLI exited with code ${code}`;
-					callbacks.onError?.(msg);
+					let finalError = errorOutput.trim();
+					if (!finalError && fullResponse.trim()) {
+						callbacks.onComplete?.(fullResponse, this.getConversationId() || undefined);
+						return;
+					}
+					if (!finalError) {
+						finalError = `Process exited with code ${code}`;
+					}
+					callbacks.onError?.(finalError);
 				}
 			});
-
 		} catch (err: unknown) {
 			this.activeProcess = null;
-			const message = err instanceof Error ? err.message : String(err);
-			callbacks.onError?.(`Process execution error: ${message}`);
+			const msg = err instanceof Error ? err.message : String(err);
+			callbacks.onError?.(`Spawn exception: ${msg}`);
 		}
 	}
 }
-
