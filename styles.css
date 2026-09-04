@@ -598,14 +598,18 @@
 	color: var(--text-on-accent);
 	border: none;
 	border-radius: var(--radius-s);
-	width: 26px;
-	height: 26px;
-	display: flex;
+	width: 28px;
+	height: 28px;
+	min-width: 28px;
+	min-height: 28px;
+	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
 	flex-shrink: 0;
-	transition: opacity 0.15s ease;
+	padding: 0;
+	margin: 0;
+	transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .agy-submit-btn:hover {
@@ -621,11 +625,16 @@
 	background-color: var(--text-error);
 }
 
-.agy-submit-btn svg {
-	width: 13px;
-	height: 13px;
-	stroke-width: 2.5;
+.agy-submit-btn svg,
+.agy-submit-btn .svg-icon {
+	width: 15px !important;
+	height: 15px !important;
+	stroke-width: 2.5 !important;
+	display: block !important;
+	color: var(--text-on-accent) !important;
+	stroke: currentColor !important;
 }
+
 
 /* Status Bar Item */
 .agy-status-bar-item {
@@ -653,3 +662,4 @@
 	color: var(--text-on-accent);
 	font-weight: 600;
 }
+
