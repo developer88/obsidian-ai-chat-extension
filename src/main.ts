@@ -3,8 +3,6 @@ import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
 	AiProviderId,
-	ANTIGRAVITY_MODELS,
-	COPILOT_MODELS,
 	PROVIDER_METADATA,
 	DEFAULT_PROVIDER_CONFIGS
 } from './types';
@@ -80,7 +78,7 @@ export default class AntigravityPlugin extends Plugin {
 		// Command: Switch Model & Effort
 		this.addCommand({
 			id: 'switch-antigravity-model',
-			name: 'Switch Model, Provider & Effort',
+			name: 'Switch Model & Effort',
 			callback: () => {
 				new ModelSuggestModal(this.app, this).open();
 			},
@@ -117,15 +115,12 @@ export default class AntigravityPlugin extends Plugin {
 
 		const provId = this.settings.activeProvider || 'antigravity';
 		const provConfig = this.settings.providers?.[provId];
-		const models = (provConfig?.cachedModels && provConfig.cachedModels.length > 0)
-			? provConfig.cachedModels
-			: (provId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
+		const models = provConfig?.cachedModels || [];
 
 		const currentId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentId || currentId.startsWith(m.id));
 
-		const provShort = provId === 'copilot' ? 'Copilot' : 'AGY';
-		const label = modelDef ? modelDef.label : currentId;
+		const label = modelDef ? modelDef.label : (currentId || 'No model');
 		let effortSuffix = '';
 
 		if (modelDef && modelDef.efforts && modelDef.efforts.length > 1) {
@@ -133,21 +128,21 @@ export default class AntigravityPlugin extends Plugin {
 			effortSuffix = ` (${effort})`;
 		}
 
-		this.statusBarItemEl.setText(`⚡ [${provShort}] ${label}${effortSuffix}`);
-		this.statusBarItemEl.setAttribute('aria-label', `AI Chat: [${provShort}] ${label}${effortSuffix} (Click to switch)`);
+		this.statusBarItemEl.setText(`⚡ ${label}${effortSuffix}`);
+		this.statusBarItemEl.setAttribute('aria-label', `AI Chat: ${label}${effortSuffix} (Click to switch)`);
 	}
 
-	public async switchProviderAndModel(providerId: AiProviderId, modelId: string, effort?: string): Promise<void> {
-		this.settings.activeProvider = providerId;
+	public async switchModelForActiveProvider(modelId: string, effort?: string): Promise<void> {
+		const provId = this.settings.activeProvider || 'antigravity';
 
 		if (!this.settings.providers) {
 			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS));
 		}
-		if (!this.settings.providers[providerId]) {
-			this.settings.providers[providerId] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[providerId]));
+		if (!this.settings.providers[provId]) {
+			this.settings.providers[provId] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[provId]));
 		}
 
-		const provConfig = this.settings.providers[providerId];
+		const provConfig = this.settings.providers[provId];
 		provConfig.selectedModel = modelId;
 
 		if (effort) {
@@ -160,7 +155,7 @@ export default class AntigravityPlugin extends Plugin {
 		await this.saveData(this.settings);
 		this.updateStatusBar();
 
-		// Notify open chat views to update toolbar button in real time
+		// Notify open chat views to update trigger label in real time
 		const leaves = this.app.workspace.getLeavesOfType(ANTIGRAVITY_CHAT_VIEW_TYPE);
 		leaves.forEach((leaf) => {
 			if (leaf.view instanceof AntigravityChatView) {
@@ -168,15 +163,12 @@ export default class AntigravityPlugin extends Plugin {
 			}
 		});
 
-		const provName = PROVIDER_METADATA[providerId]?.name || providerId;
-		const models = (provConfig.cachedModels && provConfig.cachedModels.length > 0)
-			? provConfig.cachedModels
-			: (providerId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
+		const models = provConfig.cachedModels || [];
 		const modelDef = models.find(m => m.id === modelId);
 		const label = modelDef ? modelDef.label : modelId;
 		const effortStr = effort ? ` (${effort})` : '';
 
-		new Notice(`Switched to: ${provName} • ${label}${effortStr}`);
+		new Notice(`Model: ${label}${effortStr}`);
 	}
 
 	async activateView(): Promise<void> {
@@ -209,7 +201,6 @@ export default class AntigravityPlugin extends Plugin {
 		const data = await this.loadData();
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 
-		// Auto-migrate legacy settings if upgrading from v1.0
 		if (!this.settings.providers) {
 			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS));
 		}

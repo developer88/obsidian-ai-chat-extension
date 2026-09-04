@@ -2,8 +2,6 @@ import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import type AntigravityPlugin from './main';
 import {
 	AiProviderId,
-	ANTIGRAVITY_MODELS,
-	COPILOT_MODELS,
 	PROVIDER_METADATA
 } from './types';
 import { ModelSuggestModal } from './modals/ModelSuggestModal';
@@ -45,13 +43,11 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				});
 			});
 
-		// Unified Model & Reasoning Effort Switcher Button
-		const models = (provConfig?.cachedModels && provConfig.cachedModels.length > 0)
-			? provConfig.cachedModels
-			: (activeProvId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
+		// Dynamic Model & Reasoning Effort Selector
+		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
 		const currentModelObj = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
-		const currentModelLabel = currentModelObj ? currentModelObj.label : currentModelId;
+		const currentModelLabel = currentModelObj ? currentModelObj.label : (currentModelId || 'No model loaded');
 
 		let currentEffortStr = '';
 		if (currentModelObj && currentModelObj.efforts && currentModelObj.efforts.length > 1) {
@@ -61,25 +57,33 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		const provName = PROVIDER_METADATA[activeProvId]?.name || activeProvId;
 
-		new Setting(containerEl)
+		const modelSetting = new Setting(containerEl)
 			.setName('Active Model & Reasoning Effort')
-			.setDesc(`Currently: ${provName} • ${currentModelLabel}${currentEffortStr}`)
-			.addButton(button => button
+			.setDesc(`Currently: ${currentModelLabel}${currentEffortStr}`);
+
+		if (models.length > 0) {
+			modelSetting.addButton(button => button
 				.setButtonText('Select Model & Effort...')
 				.setCta()
 				.onClick(() => {
 					new ModelSuggestModal(this.app, this.plugin).open();
-				}))
-			.addButton(button => button
-				.setButtonText('Refresh from CLI')
-				.setTooltip('Query CLI for updated models')
-				.onClick(async () => {
-					button.setButtonText('Querying...');
-					button.setDisabled(true);
-					const fetched = await this.plugin.cliService.fetchAvailableModels();
-					new Notice(`Loaded ${fetched.length} models.`);
-					this.display();
 				}));
+		}
+
+		modelSetting.addButton(button => button
+			.setButtonText('Retrieve from CLI')
+			.setTooltip('Query CLI dynamically for available models')
+			.onClick(async () => {
+				button.setButtonText('Querying...');
+				button.setDisabled(true);
+				const fetched = await this.plugin.cliService.fetchAvailableModels();
+				if (fetched && fetched.length > 0) {
+					new Notice(`Loaded ${fetched.length} models for ${provName}.`);
+				} else {
+					new Notice(`No models retrieved. Ensure "${provConfig?.cliCommand || provName}" is installed and working.`);
+				}
+				this.display();
+			}));
 
 		containerEl.createEl('h3', { text: `${provName} Configuration` });
 
@@ -152,7 +156,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		// Show Status Bar Item
 		new Setting(containerEl)
 			.setName('Show Status Bar Item')
-			.setDesc('Display the active AI provider, model, and reasoning effort in Obsidian\'s bottom status bar.')
+			.setDesc('Display the active AI model and reasoning effort in Obsidian\'s bottom status bar.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showStatusBarItem)
 				.onChange(async (value) => {

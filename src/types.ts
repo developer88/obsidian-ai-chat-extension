@@ -88,45 +88,6 @@ export const ANTIGRAVITY_MODELS: ModelDefinition[] = [
 	}
 ];
 
-export const COPILOT_MODELS: ModelDefinition[] = [
-	{
-		id: 'gpt-5.2',
-		label: 'GPT-5.2',
-		efforts: [],
-		defaultEffort: undefined
-	},
-	{
-		id: 'gpt-5',
-		label: 'GPT-5',
-		efforts: [],
-		defaultEffort: undefined
-	},
-	{
-		id: 'claude-3.7-sonnet',
-		label: 'Claude 3.7 Sonnet',
-		efforts: ['Low', 'Medium', 'High'],
-		defaultEffort: 'Medium'
-	},
-	{
-		id: 'claude-3.5-sonnet',
-		label: 'Claude 3.5 Sonnet',
-		efforts: [],
-		defaultEffort: undefined
-	},
-	{
-		id: 'o1',
-		label: 'OpenAI o1',
-		efforts: ['Low', 'Medium', 'High'],
-		defaultEffort: 'Medium'
-	},
-	{
-		id: 'o3-mini',
-		label: 'OpenAI o3-mini',
-		efforts: ['Low', 'Medium', 'High'],
-		defaultEffort: 'Medium'
-	}
-];
-
 export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd: string }> = {
 	antigravity: {
 		name: 'Google Antigravity',
@@ -182,13 +143,9 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 		cliCommand: 'copilot',
 		useWsl: false,
 		extraCliFlags: '',
-		selectedModel: 'gpt-5.2',
-		modelEfforts: {
-			'claude-3.7-sonnet': 'Medium',
-			'o1': 'Medium',
-			'o3-mini': 'Medium'
-		},
-		cachedModels: COPILOT_MODELS,
+		selectedModel: '',
+		modelEfforts: {},
+		cachedModels: [],
 		defaultMode: '',
 		conversationId: null
 	}

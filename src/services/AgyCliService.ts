@@ -7,7 +7,6 @@ import {
 	AiProviderId,
 	ProviderConfig,
 	ANTIGRAVITY_MODELS,
-	COPILOT_MODELS,
 	DEFAULT_PROVIDER_CONFIGS
 } from '../types';
 
@@ -120,17 +119,11 @@ export class AgyCliService {
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
 		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 
-		// For Copilot, return built-in curated Copilot models
-		if (targetProvider === 'copilot') {
-			return config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : COPILOT_MODELS;
-		}
-
-		// For Antigravity, query `agy models`
-		let cmd = config.cliCommand || 'agy';
-		let args = ['models'];
+		let cmd = config.cliCommand || (targetProvider === 'copilot' ? 'copilot' : 'agy');
+		let args = targetProvider === 'copilot' ? ['--help'] : ['models'];
 
 		if (config.useWsl) {
-			args = ['-d', 'Ubuntu', '--', cmd, 'models'];
+			args = ['-d', 'Ubuntu', '--', cmd, ...args];
 			cmd = 'wsl';
 		} else if (process.platform === 'win32' && !cmd.toLowerCase().endsWith('.exe') && !cmd.includes('\\') && !cmd.includes('/')) {
 			cmd = `${cmd}.exe`;
@@ -155,28 +148,55 @@ export class AgyCliService {
 				});
 
 				child.on('error', (err) => {
-					console.warn('[AI Chat] Could not query agy models:', err);
-					resolve(config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS);
+					console.warn(`[AI Chat] Could not query ${targetProvider} CLI:`, err);
+					resolve(config.cachedModels || []);
 				});
 
 				child.on('close', async (code) => {
 					if (code === 0 && output.trim()) {
-						const parsed = this.parseAntigravityModels(output);
+						const parsed = targetProvider === 'copilot'
+							? this.parseCopilotModels(output)
+							: this.parseAntigravityModels(output);
+
 						if (parsed.length > 0) {
-							if (settings.providers && settings.providers.antigravity) {
-								settings.providers.antigravity.cachedModels = parsed;
+							if (settings.providers && settings.providers[targetProvider]) {
+								settings.providers[targetProvider].cachedModels = parsed;
 								await this.saveSettings(settings);
 							}
 							resolve(parsed);
 							return;
 						}
 					}
-					resolve(config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS);
+					resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : []));
 				});
 			} catch {
-				resolve(config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS);
+				resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : []));
 			}
 		});
+	}
+
+	private parseCopilotModels(rawOutput: string): ModelDefinition[] {
+		// Parse models from copilot CLI help/output if available
+		const models: ModelDefinition[] = [];
+		const modelMatch = rawOutput.match(/--model\s+<model>\s+.*?(?:\n\s{2,}.*?)*/i);
+		if (modelMatch) {
+			const text = modelMatch[0];
+			const choicesMatch = text.match(/\(choices:\s*([^)]+)\)/i);
+			if (choicesMatch) {
+				const items = choicesMatch[1].split(/,\s*/);
+				for (const item of items) {
+					const cleaned = item.replace(/['"]/g, '').trim();
+					if (cleaned) {
+						models.push({
+							id: cleaned,
+							label: cleaned,
+							efforts: []
+						});
+					}
+				}
+			}
+		}
+		return models;
 	}
 
 	private parseAntigravityModels(rawOutput: string): ModelDefinition[] {
@@ -334,7 +354,6 @@ export class AgyCliService {
 				const chunk = data.toString();
 				fullResponse += chunk;
 
-				// Try to extract conversation/session ID if present in output
 				const match = chunk.match(/conversation[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
 					chunk.match(/session[:\s]+([a-zA-Z0-9_-]{8,})/i);
 				if (match && match[1]) {

@@ -14,8 +14,6 @@ import {
 	ChatMessage,
 	ActiveNoteContext,
 	ModelDefinition,
-	ANTIGRAVITY_MODELS,
-	COPILOT_MODELS,
 	PROVIDER_METADATA
 } from '../types';
 import { AgyCliService } from '../services/AgyCliService';
@@ -92,26 +90,30 @@ export class AntigravityChatView extends ItemView {
 	private buildHeader(parent: HTMLElement): void {
 		const header = parent.createDiv({ cls: 'agy-header' });
 
-		const brand = header.createDiv({ cls: 'agy-brand' });
-		const title = brand.createSpan({ text: 'AI Chat', cls: 'agy-title' });
+		const titleGroup = header.createDiv({ cls: 'agy-title-group' });
+		const titleIcon = titleGroup.createSpan({ cls: 'agy-title-icon' });
+		setIcon(titleIcon, 'cpu');
+		titleGroup.createEl('span', { text: 'AI Chat', cls: 'agy-title-text' });
 
-		this.sessionBadgeEl = brand.createSpan({
+		const convId = this.cliService.getConversationId();
+		this.sessionBadgeEl = titleGroup.createSpan({
 			cls: 'agy-session-badge',
-			text: 'New Session'
+			text: convId ? `ID: ${convId.slice(0, 6)}` : ''
 		});
+		if (!convId) {
+			this.sessionBadgeEl.style.display = 'none';
+		}
 
 		const actionsGroup = header.createDiv({ cls: 'agy-header-actions' });
 
-		// New Session Action
+		// New Session Button
 		const newSessionBtn = actionsGroup.createEl('button', {
-			cls: 'clickable-icon agy-icon-btn agy-new-session-btn',
-			attr: {
-				'aria-label': 'Start New Session (Clear context)',
-				'type': 'button'
-			}
+			cls: 'agy-btn agy-btn-secondary',
+			attr: { 'aria-label': 'Start new conversation session' }
 		});
-		setIcon(newSessionBtn, 'rotate-ccw');
-		newSessionBtn.createSpan({ text: 'New', cls: 'agy-btn-label' });
+		const btnIcon = newSessionBtn.createSpan({ cls: 'agy-btn-icon' });
+		setIcon(btnIcon, 'rotate-ccw');
+		newSessionBtn.createSpan({ text: 'New Session' });
 		newSessionBtn.addEventListener('click', () => this.restartSession());
 
 		// Clear Messages Action
@@ -134,14 +136,13 @@ export class AntigravityChatView extends ItemView {
 	private buildToolbar(parent: HTMLElement): void {
 		const toolbar = parent.createDiv({ cls: 'agy-toolbar' });
 
-		// Model & Effort Selector Trigger Button
 		const modelGroup = toolbar.createDiv({ cls: 'agy-toolbar-group is-model-group' });
 
 		this.modelTriggerBtn = modelGroup.createEl('button', {
 			cls: 'agy-model-trigger-btn',
 			attr: {
 				'type': 'button',
-				'aria-label': 'Select AI Provider, Model, and Reasoning Effort'
+				'aria-label': 'Select AI Model and Reasoning Effort'
 			}
 		});
 
@@ -173,15 +174,11 @@ export class AntigravityChatView extends ItemView {
 		const settings = this.getSettings();
 		const provId = settings.activeProvider || 'antigravity';
 		const provConfig = settings.providers?.[provId];
-		const provName = provId === 'copilot' ? 'Copilot' : 'Antigravity';
 
-		const models = (provConfig?.cachedModels && provConfig.cachedModels.length > 0)
-			? provConfig.cachedModels
-			: (provId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
-
+		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
-		const label = modelDef ? modelDef.label : currentModelId;
+		const label = modelDef ? modelDef.label : (currentModelId || 'No model selected');
 
 		let effortStr = '';
 		if (modelDef && modelDef.efforts && modelDef.efforts.length > 1) {
@@ -190,7 +187,7 @@ export class AntigravityChatView extends ItemView {
 		}
 
 		if (this.modelTriggerLabel) {
-			this.modelTriggerLabel.setText(`${provName} • ${label}${effortStr}`);
+			this.modelTriggerLabel.setText(`${label}${effortStr}`);
 		}
 	}
 
@@ -202,6 +199,10 @@ export class AntigravityChatView extends ItemView {
 				this.updateModelSelectionFromSettings();
 				if (showNotice) {
 					new Notice(`Loaded ${fetched.length} models.`);
+				}
+			} else {
+				if (showNotice) {
+					new Notice('No models found from active provider.');
 				}
 			}
 		} catch (e) {
@@ -232,7 +233,7 @@ export class AntigravityChatView extends ItemView {
 
 		emptyDiv.createEl('p', {
 			cls: 'agy-empty-desc',
-			text: 'Connected directly to your local AI CLI (Google Antigravity & GitHub Copilot) without API tokens.'
+			text: 'Connected directly to your local AI CLI without API tokens.'
 		});
 	}
 
@@ -261,53 +262,62 @@ export class AntigravityChatView extends ItemView {
 
 	private buildContextPill(parent: HTMLElement): void {
 		this.contextPillEl = parent.createDiv({ cls: 'agy-context-container' });
-		this.renderContextBadge();
+		this.renderContextPill();
 	}
 
-	private renderContextBadge(): void {
+	private renderContextPill(): void {
 		this.contextPillEl.empty();
 
 		if (!this.includeActiveNote || !this.currentActiveContext) {
+			const detachedPill = this.contextPillEl.createDiv({ cls: 'agy-context-badge is-detached' });
+			const icon = detachedPill.createSpan({ cls: 'agy-badge-icon' });
+			setIcon(icon, 'file-text');
+			detachedPill.createSpan({ text: 'Note detached (click to link active note)' });
+			detachedPill.addEventListener('click', () => {
+				this.includeActiveNote = true;
+				this.updateActiveDocumentContext();
+			});
 			return;
 		}
 
 		const badge = this.contextPillEl.createDiv({ cls: 'agy-context-badge' });
+		const fileIcon = badge.createSpan({ cls: 'agy-badge-icon' });
+		setIcon(fileIcon, 'file-text');
 
-		const icon = badge.createSpan({ cls: 'agy-badge-icon' });
-		setIcon(icon, 'file-text');
+		const title = this.currentActiveContext.title;
+		const selectionText = this.currentActiveContext.selection
+			? `${title} (selection)`
+			: title;
 
-		const noteName = this.currentActiveContext.title;
-		let badgeText = noteName;
-		if (this.currentActiveContext.selection) {
-			badgeText = `${noteName} (selection)`;
-		}
-
-		badge.createSpan({ cls: 'agy-badge-text', text: badgeText });
+		badge.createSpan({ cls: 'agy-badge-title', text: selectionText });
 
 		const dismissBtn = badge.createSpan({
-			cls: 'agy-badge-dismiss clickable-icon',
-			attr: { 'aria-label': 'Detach active note context' }
+			cls: 'agy-badge-dismiss',
+			attr: { 'aria-label': 'Detach active note' }
 		});
 		setIcon(dismissBtn, 'x');
-
 		dismissBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			this.includeActiveNote = false;
-			this.renderContextBadge();
-			new Notice('Detached active note for this chat.');
+			this.renderContextPill();
 		});
 	}
 
 	private buildInputArea(parent: HTMLElement): void {
-		const footer = parent.createDiv({ cls: 'agy-footer' });
-		const inputWrapper = footer.createDiv({ cls: 'agy-input-wrapper' });
+		const inputSection = parent.createDiv({ cls: 'agy-input-section' });
+		const inputWrapper = inputSection.createDiv({ cls: 'agy-input-container' });
 
 		this.inputEl = inputWrapper.createEl('textarea', {
 			cls: 'agy-textarea',
 			attr: {
-				placeholder: 'Ask anything about this note, or brainstorm ideas...',
+				placeholder: 'Ask AI Chat... (Enter to send, Shift+Enter for newline)',
 				rows: '1'
 			}
+		});
+
+		this.inputEl.addEventListener('input', () => {
+			this.inputEl.style.height = 'auto';
+			this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 180) + 'px';
 		});
 
 		this.inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -317,16 +327,11 @@ export class AntigravityChatView extends ItemView {
 			}
 		});
 
-		this.inputEl.addEventListener('input', () => {
-			this.inputEl.style.height = 'auto';
-			this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 180) + 'px';
-		});
-
 		this.sendBtnEl = inputWrapper.createEl('button', {
-			cls: 'agy-send-btn',
+			cls: 'agy-submit-btn',
 			attr: {
-				'type': 'button',
-				'aria-label': 'Send prompt'
+				'aria-label': 'Send prompt',
+				'type': 'button'
 			}
 		});
 		setIcon(this.sendBtnEl, 'arrow-up');
@@ -344,7 +349,7 @@ export class AntigravityChatView extends ItemView {
 		const activeFile = this.app.workspace.getActiveFile();
 		if (!activeFile) {
 			this.currentActiveContext = null;
-			this.renderContextBadge();
+			this.renderContextPill();
 			return;
 		}
 
@@ -369,19 +374,25 @@ export class AntigravityChatView extends ItemView {
 		};
 
 		this.includeActiveNote = this.getSettings().autoAttachActiveNote;
-		this.renderContextBadge();
+		this.renderContextPill();
 	}
 
 	public restartSession(): void {
 		this.cliService.resetSession();
-		this.updateSessionBadge('New Session');
+		this.updateSessionBadge('');
 		this.clearMessages();
-		new Notice('Session restarted.');
+		new Notice('Session reset.');
 	}
 
 	private updateSessionBadge(text: string): void {
 		if (this.sessionBadgeEl) {
-			this.sessionBadgeEl.setText(text);
+			if (text) {
+				this.sessionBadgeEl.setText(text);
+				this.sessionBadgeEl.style.display = 'inline-block';
+			} else {
+				this.sessionBadgeEl.setText('');
+				this.sessionBadgeEl.style.display = 'none';
+			}
 		}
 	}
 
@@ -391,22 +402,29 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	private async handleSend(): Promise<void> {
+		if (this.isStreaming) {
+			this.cliService.abort();
+			this.isStreaming = false;
+			this.setSendButtonState(false);
+			return;
+		}
+
 		const userText = this.inputEl.value.trim();
-		if (!userText || this.isStreaming) return;
+		if (!userText) return;
 
 		let noteContextPrefix = '';
 		let attachedNotePath: string | undefined;
 		let attachedSelection: string | undefined;
 
 		if (this.includeActiveNote && this.currentActiveContext) {
-			attachedNotePath = this.currentActiveContext.title;
-			const targetPath = this.currentActiveContext.fullPath || this.currentActiveContext.path;
+			const targetFilePath = this.currentActiveContext.fullPath || this.currentActiveContext.path;
+			attachedNotePath = this.currentActiveContext.path;
+			attachedSelection = this.currentActiveContext.selection;
 
-			if (this.currentActiveContext.selection) {
-				attachedSelection = this.currentActiveContext.selection;
-				noteContextPrefix = `Regarding file "${targetPath}" with selected text:\n"""\n${this.currentActiveContext.selection}\n"""\n\n`;
+			if (attachedSelection) {
+				noteContextPrefix = `Regarding the selected text in file "${targetFilePath}":\n"""\n${attachedSelection}\n"""\n\n`;
 			} else {
-				noteContextPrefix = `Please read and analyze the file "${targetPath}":\n\n`;
+				noteContextPrefix = `Please read and analyze the file "${targetFilePath}":\n\n`;
 			}
 		}
 
@@ -433,10 +451,7 @@ export class AntigravityChatView extends ItemView {
 		const provConfig = settings.providers?.[provId];
 		const provName = PROVIDER_METADATA[provId]?.name || (provId === 'copilot' ? 'GitHub Copilot' : 'Google Antigravity');
 
-		const models = (provConfig?.cachedModels && provConfig.cachedModels.length > 0)
-			? provConfig.cachedModels
-			: (provId === 'copilot' ? COPILOT_MODELS : ANTIGRAVITY_MODELS);
-
+		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
 		const currentModelLabel = modelDef ? modelDef.label : currentModelId;
@@ -559,100 +574,80 @@ export class AntigravityChatView extends ItemView {
 		const contentDiv = msgRow.querySelector('.agy-assistant-content') as HTMLElement;
 		if (!contentDiv) return;
 
+		contentDiv.empty();
 		this.renderMarkdownTo(contentDiv, content);
 
 		if (isFinal) {
-			this.addMessageActionButtons(msgRow, content);
+			this.attachCodeBlockActions(contentDiv);
 		}
 	}
 
-	private addMessageActionButtons(msgRow: HTMLElement, text: string): void {
-		if (msgRow.querySelector('.agy-msg-actions')) return;
-
-		const actionsRow = msgRow.createDiv({ cls: 'agy-msg-actions' });
-
-		const copyBtn = actionsRow.createEl('button', {
-			cls: 'agy-action-btn',
-			attr: { 'type': 'button', 'aria-label': 'Copy full response' }
-		});
-		setIcon(copyBtn, 'copy');
-		copyBtn.createSpan({ text: 'Copy' });
-		copyBtn.addEventListener('click', async () => {
-			await navigator.clipboard.writeText(text);
-			new Notice('Response copied to clipboard.');
-		});
-
-		const insertBtn = actionsRow.createEl('button', {
-			cls: 'agy-action-btn',
-			attr: { 'type': 'button', 'aria-label': 'Insert into active note' }
-		});
-		setIcon(insertBtn, 'corner-down-left');
-		insertBtn.createSpan({ text: 'Insert' });
-		insertBtn.addEventListener('click', () => {
-			this.insertTextIntoActiveNote(text);
-		});
-	}
-
-	private insertTextIntoActiveNote(text: string): void {
-		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (activeView && activeView.editor) {
-			activeView.editor.replaceSelection(`\n\n${text}\n\n`);
-			new Notice('Inserted into note.');
-		} else {
-			new Notice('No active note editor open to insert text.');
-		}
-	}
-
-	private renderMarkdownTo(el: HTMLElement, markdownText: string): void {
-		el.empty();
-		MarkdownRenderer.renderMarkdown(
-			markdownText,
-			el,
+	private renderMarkdownTo(targetEl: HTMLElement, markdownText: string): void {
+		MarkdownRenderer.render(
+			this.app,
+			markdownText || '...',
+			targetEl,
 			'',
 			this
-		).then(() => {
-			this.enhanceCodeBlocks(el);
+		);
+	}
+
+	private attachCodeBlockActions(container: HTMLElement): void {
+		const preElements = container.querySelectorAll('pre');
+		preElements.forEach((pre) => {
+			if (pre.querySelector('.agy-code-toolbar')) return;
+
+			const actionsBar = document.createElement('div');
+			actionsBar.className = 'agy-code-toolbar';
+
+			// Copy button
+			const copyBtn = actionsBar.createEl('button', {
+				text: 'Copy',
+				cls: 'agy-code-btn'
+			});
+			copyBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const code = pre.querySelector('code')?.innerText || pre.innerText;
+				navigator.clipboard.writeText(code);
+				copyBtn.setText('Copied');
+				setTimeout(() => copyBtn.setText('Copy'), 2000);
+			});
+
+			// Insert into Note button
+			const insertBtn = actionsBar.createEl('button', {
+				text: 'Insert into note',
+				cls: 'agy-code-btn'
+			});
+			insertBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const code = pre.querySelector('code')?.innerText || pre.innerText;
+				this.insertTextIntoActiveNote(code);
+			});
+
+			pre.appendChild(actionsBar);
 		});
 	}
 
-	private enhanceCodeBlocks(container: HTMLElement): void {
-		const codeBlocks = container.querySelectorAll('pre');
-		codeBlocks.forEach((pre) => {
-			if (pre.querySelector('.agy-code-actions')) return;
+	public insertTextIntoActiveNote(textToInsert: string): void {
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!activeView || !activeView.editor) {
+			new Notice('No active note editor found.');
+			return;
+		}
 
-			const actionsBar = document.createElement('div');
-			actionsBar.className = 'agy-code-actions';
-
-			const copyBtn = document.createElement('button');
-			copyBtn.className = 'agy-code-btn';
-			copyBtn.textContent = 'Copy';
-			copyBtn.onclick = async (e) => {
-				e.stopPropagation();
-				const code = pre.querySelector('code')?.innerText || pre.innerText;
-				await navigator.clipboard.writeText(code);
-				copyBtn.textContent = 'Copied!';
-				setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1800);
-			};
-
-			const insertBtn = document.createElement('button');
-			insertBtn.className = 'agy-code-btn';
-			insertBtn.textContent = 'Insert';
-			insertBtn.onclick = (e) => {
-				e.stopPropagation();
-				const code = pre.querySelector('code')?.innerText || pre.innerText;
-				this.insertTextIntoActiveNote(`\`\`\`\n${code}\n\`\`\``);
-			};
-
-			actionsBar.appendChild(copyBtn);
-			actionsBar.appendChild(insertBtn);
-			pre.style.position = 'relative';
-			pre.appendChild(actionsBar);
-		});
+		const editor = activeView.editor;
+		const cursor = editor.getCursor();
+		editor.replaceRange(`\n${textToInsert}\n`, cursor);
+		new Notice('Inserted into note');
 	}
 
 	private scrollToBottom(): void {
 		if (this.getSettings().autoScrollChat && this.messagesContainerEl) {
 			this.messagesContainerEl.scrollTop = this.messagesContainerEl.scrollHeight;
 		}
+	}
+
+	async onClose(): Promise<void> {
+		this.cliService.abort();
 	}
 }
