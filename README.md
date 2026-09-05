@@ -127,3 +127,10 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 ## 📄 License
 
 This plugin is licensed under the [MIT License](LICENSE).
+
+---
+
+## 🤖 Development & Transparency
+
+* This extension was built using **Google Gemini AI**.
+* Each change, implementation detail, and line of code was reviewed and verified by the author.
