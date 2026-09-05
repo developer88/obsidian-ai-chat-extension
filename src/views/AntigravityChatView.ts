@@ -116,13 +116,6 @@ export class AntigravityChatView extends ItemView {
 		newSessionBtn.createSpan({ text: 'New Session' });
 		newSessionBtn.addEventListener('click', () => this.restartSession());
 
-		// Clear Messages Action
-		const clearBtn = actionsGroup.createEl('div', {
-			cls: 'clickable-icon agy-icon-btn',
-			attr: { 'aria-label': 'Clear chat' }
-		});
-		setIcon(clearBtn, 'trash-2');
-		clearBtn.addEventListener('click', () => this.clearMessages());
 
 		// Settings Action
 		const settingsBtn = actionsGroup.createEl('div', {
@@ -651,3 +644,5 @@ export class AntigravityChatView extends ItemView {
 		this.cliService.abort();
 	}
 }
+
+
