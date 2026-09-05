@@ -1,5 +1,5 @@
 {
-  "id": "agy-in-obsidian",
+  "id": "obsidian-ai-chat-extension",
   "name": "AI Chat",
   "version": "2.0.0",
   "minAppVersion": "0.15.0",
@@ -8,3 +8,4 @@
   "authorUrl": "https://github.com",
   "isDesktopOnly": true
 }
+
