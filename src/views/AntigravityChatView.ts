@@ -221,12 +221,12 @@ export class AntigravityChatView extends ItemView {
 		const icon = emptyDiv.createDiv({ cls: 'agy-empty-icon' });
 		setIcon(icon, 'messages-square');
 
-		emptyDiv.createEl('div', {
+		emptyDiv.createDiv({
 			cls: 'agy-empty-title',
 			text: 'No messages yet'
 		});
 
-		emptyDiv.createEl('div', {
+		emptyDiv.createDiv({
 			cls: 'agy-empty-desc',
 			text: 'Type a message below or pick a quick action to start chatting with your local AI CLI.'
 		});
