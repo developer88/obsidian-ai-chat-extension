@@ -1,7 +1,7 @@
 {
   "name": "sidecar-ai",
-  "version": "3.2.1",
-  "description": "Native Obsidian AI chat sidebar supporting Google Antigravity, GitHub Copilot, and local AI CLI providers",
+  "version": "3.3.0",
+  "description": "Native Obsidian AI chat sidebar supporting Google Antigravity, GitHub Copilot, Pi Coding Agent, and local AI CLI providers",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

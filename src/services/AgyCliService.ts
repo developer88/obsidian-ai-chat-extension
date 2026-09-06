@@ -7,7 +7,9 @@ import {
 	AiProviderId,
 	ProviderConfig,
 	ANTIGRAVITY_MODELS,
-	DEFAULT_PROVIDER_CONFIGS
+	PI_DEFAULT_MODELS,
+	DEFAULT_PROVIDER_CONFIGS,
+	PROVIDER_METADATA
 } from '../types';
 
 export class AgyCliService {
@@ -85,26 +87,49 @@ export class AgyCliService {
 		return winPath.replace(/\\/g, '/');
 	}
 
+	private resolveExecution(
+		config: ProviderConfig,
+		targetProvider: AiProviderId,
+		vaultPath?: string
+	): { command: string; prefixArgs: string[] } {
+		const defaultCmd = PROVIDER_METADATA[targetProvider]?.defaultCmd || 'agy';
+		const rawCmd = config.cliCommand || defaultCmd;
+
+		if (config.useWsl) {
+			const prefixArgs = ['-d', 'Ubuntu'];
+			if (vaultPath) {
+				prefixArgs.push('--cd', this.toWslPath(vaultPath));
+			}
+			prefixArgs.push('--', rawCmd);
+			return { command: 'wsl', prefixArgs };
+		}
+
+		if (process.platform === 'win32') {
+			if (targetProvider === 'pi' || rawCmd.toLowerCase() === 'pi' || rawCmd.toLowerCase().endsWith('.cmd') || rawCmd.toLowerCase().endsWith('.bat')) {
+				return { command: 'cmd.exe', prefixArgs: ['/c', rawCmd] };
+			}
+			if (!rawCmd.toLowerCase().endsWith('.exe') && !rawCmd.includes('\\') && !rawCmd.includes('/')) {
+				return { command: `${rawCmd}.exe`, prefixArgs: [] };
+			}
+		}
+
+		return { command: rawCmd, prefixArgs: [] };
+	}
+
 	public async checkCliInstalled(providerId?: AiProviderId): Promise<boolean> {
 		const settings = this.getSettings();
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
 		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 
 		return new Promise((resolve) => {
-			let cmd = config.cliCommand || (targetProvider === 'copilot' ? 'copilot' : 'agy');
-			let args = ['--version'];
-
-			if (config.useWsl) {
-				args = ['-d', 'Ubuntu', '--', cmd, '--version'];
-				cmd = 'wsl';
-			} else if (process.platform === 'win32' && !cmd.toLowerCase().endsWith('.exe') && !cmd.includes('\\') && !cmd.includes('/')) {
-				cmd = `${cmd}.exe`;
-			}
+			const { command, prefixArgs } = this.resolveExecution(config, targetProvider);
+			const args = [...prefixArgs, '--version'];
 
 			try {
-				const child = spawn(cmd, args, {
+				const child = spawn(command, args, {
 					shell: false,
-					timeout: 5000
+					timeout: 5000,
+					stdio: ['ignore', 'pipe', 'pipe']
 				});
 				child.on('error', () => resolve(false));
 				child.on('close', (code) => resolve(code === 0));
@@ -119,23 +144,21 @@ export class AgyCliService {
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
 		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 
-		let cmd = config.cliCommand || (targetProvider === 'copilot' ? 'copilot' : 'agy');
-		let args = targetProvider === 'copilot' ? ['--help'] : ['models'];
+		const queryFlag = targetProvider === 'copilot'
+			? '--help'
+			: (targetProvider === 'pi' ? '--list-models' : 'models');
 
-		if (config.useWsl) {
-			args = ['-d', 'Ubuntu', '--', cmd, ...args];
-			cmd = 'wsl';
-		} else if (process.platform === 'win32' && !cmd.toLowerCase().endsWith('.exe') && !cmd.includes('\\') && !cmd.includes('/')) {
-			cmd = `${cmd}.exe`;
-		}
+		const { command, prefixArgs } = this.resolveExecution(config, targetProvider);
+		const args = [...prefixArgs, queryFlag];
 
 		return new Promise((resolve) => {
 			let output = '';
 
 			try {
-				const child = spawn(cmd, args, {
+				const child = spawn(command, args, {
 					shell: false,
-					timeout: 7000
+					timeout: 10000,
+					stdio: ['ignore', 'pipe', 'pipe']
 				});
 
 				child.stdout?.on('data', (data: Buffer | string) => {
@@ -150,9 +173,14 @@ export class AgyCliService {
 				child.on('close', (code) => {
 					void (async () => {
 						if (code === 0 && output.trim()) {
-							const parsed = targetProvider === 'copilot'
-								? this.parseCopilotModels(output)
-								: this.parseAntigravityModels(output);
+							let parsed: ModelDefinition[] = [];
+							if (targetProvider === 'copilot') {
+								parsed = this.parseCopilotModels(output);
+							} else if (targetProvider === 'pi') {
+								parsed = this.parsePiModels(output);
+							} else {
+								parsed = this.parseAntigravityModels(output);
+							}
 
 							if (parsed.length > 0) {
 								if (settings.providers && settings.providers[targetProvider]) {
@@ -163,11 +191,11 @@ export class AgyCliService {
 								return;
 							}
 						}
-						resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : []));
+						resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : [])));
 					})();
 				});
 			} catch {
-				resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : []));
+				resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : [])));
 			}
 		});
 	}
@@ -256,6 +284,43 @@ export class AgyCliService {
 		return result.length > 0 ? result : ANTIGRAVITY_MODELS;
 	}
 
+	private parsePiModels(rawOutput: string): ModelDefinition[] {
+		const lines = rawOutput.split('\n');
+		const models: ModelDefinition[] = [];
+
+		for (const rawLine of lines) {
+			const line = rawLine.trim();
+			if (!line || line.startsWith('provider') || line.startsWith('---') || line.startsWith('ID')) {
+				continue;
+			}
+
+			const parts = line.split(/\s+/);
+			if (parts.length < 2) continue;
+
+			const provider = parts[0];
+			const model = parts[1];
+			const isThinking = parts.length >= 5 && parts[4].toLowerCase() === 'yes';
+
+			const providerFormatted = provider.charAt(0).toUpperCase() + provider.slice(1);
+			const cleanModel = model
+				.split('-')
+				.map(w => w.charAt(0).toUpperCase() + w.slice(1))
+				.join(' ');
+
+			const label = `${cleanModel} (${providerFormatted})`;
+			const efforts = isThinking ? ['Off', 'Low', 'Medium', 'High', 'Max'] : [];
+
+			models.push({
+				id: model,
+				label,
+				efforts,
+				defaultEffort: isThinking ? 'High' : undefined
+			});
+		}
+
+		return models.length > 0 ? models : PI_DEFAULT_MODELS;
+	}
+
 	public async sendPrompt(
 		prompt: string,
 		callbacks: CliStreamCallbacks
@@ -268,16 +333,8 @@ export class AgyCliService {
 		const vaultPath = this.getVaultBasePath();
 		const args: string[] = [];
 
-		let command = config.cliCommand || (providerId === 'copilot' ? 'copilot' : 'agy');
-		let spawnCwd = vaultPath;
-
-		if (config.useWsl) {
-			command = 'wsl';
-			const wslVaultPath = this.toWslPath(vaultPath);
-			args.push('-d', 'Ubuntu', '--cd', wslVaultPath, '--', config.cliCommand || (providerId === 'copilot' ? 'copilot' : 'agy'));
-		} else if (process.platform === 'win32' && !command.toLowerCase().endsWith('.exe') && !command.includes('\\') && !command.includes('/')) {
-			command = `${command}.exe`;
-		}
+		const { command, prefixArgs } = this.resolveExecution(config, providerId, vaultPath);
+		args.push(...prefixArgs);
 
 		// Prompt argument
 		args.push('-p', prompt);
@@ -295,6 +352,22 @@ export class AgyCliService {
 			// Resume session if exists
 			if (config.conversationId) {
 				args.push(`--resume=${config.conversationId}`);
+			}
+		} else if (providerId === 'pi') {
+			// Pi Coding Agent flags
+			if (config.selectedModel) {
+				args.push('--model', config.selectedModel);
+			}
+
+			const selectedEffort = (config.modelEfforts?.[config.selectedModel] || 'high').toLowerCase();
+			if (selectedEffort && selectedEffort !== 'off') {
+				args.push('--thinking', selectedEffort);
+			} else if (selectedEffort === 'off') {
+				args.push('--thinking', 'off');
+			}
+
+			if (config.conversationId) {
+				args.push('--session', config.conversationId);
 			}
 		} else {
 			// Antigravity CLI flags
@@ -336,16 +409,19 @@ export class AgyCliService {
 
 		try {
 			const child = spawn(command, args, {
-				cwd: config.useWsl ? undefined : spawnCwd,
+				cwd: config.useWsl ? undefined : vaultPath,
 				env: {
 					...process.env,
 					PAGER: 'cat',
 					CI: '1',
 				},
-				shell: false
+				shell: false,
+				stdio: ['pipe', 'pipe', 'pipe']
 			});
 
 			this.activeProcess = child;
+			// Close stdin immediately to prevent CLI tools like pi from waiting for piped input
+			child.stdin?.end();
 
 			child.stdout?.on('data', (data: Buffer) => {
 				const chunk = data.toString();

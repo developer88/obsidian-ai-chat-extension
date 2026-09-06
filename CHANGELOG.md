@@ -5,6 +5,17 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-09-06
+
+### Added
+- **Pi Coding Agent (`pi`) Provider Support**:
+  - Full native support for Pi Coding Agent CLI (`pi` / `@earendil-works/pi-coding-agent`).
+  - Searchable model selection with reasoning thinking controls (`Off`, `Low`, `Medium`, `High`, `Max`).
+  - Dynamic model discovery from local Pi CLI (`pi --list-models`).
+  - Multi-platform execution support on Windows (`pi.cmd`), macOS, Linux, and WSL (`wsl pi`).
+  - Closed-stdin stream handling to avoid waiting on piped input in CLI non-interactive mode.
+  - Automated release descriptions extracting changelog entries directly into GitHub releases.
+
 ## [3.2.1] - 2026-09-06
 
 ### Changed

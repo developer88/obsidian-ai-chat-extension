@@ -1,11 +1,11 @@
 # Sidecar AI for Obsidian
 
 [![Obsidian](https://img.shields.io/badge/Obsidian-v1.13.0+-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
-[![Version](https://img.shields.io/badge/Version-v3.2.1-blue)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-v3.3.0-blue)](https://github.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20WSL-brightgreen)](#)
 
-A native, privacy-first AI chat companion for **[Obsidian](https://obsidian.md)** powered by your local AI CLI providers—including **Google Antigravity** (`agy`) and **GitHub Copilot** (`copilot`)—with **zero API keys or per-token charges required**.
+A native, privacy-first AI chat companion for **[Obsidian](https://obsidian.md)** powered by your local AI CLI providers—including **Google Antigravity** (`agy`), **GitHub Copilot** (`copilot`), and **Pi Coding Agent** (`pi`)—with **zero API keys or per-token charges required**.
 
 ---
 
@@ -13,18 +13,19 @@ A native, privacy-first AI chat companion for **[Obsidian](https://obsidian.md)*
 
 Most AI plugins for Obsidian require you to manage paid third-party API tokens, configure proxies, or paste secret keys into plugin settings.
 
-**Sidecar AI** connects directly to authenticated local command-line tools already installed on your machine. It utilizes your existing subscriptions (such as **Google AI subscriptions** or **GitHub Copilot**) and provides a native, unified chat sidebar that integrates directly with your vault workflow.
+**Sidecar AI** connects directly to authenticated local command-line tools already installed on your machine. It utilizes your existing subscriptions (such as **Google AI subscriptions**, **GitHub Copilot**, or local coding agents like **Pi**) and provides a native, unified chat sidebar that integrates directly with your vault workflow.
 
 ---
 
 ## 🚀 Key Features
 
-* 🔌 **Multi-Provider Support (v2.0)**:
+* 🔌 **Multi-Provider Support**:
   * **Google Antigravity** (`agy`): Powered by your Google AI subscription (Gemini 3.8 Flash, 3.7 Flash, 3.1 Pro, Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B).
   * **GitHub Copilot** (`copilot`): Powered by your GitHub Copilot subscription (GPT-5.2, GPT-5, Claude 3.7 Sonnet, Claude 3.5 Sonnet, OpenAI o1, OpenAI o3-mini).
+  * **Pi Coding Agent** (`pi`): Powered by Pi coding agent CLI with configurable models, thinking levels (`Off`, `Low`, `Medium`, `High`, `Max`), and session management.
   * Modular architecture ready for future providers (Claude CLI, Ollama, etc.).
 * 🔐 **Zero API Keys Needed**: Connects directly to authenticated local binaries via CLI execution.
-* 🌐 **100% OS-Agnostic**: Native support for **Windows**, **macOS**, **Linux**, and **WSL** (`wsl agy` / `wsl copilot`).
+* 🌐 **100% OS-Agnostic**: Native support for **Windows**, **macOS**, **Linux**, and **WSL** (`wsl agy` / `wsl copilot` / `wsl pi`).
 * 🎯 **Unified Model & Reasoning Effort Switcher**:
   * Clean, searchable fuzzy modal used across the **Chat Toolbar**, **Bottom Status Bar widget**, and **Settings tab**.
   * Switch providers, models, and reasoning efforts (`Low`, `Medium`, `High`) in a single click.

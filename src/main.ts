@@ -221,6 +221,12 @@ export default class AntigravityPlugin extends Plugin {
 
 		if (!this.settings.providers) {
 			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)) as Record<AiProviderId, ProviderConfig>;
+		} else {
+			for (const provKey of Object.keys(DEFAULT_PROVIDER_CONFIGS) as AiProviderId[]) {
+				if (!this.settings.providers[provKey]) {
+					this.settings.providers[provKey] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[provKey])) as ProviderConfig;
+				}
+			}
 		}
 		if (rawData?.cliCommand && this.settings.providers.antigravity) {
 			this.settings.providers.antigravity.cliCommand = rawData.cliCommand;

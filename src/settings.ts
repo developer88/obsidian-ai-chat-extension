@@ -33,6 +33,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			.addDropdown(dropdown => {
 				dropdown.addOption('antigravity', 'Google Antigravity (agy)');
 				dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
+				dropdown.addOption('pi', 'Pi Coding Agent (pi)');
 				dropdown.setValue(activeProvId);
 				dropdown.onChange(async (value: string) => {
 					this.plugin.settings.activeProvider = value as AiProviderId;
@@ -88,16 +89,21 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			.setName(`${provName} Configuration`)
 			.setHeading();
 
+		const defaultCmd = PROVIDER_METADATA[activeProvId]?.defaultCmd || 'agy';
+		const defaultExtraFlags = activeProvId === 'copilot'
+			? '--allow-all-tools'
+			: (activeProvId === 'pi' ? '--thinking high' : '--dangerously-skip-permissions');
+
 		// CLI Command / Path for Active Provider
 		new Setting(containerEl)
-			.setName(`${provName} CLI Command / Path`)
-			.setDesc(`The command or full path to the executable (e.g. "${activeProvId === 'copilot' ? 'copilot' : 'agy'}").`)
+			.setName(`${provName} CLI command / path`)
+			.setDesc(`The command or full path to the executable (e.g. "${defaultCmd}").`)
 			.addText(text => text
-				.setPlaceholder(activeProvId === 'copilot' ? 'copilot' : 'agy')
-				.setValue(provConfig?.cliCommand || (activeProvId === 'copilot' ? 'copilot' : 'agy'))
+				.setPlaceholder(defaultCmd)
+				.setValue(provConfig?.cliCommand || defaultCmd)
 				.onChange(async (value) => {
 					if (provConfig) {
-						provConfig.cliCommand = value.trim() || (activeProvId === 'copilot' ? 'copilot' : 'agy');
+						provConfig.cliCommand = value.trim() || defaultCmd;
 						await this.plugin.saveSettings();
 					}
 				}));
@@ -105,7 +111,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		// Use WSL for Active Provider
 		new Setting(containerEl)
 			.setName(`Run ${provName} in WSL`)
-			.setDesc(`Execute via Windows Subsystem for Linux (e.g. "wsl ${activeProvId === 'copilot' ? 'copilot' : 'agy'}"). Enable if installed in Ubuntu/WSL.`)
+			.setDesc(`Execute via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
 			.addToggle(toggle => toggle
 				.setValue(provConfig?.useWsl || false)
 				.onChange(async (value) => {
@@ -117,10 +123,10 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		// Extra Flags for Active Provider
 		new Setting(containerEl)
-			.setName(`Extra CLI Flags for ${provName}`)
-			.setDesc('Additional flags passed on each invocation (e.g. "--allow-all-tools" or "--dangerously-skip-permissions").')
+			.setName(`Extra CLI flags for ${provName}`)
+			.setDesc('Additional flags passed on each invocation (e.g. "--allow-all-tools", "--thinking high", or "--dangerously-skip-permissions").')
 			.addText(text => text
-				.setPlaceholder(activeProvId === 'copilot' ? '--allow-all-tools' : '--dangerously-skip-permissions')
+				.setPlaceholder(defaultExtraFlags)
 				.setValue(provConfig?.extraCliFlags || '')
 				.onChange(async (value) => {
 					if (provConfig) {

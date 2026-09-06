@@ -1,9 +1,9 @@
 {
   "id": "sidecar-ai",
   "name": "Sidecar AI",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "minAppVersion": "1.13.0",
-  "description": "Native AI chat sidebar supporting Google Antigravity, GitHub Copilot, and local AI CLI providers with zero API tokens needed.",
+  "description": "Native AI chat sidebar supporting Google Antigravity, GitHub Copilot, Pi Coding Agent, and local AI CLI providers with zero API tokens needed.",
   "author": "Andrey",
   "authorUrl": "https://github.com/developer88",
   "isDesktopOnly": true

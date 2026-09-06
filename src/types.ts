@@ -1,4 +1,4 @@
-export type AiProviderId = 'antigravity' | 'copilot';
+export type AiProviderId = 'antigravity' | 'copilot' | 'pi';
 
 export interface ModelDefinition {
 	id: string;
@@ -88,6 +88,43 @@ export const ANTIGRAVITY_MODELS: ModelDefinition[] = [
 	}
 ];
 
+export const PI_DEFAULT_MODELS: ModelDefinition[] = [
+	{
+		id: 'gemini-3.1-pro-preview',
+		label: 'Gemini 3.1 Pro Preview (Google)',
+		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'High'
+	},
+	{
+		id: 'gemini-2.5-pro',
+		label: 'Gemini 2.5 Pro (Google)',
+		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'High'
+	},
+	{
+		id: 'gemini-2.5-flash',
+		label: 'Gemini 2.5 Flash (Google)',
+		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'High'
+	},
+	{
+		id: 'claude-3-7-sonnet',
+		label: 'Claude 3.7 Sonnet (Anthropic)',
+		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'High'
+	},
+	{
+		id: 'claude-3-5-sonnet',
+		label: 'Claude 3.5 Sonnet (Anthropic)',
+		efforts: []
+	},
+	{
+		id: 'gpt-4o',
+		label: 'GPT-4o (OpenAI)',
+		efforts: []
+	}
+];
+
 export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd: string }> = {
 	antigravity: {
 		name: 'Google Antigravity',
@@ -96,6 +133,10 @@ export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd:
 	copilot: {
 		name: 'GitHub Copilot',
 		defaultCmd: 'copilot'
+	},
+	pi: {
+		name: 'Pi Coding Agent',
+		defaultCmd: 'pi'
 	}
 };
 
@@ -146,6 +187,20 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 		selectedModel: '',
 		modelEfforts: {},
 		cachedModels: [],
+		defaultMode: '',
+		conversationId: null
+	},
+	pi: {
+		id: 'pi',
+		name: 'Pi Coding Agent',
+		cliCommand: 'pi',
+		useWsl: false,
+		extraCliFlags: '',
+		selectedModel: 'gemini-3.1-pro-preview',
+		modelEfforts: {
+			'gemini-3.1-pro-preview': 'High'
+		},
+		cachedModels: PI_DEFAULT_MODELS,
 		defaultMode: '',
 		conversationId: null
 	}
