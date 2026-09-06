@@ -45,7 +45,7 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 2. Open **Command Palette** (`Ctrl/Cmd + P`) and run `BRAT: Add a beta plugin for testing`.
 3. Enter the repository URL:
    ```text
-   https://github.com/<your-username>/agy-in-obsidian
+   https://github.com/developer88/obsidian-ai-chat-extension
    ```
 4. Enable **Sidecar AI** in Settings → Community Plugins.
 
@@ -65,8 +65,8 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 ### Option 3: Build from Source
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/agy-in-obsidian.git
-cd agy-in-obsidian
+git clone https://github.com/developer88/obsidian-ai-chat-extension.git
+cd obsidian-ai-chat-extension
 
 # Install dependencies and build
 npm install
@@ -97,6 +97,14 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
    ```bash
    copilot login
    ```
+
+### For Pi Coding Agent
+1. Install the Pi CLI (`pi`):
+   ```bash
+   npm install -g @earendil-works/pi-coding-agent
+   ```
+2. Run `pi` once in your terminal to configure providers or API keys.
+3. Configure model, thinking levels (`Off`, `Low`, `Medium`, `High`, `Max`), or WSL settings in Sidecar AI Settings.
 
 ---
 
