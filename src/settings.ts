@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem } from 'obsidian';
 import type AntigravityPlugin from './main';
 import {
 	AiProviderId,
@@ -14,36 +14,15 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
-
-		containerEl.createEl('p', {
-			text: 'Connects directly to your local AI CLI binaries (Google Antigravity & GitHub Copilot) without API tokens.',
-			cls: 'setting-item-description'
-		});
-
+	override getSettingDefinitions(): SettingDefinitionItem[] {
 		const activeProvId = this.plugin.settings.activeProvider || 'antigravity';
 		const provConfig = this.plugin.settings.providers?.[activeProvId];
+		const provName = PROVIDER_METADATA[activeProvId]?.name || activeProvId;
+		const defaultCmd = PROVIDER_METADATA[activeProvId]?.defaultCmd || 'agy';
+		const defaultExtraFlags = activeProvId === 'copilot'
+			? '--allow-all-tools'
+			: (activeProvId === 'pi' ? '--thinking high' : '--dangerously-skip-permissions');
 
-		// Active AI Provider Selector
-		new Setting(containerEl)
-			.setName('Active AI provider')
-			.setDesc('Select which AI CLI provider powers your chat sessions.')
-			.addDropdown(dropdown => {
-				dropdown.addOption('antigravity', 'Google Antigravity (agy)');
-				dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
-				dropdown.addOption('pi', 'Pi Coding Agent (pi)');
-				dropdown.setValue(activeProvId);
-				dropdown.onChange(async (value: string) => {
-					this.plugin.settings.activeProvider = value as AiProviderId;
-					await this.plugin.saveSettings();
-					this.plugin.updateStatusBar();
-					this.update();
-				});
-			});
-
-		// Dynamic Model & Reasoning Effort Selector
 		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
 		const currentModelObj = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
@@ -55,138 +34,199 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			currentEffortStr = ` (${effort} effort)`;
 		}
 
-		const provName = PROVIDER_METADATA[activeProvId]?.name || activeProvId;
-
-		const modelSetting = new Setting(containerEl)
-			.setName('Active model and reasoning effort')
-			.setDesc(`Currently: ${currentModelLabel}${currentEffortStr}`);
-
-		if (models.length > 0) {
-			modelSetting.addButton(button => button
-				.setButtonText('Select model and effort...')
-				.setCta()
-				.onClick(() => {
-					new ModelSuggestModal(this.app, this.plugin).open();
-				}));
-		}
-
-		modelSetting.addButton(button => button
-			.setButtonText('Retrieve from CLI')
-			.setTooltip('Query CLI dynamically for available models')
-			.onClick(async () => {
-				button.setButtonText('Querying...');
-				button.setDisabled(true);
-				const fetched = await this.plugin.cliService.fetchAvailableModels();
-				if (fetched && fetched.length > 0) {
-					new Notice(`Loaded ${fetched.length} models for ${provName}.`);
-				} else {
-					new Notice(`No models retrieved. Ensure "${provConfig?.cliCommand || provName}" is installed and working.`);
+		return [
+			{
+				name: 'Active AI provider',
+				desc: 'Select which AI CLI provider powers your chat sessions.',
+				render: (setting: Setting) => {
+					setting.setName('Active AI provider')
+						.setDesc('Select which AI CLI provider powers your chat sessions.')
+						.addDropdown(dropdown => {
+							dropdown.addOption('antigravity', 'Google Antigravity (agy)');
+							dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
+							dropdown.addOption('pi', 'Pi Coding Agent (pi)');
+							dropdown.setValue(activeProvId);
+							dropdown.onChange((value: string) => {
+								void (async () => {
+									this.plugin.settings.activeProvider = value as AiProviderId;
+									await this.plugin.saveSettings();
+									this.plugin.updateStatusBar();
+									this.update();
+								})();
+							});
+						});
 				}
-				this.update();
-			}));
+			},
+			{
+				name: 'Active model and reasoning effort',
+				desc: `Currently: ${currentModelLabel}${currentEffortStr}`,
+				render: (setting: Setting) => {
+					setting.setName('Active model and reasoning effort')
+						.setDesc(`Currently: ${currentModelLabel}${currentEffortStr}`);
 
-		new Setting(containerEl)
-			.setName(`${provName} Configuration`)
-			.setHeading();
-
-		const defaultCmd = PROVIDER_METADATA[activeProvId]?.defaultCmd || 'agy';
-		const defaultExtraFlags = activeProvId === 'copilot'
-			? '--allow-all-tools'
-			: (activeProvId === 'pi' ? '--thinking high' : '--dangerously-skip-permissions');
-
-		// CLI Command / Path for Active Provider
-		new Setting(containerEl)
-			.setName(`${provName} CLI command / path`)
-			.setDesc(`The command or full path to the executable (e.g. "${defaultCmd}").`)
-			.addText(text => text
-				.setPlaceholder(defaultCmd)
-				.setValue(provConfig?.cliCommand || defaultCmd)
-				.onChange(async (value) => {
-					if (provConfig) {
-						provConfig.cliCommand = value.trim() || defaultCmd;
-						await this.plugin.saveSettings();
+					if (models.length > 0) {
+						setting.addButton(button => button
+							.setButtonText('Select model and effort...')
+							.setCta()
+							.onClick(() => {
+								new ModelSuggestModal(this.app, this.plugin).open();
+							}));
 					}
-				}));
 
-		// Use WSL for Active Provider
-		new Setting(containerEl)
-			.setName(`Run ${provName} in WSL`)
-			.setDesc(`Execute via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
-			.addToggle(toggle => toggle
-				.setValue(provConfig?.useWsl || false)
-				.onChange(async (value) => {
-					if (provConfig) {
-						provConfig.useWsl = value;
-						await this.plugin.saveSettings();
+					setting.addButton(button => button
+						.setButtonText('Retrieve from CLI')
+						.setTooltip('Query CLI dynamically for available models')
+						.onClick(() => {
+							void (async () => {
+								button.setButtonText('Querying...');
+								button.setDisabled(true);
+								const fetched = await this.plugin.cliService.fetchAvailableModels();
+								if (fetched && fetched.length > 0) {
+									new Notice(`Loaded ${fetched.length} models for ${provName}.`);
+								} else {
+									new Notice(`No models retrieved. Ensure "${provConfig?.cliCommand || provName}" is installed and working.`);
+								}
+								this.update();
+							})();
+						}));
+				}
+			},
+			{
+				type: 'group',
+				heading: `${provName} Configuration`,
+				items: [
+					{
+						name: `${provName} CLI command / path`,
+						desc: `The command or full path to the executable (e.g. "${defaultCmd}").`,
+						render: (setting: Setting) => {
+							setting.setName(`${provName} CLI command / path`)
+								.setDesc(`The command or full path to the executable (e.g. "${defaultCmd}").`)
+								.addText(text => text
+									.setPlaceholder(defaultCmd)
+									.setValue(provConfig?.cliCommand || defaultCmd)
+									.onChange((value) => {
+										void (async () => {
+											if (provConfig) {
+												provConfig.cliCommand = value.trim() || defaultCmd;
+												await this.plugin.saveSettings();
+											}
+										})();
+									}));
+						}
+					},
+					{
+						name: `Run ${provName} in WSL`,
+						desc: `Execute via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`,
+						render: (setting: Setting) => {
+							setting.setName(`Run ${provName} in WSL`)
+								.setDesc(`Execute via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
+								.addToggle(toggle => toggle
+									.setValue(provConfig?.useWsl || false)
+									.onChange((value) => {
+										void (async () => {
+											if (provConfig) {
+												provConfig.useWsl = value;
+												await this.plugin.saveSettings();
+											}
+										})();
+									}));
+						}
+					},
+					{
+						name: `Extra CLI flags for ${provName}`,
+						desc: 'Additional flags passed on each invocation (e.g. "--allow-all-tools", "--thinking high", or "--dangerously-skip-permissions").',
+						render: (setting: Setting) => {
+							setting.setName(`Extra CLI flags for ${provName}`)
+								.setDesc('Additional flags passed on each invocation (e.g. "--allow-all-tools", "--thinking high", or "--dangerously-skip-permissions").')
+								.addText(text => text
+									.setPlaceholder(defaultExtraFlags)
+									.setValue(provConfig?.extraCliFlags || '')
+									.onChange((value) => {
+										void (async () => {
+											if (provConfig) {
+												provConfig.extraCliFlags = value.trim();
+												await this.plugin.saveSettings();
+											}
+										})();
+									}));
+						}
 					}
-				}));
-
-		// Extra Flags for Active Provider
-		new Setting(containerEl)
-			.setName(`Extra CLI flags for ${provName}`)
-			.setDesc('Additional flags passed on each invocation (e.g. "--allow-all-tools", "--thinking high", or "--dangerously-skip-permissions").')
-			.addText(text => text
-				.setPlaceholder(defaultExtraFlags)
-				.setValue(provConfig?.extraCliFlags || '')
-				.onChange(async (value) => {
-					if (provConfig) {
-						provConfig.extraCliFlags = value.trim();
-						await this.plugin.saveSettings();
+				]
+			},
+			{
+				type: 'group',
+				heading: 'Vault integration and display',
+				items: [
+					{
+						name: 'Auto-attach active note',
+						desc: 'Automatically link the active vault document and text selection to the chat context.',
+						render: (setting: Setting) => {
+							setting.setName('Auto-attach active note')
+								.setDesc('Automatically link the active vault document and text selection to the chat context.')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.autoAttachActiveNote)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.autoAttachActiveNote = value;
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Auto-scroll chat',
+						desc: 'Automatically scroll to bottom as new response chunks arrive.',
+						render: (setting: Setting) => {
+							setting.setName('Auto-scroll chat')
+								.setDesc('Automatically scroll to bottom as new response chunks arrive.')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.autoScrollChat)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.autoScrollChat = value;
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Show status bar item',
+						desc: 'Display current provider and model widget in the bottom status bar.',
+						render: (setting: Setting) => {
+							setting.setName('Show status bar item')
+								.setDesc('Display current provider and model widget in the bottom status bar.')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.showStatusBarItem)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.showStatusBarItem = value;
+											await this.plugin.saveSettings();
+											this.plugin.updateStatusBar();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Reset conversation memory',
+						desc: `Clear session history for ${provName} and start fresh on the next prompt.`,
+						render: (setting: Setting) => {
+							setting.setName('Reset conversation memory')
+								.setDesc(`Clear session history for ${provName} and start fresh on the next prompt.`)
+								.addButton(button => button
+									.setButtonText('Reset active session')
+									.setDestructive()
+									.onClick(() => {
+										this.plugin.cliService.resetSession();
+										button.setButtonText('Session reset!');
+										window.setTimeout(() => {
+											button.setButtonText('Reset active session');
+										}, 2000);
+									}));
+						}
 					}
-				}));
-
-		// Vault and display options
-		new Setting(containerEl)
-			.setName('Vault integration and display')
-			.setHeading();
-
-		// Auto-Attach Active Note
-		new Setting(containerEl)
-			.setName('Auto-attach active note')
-			.setDesc('Automatically link the active vault document and text selection to the chat context.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.autoAttachActiveNote)
-				.onChange(async (value) => {
-					this.plugin.settings.autoAttachActiveNote = value;
-					await this.plugin.saveSettings();
-				}));
-
-		// Auto-Scroll Chat
-		new Setting(containerEl)
-			.setName('Auto-scroll chat')
-			.setDesc('Automatically scroll to bottom as new response chunks arrive.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.autoScrollChat)
-				.onChange(async (value) => {
-					this.plugin.settings.autoScrollChat = value;
-					await this.plugin.saveSettings();
-				}));
-
-		// Show Status Bar Item
-		new Setting(containerEl)
-			.setName('Show status bar item')
-			.setDesc('Display current provider and model widget in the bottom status bar.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showStatusBarItem)
-				.onChange(async (value) => {
-					this.plugin.settings.showStatusBarItem = value;
-					await this.plugin.saveSettings();
-					this.plugin.updateStatusBar();
-				}));
-
-		// Reset Active Session
-		new Setting(containerEl)
-			.setName('Reset conversation memory')
-			.setDesc(`Clear session history for ${provName} and start fresh on the next prompt.`)
-			.addButton(button => button
-				.setButtonText('Reset active session')
-				.setDestructive()
-				.onClick(() => {
-					this.plugin.cliService.resetSession();
-					button.setButtonText('Session reset!');
-					window.setTimeout(() => {
-						button.setButtonText('Reset active session');
-					}, 2000);
-				}));
+				]
+			}
+		];
 	}
 }
+

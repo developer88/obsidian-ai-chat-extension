@@ -5,6 +5,15 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.1] - 2026-09-06
+
+### Changed
+- **Obsidian 1.13+ Declarative Settings API**:
+  - Implemented `getSettingDefinitions()` on `AntigravitySettingTab` to enable full settings search indexing in Obsidian 1.13.0+.
+  - Migrated settings to declarative items and grouped controls.
+- **Security & Permissions Disclosures**:
+  - Added comprehensive security disclosures in `README.md` clarifying that `child_process.spawn` is used exclusively for executing local AI CLI binaries (`agy`, `copilot`, `pi`) and clipboard access is strictly write-only for user-initiated code copying.
+
 ## [3.3.0] - 2026-09-06
 
 ### Added

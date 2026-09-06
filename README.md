@@ -1,7 +1,7 @@
 # Sidecar AI for Obsidian
 
 [![Obsidian](https://img.shields.io/badge/Obsidian-v1.13.0+-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
-[![Version](https://img.shields.io/badge/Version-v3.3.0-blue)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-v3.3.1-blue)](https://github.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20WSL-brightgreen)](#)
 
@@ -104,14 +104,28 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 
 | Setting | Default | Description |
 | :--- | :--- | :--- |
-| **Active AI Provider** | `Google Antigravity` | Choose between `Google Antigravity` and `GitHub Copilot`. |
+| **Active AI Provider** | `Google Antigravity` | Choose between `Google Antigravity` (`agy`), `GitHub Copilot` (`copilot`), and `Pi Coding Agent` (`pi`). |
 | **Active Model & Effort** | *(Dynamic)* | Opens the unified fuzzy modal to switch provider, model, and reasoning effort. |
-| **Provider CLI Command** | `agy` / `copilot` | Executable path for the selected provider. |
+| **Provider CLI Command** | `agy` / `copilot` / `pi` | Executable command or path for the selected provider. |
 | **Run in WSL** | `false` | Enable if the provider CLI is installed inside Ubuntu/WSL on Windows. |
 | **Extra CLI Flags** | *(empty)* | Optional extra command-line flags per provider. |
 | **Auto-Attach Active Note** | `true` | Automatically includes the active note file reference and selection in prompts. |
 | **Auto-Scroll Chat** | `true` | Automatically scrolls chat to bottom during streaming responses. |
 | **Show Status Bar Item** | `true` | Toggles the active provider/model widget in Obsidian's bottom status bar. |
+
+---
+
+## 🔒 Security & System Permissions
+
+Sidecar AI is designed with a privacy-first, zero-telemetry architecture. To operate as an AI bridge without third-party cloud API keys, it uses the following system APIs:
+
+- **Shell Execution (`child_process.spawn`)**:
+  - The plugin spawns local CLI processes solely to communicate with your user-installed and authenticated AI CLI tools (`agy`, `copilot`, `pi`).
+  - It runs exclusively the command configured in Settings (or prefixed with `wsl` if enabled) passing user prompts via standard CLI arguments and reading streaming output via stdout. No background scripts, remote downloads, or arbitrary commands are executed.
+- **Clipboard Access (`navigator.clipboard.writeText`)**:
+  - Clipboard access is strictly **write-only**.
+  - It is triggered solely when you explicitly click the "Copy" button on generated code blocks in the chat UI.
+  - The plugin **never** reads, inspects, or monitors system clipboard contents.
 
 ---
 
