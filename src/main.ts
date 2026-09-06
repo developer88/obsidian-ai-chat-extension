@@ -85,7 +85,7 @@ export default class AntigravityPlugin extends Plugin {
 		// Command: Switch Model & Effort
 		this.addCommand({
 			id: 'switch-antigravity-model',
-			name: 'Switch Model & Effort',
+			name: 'Switch model & effort',
 			callback: () => {
 				new ModelSuggestModal(this.app, this).open();
 			},
@@ -94,7 +94,7 @@ export default class AntigravityPlugin extends Plugin {
 		// Command: Restart Session
 		this.addCommand({
 			id: 'restart-antigravity-session',
-			name: 'Restart Session (New Chat)',
+			name: 'Restart session (new chat)',
 			callback: () => {
 				this.cliService.resetSession();
 				const leaves = this.app.workspace.getLeavesOfType(ANTIGRAVITY_CHAT_VIEW_TYPE);

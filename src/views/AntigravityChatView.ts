@@ -132,7 +132,7 @@ export class AntigravityChatView extends ItemView {
 			cls: 'agy-model-trigger-btn',
 			attr: {
 				'type': 'button',
-				'aria-label': 'Select AI Model and Reasoning Effort'
+				'aria-label': 'Select AI model and reasoning effort'
 			}
 		});
 
@@ -141,7 +141,7 @@ export class AntigravityChatView extends ItemView {
 
 		this.modelTriggerLabel = this.modelTriggerBtn.createSpan({
 			cls: 'agy-model-trigger-label',
-			text: 'Select Model...'
+			text: 'Select model...'
 		});
 
 		const chevronSpan = this.modelTriggerBtn.createSpan({ cls: 'agy-model-trigger-chevron' });

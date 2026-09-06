@@ -5,6 +5,15 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2026-09-06
+
+### Changed
+- **Obsidian 1.13+ Settings & UI Compliance**:
+  - Replaced imperative `this.display()` refreshes with `this.update()` in settings tab.
+  - Ensured all button callback handlers return `void` to eliminate unhandled promise warnings.
+  - Formatted command titles and UI labels to sentence case.
+  - Added `--generate-notes` to GitHub release workflow for automated release descriptions.
+
 ## [3.2.0] - 2026-09-06
 
 ### Changed

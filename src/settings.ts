@@ -28,7 +28,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		// Active AI Provider Selector
 		new Setting(containerEl)
-			.setName('Active AI Provider')
+			.setName('Active AI provider')
 			.setDesc('Select which AI CLI provider powers your chat sessions.')
 			.addDropdown(dropdown => {
 				dropdown.addOption('antigravity', 'Google Antigravity (agy)');
@@ -38,7 +38,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					this.plugin.settings.activeProvider = value as AiProviderId;
 					await this.plugin.saveSettings();
 					this.plugin.updateStatusBar();
-					this.display();
+					this.update();
 				});
 			});
 
@@ -57,12 +57,12 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const provName = PROVIDER_METADATA[activeProvId]?.name || activeProvId;
 
 		const modelSetting = new Setting(containerEl)
-			.setName('Active Model & Reasoning Effort')
+			.setName('Active model and reasoning effort')
 			.setDesc(`Currently: ${currentModelLabel}${currentEffortStr}`);
 
 		if (models.length > 0) {
 			modelSetting.addButton(button => button
-				.setButtonText('Select Model & Effort...')
+				.setButtonText('Select model and effort...')
 				.setCta()
 				.onClick(() => {
 					new ModelSuggestModal(this.app, this.plugin).open();
@@ -81,7 +81,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				} else {
 					new Notice(`No models retrieved. Ensure "${provConfig?.cliCommand || provName}" is installed and working.`);
 				}
-				this.display();
+				this.update();
 			}));
 
 		new Setting(containerEl)
@@ -136,7 +136,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		// Auto-Attach Active Note
 		new Setting(containerEl)
-			.setName('Auto-Attach Active Note')
+			.setName('Auto-attach active note')
 			.setDesc('Automatically link the active vault document and text selection to the chat context.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoAttachActiveNote)
@@ -147,7 +147,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		// Auto-Scroll Chat
 		new Setting(containerEl)
-			.setName('Auto-Scroll Chat')
+			.setName('Auto-scroll chat')
 			.setDesc('Automatically scroll to bottom as new response chunks arrive.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoScrollChat)
@@ -158,7 +158,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		// Show Status Bar Item
 		new Setting(containerEl)
-			.setName('Show Status Bar Item')
+			.setName('Show status bar item')
 			.setDesc('Display current provider and model widget in the bottom status bar.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showStatusBarItem)
@@ -170,15 +170,17 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 		// Reset Active Session
 		new Setting(containerEl)
-			.setName('Reset Conversation Memory')
+			.setName('Reset conversation memory')
 			.setDesc(`Clear session history for ${provName} and start fresh on the next prompt.`)
 			.addButton(button => button
-				.setButtonText('Reset Active Session')
+				.setButtonText('Reset active session')
 				.setDestructive()
 				.onClick(() => {
 					this.plugin.cliService.resetSession();
-					button.setButtonText('Session Reset!');
-					window.setTimeout(() => button.setButtonText('Reset Active Session'), 2000);
+					button.setButtonText('Session reset!');
+					window.setTimeout(() => {
+						button.setButtonText('Reset active session');
+					}, 2000);
 				}));
 	}
 }
