@@ -1,6 +1,5 @@
 import { App, FuzzySuggestModal, FuzzyMatch } from 'obsidian';
 import {
-	ModelDefinition,
 	AiProviderId,
 	PROVIDER_METADATA
 } from '../types';
@@ -82,7 +81,7 @@ export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 		}
 	}
 
-	async onChooseItem(item: ModelChoiceItem): Promise<void> {
-		await this.plugin.switchModelForActiveProvider(item.modelId, item.effort);
+	onChooseItem(item: ModelChoiceItem): void {
+		void this.plugin.switchModelForActiveProvider(item.modelId, item.effort);
 	}
 }

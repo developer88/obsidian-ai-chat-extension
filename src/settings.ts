@@ -18,11 +18,10 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Sidecar AI Settings' });
-		containerEl.createEl('p', {
-			text: 'Connects directly to your local AI CLI binaries (Google Antigravity & GitHub Copilot) without API tokens.',
-			cls: 'setting-item-description'
-		});
+		new Setting(containerEl)
+			.setName('Sidecar AI Settings')
+			.setDesc('Connects directly to your local AI CLI binaries (Google Antigravity & GitHub Copilot) without API tokens.')
+			.setHeading();
 
 		const activeProvId = this.plugin.settings.activeProvider || 'antigravity';
 		const provConfig = this.plugin.settings.providers?.[activeProvId];
@@ -85,7 +84,9 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				this.display();
 			}));
 
-		containerEl.createEl('h3', { text: `${provName} Configuration` });
+		new Setting(containerEl)
+			.setName(`${provName} Configuration`)
+			.setHeading();
 
 		// CLI Command / Path for Active Provider
 		new Setting(containerEl)
@@ -129,7 +130,9 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				}));
 
 		// General Chat Settings Section
-		containerEl.createEl('h3', { text: 'General Chat Options' });
+		new Setting(containerEl)
+			.setName('General Chat Options')
+			.setHeading();
 
 		// Auto-Attach Active Note
 		new Setting(containerEl)
@@ -171,11 +174,11 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			.setDesc(`Clear session history for ${provName} and start fresh on the next prompt.`)
 			.addButton(button => button
 				.setButtonText('Reset Active Session')
-				.setWarning()
+				.setDestructive()
 				.onClick(async () => {
 					this.plugin.cliService.resetSession();
 					button.setButtonText('Session Reset!');
-					setTimeout(() => button.setButtonText('Reset Active Session'), 2000);
+					window.setTimeout(() => button.setButtonText('Reset Active Session'), 2000);
 				}));
 	}
 }

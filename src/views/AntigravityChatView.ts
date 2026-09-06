@@ -5,15 +5,12 @@ import {
 	MarkdownView,
 	setIcon,
 	Notice,
-	TFile,
-	FileSystemAdapter,
-	ExtraButtonComponent
+	FileSystemAdapter
 } from 'obsidian';
 import {
 	AiChatPluginSettings,
 	ChatMessage,
 	ActiveNoteContext,
-	ModelDefinition,
 	PROVIDER_METADATA
 } from '../types';
 import { AgyCliService } from '../services/AgyCliService';
@@ -101,7 +98,7 @@ export class AntigravityChatView extends ItemView {
 			text: convId ? `ID: ${convId.slice(0, 6)}` : ''
 		});
 		if (!convId) {
-			this.sessionBadgeEl.style.display = 'none';
+			this.sessionBadgeEl.setCssStyles({ display: 'none' });
 		}
 
 		const actionsGroup = header.createDiv({ cls: 'agy-header-actions' });
@@ -114,11 +111,11 @@ export class AntigravityChatView extends ItemView {
 		const btnIcon = newSessionBtn.createSpan({ cls: 'agy-btn-icon' });
 		setIcon(btnIcon, 'rotate-ccw');
 		newSessionBtn.createSpan({ text: 'New Session' });
-		newSessionBtn.addEventListener('click', () => this.restartSession());
+		newSessionBtn.addEventListener('click', () => { void this.restartSession(); });
 
 
 		// Settings Action
-		const settingsBtn = actionsGroup.createEl('div', {
+		const settingsBtn = actionsGroup.createDiv({
 			cls: 'clickable-icon agy-icon-btn',
 			attr: { 'aria-label': 'Sidecar AI settings' }
 		});
@@ -160,7 +157,7 @@ export class AntigravityChatView extends ItemView {
 			attr: { 'aria-label': 'Refresh models from CLI' }
 		});
 		setIcon(this.refreshModelsBtn, 'refresh-cw');
-		this.refreshModelsBtn.addEventListener('click', () => this.refreshAvailableModels(true));
+		this.refreshModelsBtn.addEventListener('click', () => { void this.refreshAvailableModels(true); });
 	}
 
 	public updateModelSelectionFromSettings(): void {
@@ -198,7 +195,7 @@ export class AntigravityChatView extends ItemView {
 					new Notice('No models found from active provider.');
 				}
 			}
-		} catch (e) {
+		} catch {
 			if (showNotice) {
 				new Notice('Could not refresh models from CLI.');
 			}
@@ -248,7 +245,7 @@ export class AntigravityChatView extends ItemView {
 			});
 			chip.addEventListener('click', () => {
 				this.inputEl.value = action.prompt;
-				this.handleSend();
+				void this.handleSend();
 			});
 		}
 	}
@@ -309,14 +306,14 @@ export class AntigravityChatView extends ItemView {
 		});
 
 		this.inputEl.addEventListener('input', () => {
-			this.inputEl.style.height = 'auto';
-			this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 180) + 'px';
+			this.inputEl.setCssStyles({ height: 'auto' });
+			this.inputEl.setCssStyles({ height: `${Math.min(this.inputEl.scrollHeight, 180)}px` });
 		});
 
 		this.inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
-				this.handleSend();
+				void this.handleSend();
 			}
 		});
 
@@ -333,7 +330,7 @@ export class AntigravityChatView extends ItemView {
 			if (this.isStreaming) {
 				this.cliService.abort();
 			} else {
-				this.handleSend();
+				void this.handleSend();
 			}
 		});
 	}
@@ -381,10 +378,10 @@ export class AntigravityChatView extends ItemView {
 		if (this.sessionBadgeEl) {
 			if (text) {
 				this.sessionBadgeEl.setText(text);
-				this.sessionBadgeEl.style.display = 'inline-block';
+				this.sessionBadgeEl.setCssStyles({ display: 'inline-block' });
 			} else {
 				this.sessionBadgeEl.setText('');
-				this.sessionBadgeEl.style.display = 'none';
+				this.sessionBadgeEl.setCssStyles({ display: 'none' });
 			}
 		}
 	}
@@ -425,7 +422,7 @@ export class AntigravityChatView extends ItemView {
 
 		// Clear input
 		this.inputEl.value = '';
-		this.inputEl.style.height = 'auto';
+		this.inputEl.setCssStyles({ height: 'auto' });
 
 		// Add user message
 		const userMsg: ChatMessage = {
@@ -576,7 +573,7 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	private renderMarkdownTo(targetEl: HTMLElement, markdownText: string): void {
-		MarkdownRenderer.render(
+		void MarkdownRenderer.render(
 			this.app,
 			markdownText || '...',
 			targetEl,
@@ -590,8 +587,7 @@ export class AntigravityChatView extends ItemView {
 		preElements.forEach((pre) => {
 			if (pre.querySelector('.agy-code-toolbar')) return;
 
-			const actionsBar = document.createElement('div');
-			actionsBar.className = 'agy-code-toolbar';
+			const actionsBar = pre.createDiv({ cls: 'agy-code-toolbar' });
 
 			// Copy button
 			const copyBtn = actionsBar.createEl('button', {
@@ -601,9 +597,9 @@ export class AntigravityChatView extends ItemView {
 			copyBtn.addEventListener('click', (e) => {
 				e.stopPropagation();
 				const code = pre.querySelector('code')?.innerText || pre.innerText;
-				navigator.clipboard.writeText(code);
+				void navigator.clipboard.writeText(code);
 				copyBtn.setText('Copied');
-				setTimeout(() => copyBtn.setText('Copy'), 2000);
+				window.setTimeout(() => copyBtn.setText('Copy'), 2000);
 			});
 
 			// Insert into Note button
@@ -616,8 +612,6 @@ export class AntigravityChatView extends ItemView {
 				const code = pre.querySelector('code')?.innerText || pre.innerText;
 				this.insertTextIntoActiveNote(code);
 			});
-
-			pre.appendChild(actionsBar);
 		});
 	}
 

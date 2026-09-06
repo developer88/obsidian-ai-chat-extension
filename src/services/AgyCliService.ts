@@ -1,5 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
-import { App, FileSystemAdapter, Notice } from 'obsidian';
+import { App, FileSystemAdapter } from 'obsidian';
 import {
 	AiChatPluginSettings,
 	CliStreamCallbacks,
@@ -38,7 +38,7 @@ export class AgyCliService {
 		const providerId = settings.activeProvider || 'antigravity';
 		if (settings.providers && settings.providers[providerId]) {
 			settings.providers[providerId].conversationId = id;
-			this.saveSettings(settings);
+			void this.saveSettings(settings);
 		}
 	}
 
@@ -50,13 +50,13 @@ export class AgyCliService {
 		if (this.activeProcess && !this.activeProcess.killed) {
 			try {
 				this.activeProcess.kill('SIGINT');
-				setTimeout(() => {
+				window.setTimeout(() => {
 					if (this.activeProcess && !this.activeProcess.killed) {
 						this.activeProcess.kill('SIGTERM');
 					}
 				}, 400);
 			} catch (e) {
-				console.error('[AI Chat] Error killing process:', e);
+				console.error('[Sidecar AI] Error killing process:', e);
 			}
 		}
 		this.activeProcess = null;
@@ -72,7 +72,7 @@ export class AgyCliService {
 		if (adapter instanceof FileSystemAdapter) {
 			return adapter.getBasePath();
 		}
-		return process.cwd();
+		return typeof process !== 'undefined' && process.cwd ? process.cwd() : '';
 	}
 
 	public toWslPath(winPath: string): string {
@@ -131,7 +131,6 @@ export class AgyCliService {
 
 		return new Promise((resolve) => {
 			let output = '';
-			let error = '';
 
 			try {
 				const child = spawn(cmd, args, {
@@ -139,16 +138,12 @@ export class AgyCliService {
 					timeout: 7000
 				});
 
-				child.stdout?.on('data', (data) => {
+				child.stdout?.on('data', (data: Buffer | string) => {
 					output += data.toString();
 				});
 
-				child.stderr?.on('data', (data) => {
-					error += data.toString();
-				});
-
-				child.on('error', (err) => {
-					console.warn(`[AI Chat] Could not query ${targetProvider} CLI:`, err);
+				child.on('error', (err: Error) => {
+					console.warn(`[Sidecar AI] Could not query ${targetProvider} CLI:`, err);
 					resolve(config.cachedModels || []);
 				});
 
@@ -375,7 +370,7 @@ export class AgyCliService {
 				callbacks.onError?.(msg);
 			});
 
-			child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
+			child.on('close', (code: number | null, signal: string | null) => {
 				this.activeProcess = null;
 
 				if (signal === 'SIGINT' || signal === 'SIGTERM') {

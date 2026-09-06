@@ -3,7 +3,8 @@ import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
 	AiProviderId,
-	PROVIDER_METADATA,
+	ProviderConfig,
+	ModelDefinition,
 	DEFAULT_PROVIDER_CONFIGS
 } from './types';
 import { AgyCliService } from './services/AgyCliService';
@@ -50,10 +51,16 @@ export default class AntigravityPlugin extends Plugin {
 					this.updateStatusBar();
 				},
 				() => {
-					// @ts-ignore
-					this.app.setting.open();
-					// @ts-ignore
-					this.app.setting.openTabById(this.manifest.id);
+					const appWithSetting = this.app as unknown as {
+						setting?: {
+							open(): void;
+							openTabById(id: string): void;
+						};
+					};
+					if (appWithSetting.setting) {
+						appWithSetting.setting.open();
+						appWithSetting.setting.openTabById(this.manifest.id);
+					}
 				},
 				() => {
 					new ModelSuggestModal(this.app, this).open();
@@ -69,7 +76,7 @@ export default class AntigravityPlugin extends Plugin {
 		// Command: Open Chat Sidebar
 		this.addCommand({
 			id: 'open-antigravity-chat',
-			name: 'Open Sidecar AI Sidebar',
+			name: 'Open chat sidebar',
 			callback: async () => {
 				await this.activateView();
 			},
@@ -107,11 +114,11 @@ export default class AntigravityPlugin extends Plugin {
 		if (!this.statusBarItemEl) return;
 
 		if (!this.settings.showStatusBarItem) {
-			this.statusBarItemEl.style.display = 'none';
+			this.statusBarItemEl.setCssStyles({ display: 'none' });
 			return;
 		}
 
-		this.statusBarItemEl.style.display = '';
+		this.statusBarItemEl.setCssStyles({ display: '' });
 
 		const provId = this.settings.activeProvider || 'antigravity';
 		const provConfig = this.settings.providers?.[provId];
@@ -136,10 +143,10 @@ export default class AntigravityPlugin extends Plugin {
 		const provId = this.settings.activeProvider || 'antigravity';
 
 		if (!this.settings.providers) {
-			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS));
+			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)) as Record<AiProviderId, ProviderConfig>;
 		}
 		if (!this.settings.providers[provId]) {
-			this.settings.providers[provId] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[provId]));
+			this.settings.providers[provId] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[provId])) as ProviderConfig;
 		}
 
 		const provConfig = this.settings.providers[provId];
@@ -190,7 +197,7 @@ export default class AntigravityPlugin extends Plugin {
 		}
 
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			await workspace.revealLeaf(leaf);
 			if (leaf.view instanceof AntigravityChatView) {
 				leaf.view.updateActiveDocumentContext();
 			}
@@ -198,35 +205,46 @@ export default class AntigravityPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		const data = await this.loadData();
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+		interface LegacySettingsMigration {
+			cliCommand?: string;
+			useWsl?: boolean;
+			selectedModel?: string;
+			modelEfforts?: Record<string, string>;
+			cachedModels?: ModelDefinition[];
+			extraCliFlags?: string;
+			defaultMode?: string;
+			conversationId?: string | null;
+		}
+
+		const rawData = (await this.loadData()) as (Partial<AiChatPluginSettings> & LegacySettingsMigration) | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, rawData);
 
 		if (!this.settings.providers) {
-			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS));
+			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)) as Record<AiProviderId, ProviderConfig>;
 		}
-		if (data?.cliCommand && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.cliCommand = data.cliCommand;
+		if (rawData?.cliCommand && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.cliCommand = rawData.cliCommand;
 		}
-		if (data?.useWsl !== undefined && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.useWsl = data.useWsl;
+		if (rawData?.useWsl !== undefined && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.useWsl = rawData.useWsl;
 		}
-		if (data?.selectedModel && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.selectedModel = data.selectedModel;
+		if (rawData?.selectedModel && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.selectedModel = rawData.selectedModel;
 		}
-		if (data?.modelEfforts && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.modelEfforts = Object.assign({}, this.settings.providers.antigravity.modelEfforts, data.modelEfforts);
+		if (rawData?.modelEfforts && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.modelEfforts = Object.assign({}, this.settings.providers.antigravity.modelEfforts, rawData.modelEfforts);
 		}
-		if (data?.cachedModels && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.cachedModels = data.cachedModels;
+		if (rawData?.cachedModels && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.cachedModels = rawData.cachedModels;
 		}
-		if (data?.extraCliFlags && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.extraCliFlags = data.extraCliFlags;
+		if (rawData?.extraCliFlags && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.extraCliFlags = rawData.extraCliFlags;
 		}
-		if (data?.defaultMode && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.defaultMode = data.defaultMode;
+		if (rawData?.defaultMode && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.defaultMode = rawData.defaultMode;
 		}
-		if (data?.conversationId && this.settings.providers.antigravity) {
-			this.settings.providers.antigravity.conversationId = data.conversationId;
+		if (rawData?.conversationId && this.settings.providers.antigravity) {
+			this.settings.providers.antigravity.conversationId = rawData.conversationId;
 		}
 	}
 

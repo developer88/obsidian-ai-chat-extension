@@ -5,6 +5,17 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-09-06
+
+### Changed
+- **Obsidian Community Review Compliance**:
+  - Replaced direct style assignments with Obsidian's `setCssStyles`.
+  - Upgraded settings headings to `Setting.setHeading()`.
+  - Updated command names to remove redundant plugin name prefix.
+  - Resolved all unhandled promises and popout-compatible `window.setTimeout()` calls.
+  - Replaced `builtin-modules` with native Node.js `node:module` import.
+  - Bumped `minAppVersion` to `1.0.0` for modern Obsidian API compatibility.
+
 ## [3.0.0] - 2026-09-06
 
 ### Changed
