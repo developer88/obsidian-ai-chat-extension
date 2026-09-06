@@ -663,3 +663,16 @@
 	font-weight: 600;
 }
 
+/* Settings Dropdown Fix */
+.dropdown.agy-provider-dropdown,
+.setting-item-control select.dropdown {
+	height: auto;
+	min-height: 32px;
+	line-height: 1.4;
+	padding-top: 4px;
+	padding-bottom: 5px;
+	padding-left: 10px;
+	padding-right: 28px;
+	box-sizing: border-box;
+	vertical-align: middle;
+}

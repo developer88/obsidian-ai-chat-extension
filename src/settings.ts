@@ -42,6 +42,14 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					setting.setName('Active AI provider')
 						.setDesc('Select which AI CLI provider powers your chat sessions.')
 						.addDropdown(dropdown => {
+							dropdown.selectEl.addClass('agy-provider-dropdown');
+							dropdown.selectEl.setCssStyles({
+								height: 'auto',
+								minHeight: '32px',
+								lineHeight: '1.4',
+								paddingTop: '4px',
+								paddingBottom: '5px'
+							});
 							dropdown.addOption('antigravity', 'Google Antigravity (agy)');
 							dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
 							dropdown.addOption('pi', 'Pi Coding Agent (pi)');
