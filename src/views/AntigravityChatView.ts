@@ -409,11 +409,13 @@ export class AntigravityChatView extends ItemView {
 
 		let noteContextPrefix = '';
 		let attachedNotePath: string | undefined;
+		let attachedNoteTitle: string | undefined;
 		let attachedSelection: string | undefined;
 
 		if (this.includeActiveNote && this.currentActiveContext) {
 			const targetFilePath = this.currentActiveContext.fullPath || this.currentActiveContext.path;
 			attachedNotePath = this.currentActiveContext.path;
+			attachedNoteTitle = this.currentActiveContext.title;
 			attachedSelection = this.currentActiveContext.selection;
 
 			if (attachedSelection) {
@@ -436,6 +438,7 @@ export class AntigravityChatView extends ItemView {
 			content: userText,
 			timestamp: Date.now(),
 			attachedNotePath,
+			attachedNoteTitle,
 			attachedSelection
 		};
 		this.appendMessage(userMsg);
@@ -534,14 +537,22 @@ export class AntigravityChatView extends ItemView {
 			metaRow.createSpan({ text: 'You', cls: 'agy-msg-author' });
 
 			if (msg.attachedNotePath) {
-				const contextBadge = metaRow.createSpan({ cls: 'agy-msg-doc-ref' });
-				const icon = contextBadge.createSpan();
-				setIcon(icon, 'file-text');
-				contextBadge.createSpan({
-					text: msg.attachedSelection
-						? `${msg.attachedNotePath} (selection)`
-						: msg.attachedNotePath
+				const displayTitle = msg.attachedNoteTitle || msg.attachedNotePath.split('/').pop()?.replace(/\.md$/, '') || msg.attachedNotePath;
+				const fullTooltip = msg.attachedSelection
+					? `${msg.attachedNotePath} (selection)`
+					: msg.attachedNotePath;
+
+				const contextBadge = metaRow.createSpan({
+					cls: 'agy-msg-doc-ref',
+					attr: { 'aria-label': fullTooltip }
 				});
+				const icon = contextBadge.createSpan({ cls: 'agy-msg-doc-icon' });
+				setIcon(icon, 'file-text');
+
+				const labelText = msg.attachedSelection
+					? `${displayTitle} (selection)`
+					: displayTitle;
+				contextBadge.createSpan({ cls: 'agy-msg-doc-label', text: labelText });
 			}
 
 			const contentDiv = msgRow.createDiv({ cls: 'agy-user-content' });

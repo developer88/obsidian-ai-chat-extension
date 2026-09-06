@@ -223,6 +223,7 @@ export interface ChatMessage {
 	content: string;
 	timestamp: number;
 	attachedNotePath?: string;
+	attachedNoteTitle?: string;
 	attachedSelection?: string;
 	providerId?: AiProviderId;
 	providerName?: string;
