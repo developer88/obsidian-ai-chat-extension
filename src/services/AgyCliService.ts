@@ -87,13 +87,23 @@ export class AgyCliService {
 		return winPath.replace(/\\/g, '/');
 	}
 
+	public static sanitizeCliCommand(rawCmd: string, defaultCmd: string): string {
+		const trimmed = (rawCmd || defaultCmd).trim();
+		// Disallow dangerous shell metacharacters that could enable command chaining
+		if (/[;&|`$<>]/.test(trimmed)) {
+			console.warn(`[Sidecar AI] Dangerous shell metacharacters detected in CLI command: "${trimmed}". Falling back to default.`);
+			return defaultCmd;
+		}
+		return trimmed;
+	}
+
 	private resolveExecution(
 		config: ProviderConfig,
 		targetProvider: AiProviderId,
 		vaultPath?: string
 	): { command: string; prefixArgs: string[] } {
 		const defaultCmd = PROVIDER_METADATA[targetProvider]?.defaultCmd || 'agy';
-		const rawCmd = config.cliCommand || defaultCmd;
+		const rawCmd = AgyCliService.sanitizeCliCommand(config.cliCommand, defaultCmd);
 
 		if (config.useWsl) {
 			const prefixArgs = ['-d', 'Ubuntu'];

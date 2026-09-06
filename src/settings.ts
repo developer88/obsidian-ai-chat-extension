@@ -115,7 +115,14 @@ export class AntigravitySettingTab extends PluginSettingTab {
 									.onChange((value) => {
 										void (async () => {
 											if (provConfig) {
-												provConfig.cliCommand = value.trim() || defaultCmd;
+												const trimmed = value.trim();
+												if (/[;&|`$<>]/.test(trimmed)) {
+													new Notice('Shell metacharacters (;, &, |, `, $, <, >) are not permitted for security.');
+													provConfig.cliCommand = defaultCmd;
+													text.setValue(defaultCmd);
+												} else {
+													provConfig.cliCommand = trimmed || defaultCmd;
+												}
 												await this.plugin.saveSettings();
 											}
 										})();
@@ -210,6 +217,22 @@ export class AntigravitySettingTab extends PluginSettingTab {
 											this.plugin.settings.showStatusBarItem = value;
 											await this.plugin.saveSettings();
 											this.plugin.updateStatusBar();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Local process execution permission',
+						desc: 'Acknowledge that Sidecar AI spawns local CLI processes (agy, copilot, pi) via child_process without API keys.',
+						render: (setting: Setting) => {
+							setting.setName('Local process execution permission')
+								.setDesc('Acknowledge that Sidecar AI spawns local CLI processes (agy, copilot, pi) via child_process without API keys.')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.hasAcceptedProcessExecutionDisclaimer ?? false)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.hasAcceptedProcessExecutionDisclaimer = value;
+											await this.plugin.saveSettings();
 										})();
 									}));
 						}

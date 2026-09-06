@@ -147,6 +147,7 @@ export interface AiChatPluginSettings {
 	autoIncludeSelection: boolean;
 	autoScrollChat: boolean;
 	showStatusBarItem: boolean;
+	hasAcceptedProcessExecutionDisclaimer?: boolean;
 
 	// Legacy backward-compatibility fields (migrated to active provider)
 	cliCommand?: string;
@@ -212,7 +213,8 @@ export const DEFAULT_SETTINGS: AiChatPluginSettings = {
 	autoAttachActiveNote: true,
 	autoIncludeSelection: true,
 	autoScrollChat: true,
-	showStatusBarItem: true
+	showStatusBarItem: true,
+	hasAcceptedProcessExecutionDisclaimer: false
 };
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'error';

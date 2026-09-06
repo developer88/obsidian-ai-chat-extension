@@ -1,4 +1,4 @@
-import { App, FuzzySuggestModal, FuzzyMatch } from 'obsidian';
+import { App, FuzzySuggestModal, FuzzyMatch, Modal, Setting } from 'obsidian';
 import {
 	AiProviderId,
 	PROVIDER_METADATA
@@ -83,5 +83,50 @@ export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 
 	onChooseItem(item: ModelChoiceItem): void {
 		void this.plugin.switchModelForActiveProvider(item.modelId, item.effort);
+	}
+}
+
+export class ProcessExecutionNoticeModal extends Modal {
+	constructor(app: App, private onConfirm: () => void) {
+		super(app);
+	}
+
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('agy-security-modal');
+
+		contentEl.createEl('h3', { text: 'Sidecar AI: Local CLI Execution' });
+
+		contentEl.createEl('p', {
+			text: 'Sidecar AI connects Obsidian directly to your locally installed AI CLI tools (Google Antigravity, GitHub Copilot, or Pi Coding Agent) via child_process.spawn without remote API keys.'
+		});
+
+		const list = contentEl.createEl('ul');
+		list.createEl('li', {
+			text: 'Shell execution is strictly disabled (shell: false) to prevent command injection.'
+		});
+		list.createEl('li', {
+			text: 'Commands are executed solely on your machine under your user account when sending prompts or querying models.'
+		});
+		list.createEl('li', {
+			text: 'Clipboard access is strictly write-only for the code copy button.'
+		});
+
+		new Setting(contentEl)
+			.addButton((button) => {
+				button
+					.setButtonText('Acknowledge and proceed')
+					.setCta()
+					.onClick(() => {
+						this.close();
+						this.onConfirm();
+					});
+			});
+	}
+
+	onClose(): void {
+		const { contentEl } = this;
+		contentEl.empty();
 	}
 }

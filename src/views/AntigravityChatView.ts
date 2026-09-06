@@ -14,6 +14,7 @@ import {
 	PROVIDER_METADATA
 } from '../types';
 import { AgyCliService } from '../services/AgyCliService';
+import { ProcessExecutionNoticeModal } from '../modals/ModelSuggestModal';
 
 export const ANTIGRAVITY_CHAT_VIEW_TYPE = 'antigravity-chat-view';
 
@@ -406,6 +407,23 @@ export class AntigravityChatView extends ItemView {
 
 		const userText = this.inputEl.value.trim();
 		if (!userText) return;
+
+		const settings = this.getSettings();
+		if (!settings.hasAcceptedProcessExecutionDisclaimer) {
+			new ProcessExecutionNoticeModal(this.app, () => {
+				void (async () => {
+					settings.hasAcceptedProcessExecutionDisclaimer = true;
+					await this.saveSettings(settings);
+					await this.executePromptSend(userText);
+				})();
+			}).open();
+			return;
+		}
+
+		await this.executePromptSend(userText);
+	}
+
+	private async executePromptSend(userText: string): Promise<void> {
 
 		let noteContextPrefix = '';
 		let attachedNotePath: string | undefined;
