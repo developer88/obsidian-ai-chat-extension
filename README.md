@@ -2,6 +2,8 @@
 
 A native, privacy-first AI chat companion for **Obsidian** powered directly by your authenticated local CLI tools: **Google Antigravity** (`agy`), **GitHub Copilot** (`copilot`), and **Pi Coding Agent** (`pi`) with **zero API keys, proxies, or per-token charges**.
 
+![Sidecar AI in Obsidian](images/screenshot.png)
+
 ---
 
 ## ✨ Why Sidecar AI?
