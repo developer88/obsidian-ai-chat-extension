@@ -99,3 +99,11 @@ For instructions on building from source, manual installation from GitHub releas
 ## 📄 License
 
 Licensed under the [MIT License](LICENSE).
+
+---
+
+## 🤖 Development & Transparency
+
+* This extension was built using **Google Gemini AI**.
+* Each change, implementation detail, and line of code was reviewed and verified by the author.
+
