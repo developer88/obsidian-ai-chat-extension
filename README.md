@@ -1,11 +1,6 @@
-# Sidecar AI for Obsidian
+# Sidecar AI
 
-[![Obsidian](https://img.shields.io/badge/Obsidian-v1.13.0+-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
-[![Version](https://img.shields.io/badge/Version-v3.3.1-blue)](https://github.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20WSL-brightgreen)](#)
-
-A native, privacy-first AI chat companion for **[Obsidian](https://obsidian.md)** powered by your local AI CLI tools: **Google Antigravity** (`agy`), **GitHub Copilot** (`copilot`), and **Pi Coding Agent** (`pi`)—with **zero API keys or per-token charges required**.
+A native, privacy-first AI chat companion for **Obsidian** powered directly by your authenticated local CLI tools: **Google Antigravity** (`agy`), **GitHub Copilot** (`copilot`), and **Pi Coding Agent** (`pi`) with **zero API keys, proxies, or per-token charges**.
 
 ---
 
@@ -13,125 +8,74 @@ A native, privacy-first AI chat companion for **[Obsidian](https://obsidian.md)*
 
 Most AI plugins for Obsidian require you to manage paid third-party API tokens, configure proxies, or paste secret keys into plugin settings.
 
-**Sidecar AI** connects directly to authenticated local command-line tools already installed on your machine. It utilizes your existing subscriptions (**Google AI subscriptions**, **GitHub Copilot**, and **Pi Coding Agent**) and provides a native, unified chat sidebar that integrates directly with your vault workflow.
+**Sidecar AI** bridges your vault directly to the authenticated command-line agents already running on your machine. It utilizes your existing subscriptions (**Google AI subscriptions**, **GitHub Copilot**, and **Pi Coding Agent**) in a native sidebar designed to match Obsidian's interface.
+
+---
+
+## ⚡ Quick Start
+
+1. **Install & Enable**: Click **Install** and then **Enable** in Obsidian Settings → Community Plugins.
+2. **Ensure CLI is Ready**: Make sure at least one supported tool is installed and logged in:
+   - **Google Antigravity**: run `agy` in your terminal.
+   - **GitHub Copilot**: run `copilot login` in your terminal.
+   - **Pi Coding Agent**: install via `npm install -g @earendil-works/pi-coding-agent` and run `pi`.
+3. **Open Sidecar AI**:
+   - Click the **Sidecar AI bot icon** in the left ribbon, or
+   - Press `Ctrl/Cmd + P` and select `Sidecar AI: Open Sidecar AI Sidebar`.
+4. **Chat with Context**: Ask questions, summarize notes, or select text in your active note to query the AI assistant.
+
+---
+
+## 🔌 Supported Providers
+
+| Provider | CLI Tool | Authentication / Subscription | Supported Models |
+| :--- | :--- | :--- | :--- |
+| **Google Antigravity** | `agy` | Google AI Subscription | Gemini 3.8 Flash, 3.7 Flash, 3.1 Pro, Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B |
+| **GitHub Copilot** | `copilot` | GitHub Copilot Subscription | GPT-5.2, GPT-5, Claude 3.7 Sonnet, Claude 3.5 Sonnet, OpenAI o1, OpenAI o3-mini |
+| **Pi Coding Agent** | `pi` | Local / Configured Providers | Configurable models with Thinking controls (`Off`, `Low`, `Medium`, `High`, `Max`) |
 
 ---
 
 ## 🚀 Key Features
 
-* 🔌 **Three Native AI Providers**:
-  * **Google Antigravity** (`agy`): Powered by your Google AI subscription (Gemini 3.8 Flash, 3.7 Flash, 3.1 Pro, Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B).
-  * **GitHub Copilot** (`copilot`): Powered by your GitHub Copilot subscription (GPT-5.2, GPT-5, Claude 3.7 Sonnet, Claude 3.5 Sonnet, OpenAI o1, OpenAI o3-mini).
-  * **Pi Coding Agent** (`pi`): Powered by Pi coding agent CLI with configurable models, thinking levels (`Off`, `Low`, `Medium`, `High`, `Max`), and session management.
-* 🔐 **Zero API Keys Needed**: Connects directly to authenticated local binaries via CLI execution.
-* 🌐 **100% OS-Agnostic**: Native support for **Windows**, **macOS**, **Linux**, and **WSL** (`wsl agy` / `wsl copilot` / `wsl pi`).
-* 🎯 **Unified Model & Reasoning Effort Switcher**:
-  * Clean, searchable fuzzy modal used across the **Chat Toolbar**, **Bottom Status Bar widget**, and **Settings tab**.
-  * Switch providers, models, and reasoning efforts (`Low`, `Medium`, `High`) in a single click.
-* 📄 **Active Note & Selection Tracking**: Automatically links the file path and active highlighted text of your current note without manual copy-pasting.
-* 🏷️ **Clear Attribution**: Assistant responses display the exact provider, model, and effort used to generate the output.
+* 🔐 **Zero API Keys Needed**: Interacts directly with authenticated local CLI processes. No keys or billing details are ever stored in Obsidian.
+* 🌐 **Cross-Platform & WSL Support**: Native execution on Windows, macOS, Linux, and Windows Subsystem for Linux (`wsl`).
+* 🎯 **Unified Model & Reasoning Switcher**: A single fuzzy-search modal accessible from the chat header, the bottom status bar widget, and plugin settings to switch providers, models, and reasoning effort levels on the fly.
+* 📄 **Active Note & Selection Tracking**: Automatically references your currently focused note path and text selection as context.
+* 🏷️ **Clear Attribution**: Every assistant response clearly displays the provider, model, and reasoning effort used.
 * 🔘 **Quick Action Bar**: One-click prompt chips to **Summarize**, **Polish writing**, **Extract tasks**, and **Explain concepts** from your active note.
-* 🔄 **Session Management**: Dedicated *New Session* button to clear conversation memory and restart context on demand.
-* 📋 **Code Snippet Actions**: One-click buttons to *Copy* or *Insert into note at cursor* on all generated snippets.
-* 🎨 **Obsidian Native Design System**: Adheres strictly to Obsidian theme tokens in both Dark and Light modes.
+* 🔄 **Session Management**: Dedicated *Restart Session* button to clear conversation memory and restart context on demand.
+* 📋 **Code Snippet Actions**: One-click buttons to *Copy* code blocks or *Insert into note at cursor*.
+* 🎨 **Obsidian Native Design**: Uses Obsidian's theme tokens for both Dark and Light modes.
 
 ---
 
-## 📦 Installation
-
-### Option 1: Obsidian BRAT (Recommended for Beta)
-1. Install the **[BRAT](https://github.com/TfTHacker/obsidian42-brat)** plugin from Obsidian Community Plugins.
-2. Open **Command Palette** (`Ctrl/Cmd + P`) and run `BRAT: Add a beta plugin for testing`.
-3. Enter the repository URL:
-   ```text
-   https://github.com/developer88/obsidian-ai-chat-extension
-   ```
-4. Enable **Sidecar AI** in Settings → Community Plugins.
-
----
-
-### Option 2: Manual Installation from Release
-1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub Release](../../releases).
-2. Create a folder in your vault:
-   ```text
-   <Your-Vault>/.obsidian/plugins/sidecar-ai/
-   ```
-3. Copy the 3 downloaded files into that folder.
-4. Reload plugins in Obsidian **Settings → Community Plugins** and toggle on **Sidecar AI**.
-
----
-
-### Option 3: Build from Source
-```bash
-# Clone the repository
-git clone https://github.com/developer88/obsidian-ai-chat-extension.git
-cd obsidian-ai-chat-extension
-
-# Install dependencies and build
-npm install
-npm run build
-```
-Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plugins/sidecar-ai/`.
-
----
-
-## 🔧 Prerequisites & Setup
-
-### For Google Antigravity
-1. Install the `agy` CLI binary.
-2. Sign in once in your terminal:
-   ```bash
-   agy
-   ```
-
-### For GitHub Copilot
-1. Install the GitHub Copilot CLI (`copilot`):
-   ```bash
-   # Windows (via WinGet)
-   winget install GitHub.Copilot
-
-   # Or via npm/homebrew/official installer
-   ```
-2. Authenticate in your terminal:
-   ```bash
-   copilot login
-   ```
-
-### For Pi Coding Agent
-1. Install the Pi CLI (`pi`):
-   ```bash
-   npm install -g @earendil-works/pi-coding-agent
-   ```
-2. Run `pi` once in your terminal to configure providers or API keys.
-3. Configure model, thinking levels (`Off`, `Low`, `Medium`, `High`, `Max`), or WSL settings in Sidecar AI Settings.
-
----
-
-## ⚙️ Settings
+## ⚙️ Settings Overview
 
 | Setting | Default | Description |
 | :--- | :--- | :--- |
-| **Active AI Provider** | `Google Antigravity` | Choose between `Google Antigravity` (`agy`), `GitHub Copilot` (`copilot`), and `Pi Coding Agent` (`pi`). |
-| **Active Model & Effort** | *(Dynamic)* | Opens the unified fuzzy modal to switch provider, model, and reasoning effort. |
-| **Provider CLI Command** | `agy` / `copilot` / `pi` | Executable command or path for the selected provider. |
+| **Active AI provider** | `Google Antigravity` | Choose between `Google Antigravity` (`agy`), `GitHub Copilot` (`copilot`), and `Pi Coding Agent` (`pi`). |
+| **Active model and reasoning effort** | *(Dynamic)* | View current model and effort, search available models, or query the CLI dynamically. |
+| **CLI command or path** | `agy` / `copilot` / `pi` | Executable command name or absolute path for the selected provider. |
 | **Run in WSL** | `false` | Enable if the provider CLI is installed inside Ubuntu/WSL on Windows. |
-| **Extra CLI Flags** | *(empty)* | Optional extra command-line flags per provider. |
-| **Auto-Attach Active Note** | `true` | Automatically includes the active note file reference and selection in prompts. |
-| **Auto-Scroll Chat** | `true` | Automatically scrolls chat to bottom during streaming responses. |
-| **Show Status Bar Item** | `true` | Toggles the active provider/model widget in Obsidian's bottom status bar. |
+| **Extra CLI flags** | *(empty)* | Custom arguments passed on each invocation (e.g. `--thinking high`, `--allow-all-tools`). |
+| **Auto-attach active note** | `true` | Automatically includes the active note file reference and selection in prompts. |
+| **Auto-scroll chat** | `true` | Automatically scrolls the chat container as responses stream in. |
+| **Show status bar item** | `true` | Shows the active provider and model status bar widget. |
+| **Reset conversation memory** | — | Clears saved session ID and starts fresh on the next prompt. |
 
 ---
 
 ## 🔒 Security & System Permissions
 
-Sidecar AI is designed with a privacy-first, zero-telemetry architecture. To operate as an AI bridge without third-party cloud API keys, it uses the following system APIs:
+Sidecar AI uses a privacy-first, zero-telemetry architecture:
 
 - **Shell Execution (`child_process.spawn`)**:
   - The plugin spawns local CLI processes solely to communicate with your user-installed and authenticated AI CLI tools (`agy`, `copilot`, `pi`).
-  - It runs exclusively the command configured in Settings (or prefixed with `wsl` if enabled) passing user prompts via standard CLI arguments and reading streaming output via stdout. No background scripts, remote downloads, or arbitrary commands are executed.
+  - It executes exclusively the command configured in Settings (prefixed with `wsl` if enabled), passing user prompts via standard CLI arguments and reading streaming output via stdout. No background scripts, remote downloads, or arbitrary commands are executed.
 - **Clipboard Access (`navigator.clipboard.writeText`)**:
   - Clipboard access is strictly **write-only**.
-  - It is triggered solely when you explicitly click the "Copy" button on generated code blocks in the chat UI.
+  - It is triggered solely when you explicitly click the "Copy" button on code blocks in the chat UI.
   - The plugin **never** reads, inspects, or monitors system clipboard contents.
 
 ---
@@ -146,13 +90,12 @@ Sidecar AI is designed with a privacy-first, zero-telemetry architecture. To ope
 
 ---
 
-## 📄 License
+## 📚 Advanced Setup & Manual Installation
 
-This plugin is licensed under the [MIT License](LICENSE).
+For instructions on building from source, manual installation from GitHub releases, or installing via Obsidian BRAT for beta testing, see the [Development & Manual Installation Guide](docs/DEVELOPMENT.md).
 
 ---
 
-## 🤖 Development & Transparency
+## 📄 License
 
-* This extension was built using **Google Gemini AI**.
-* Each change, implementation detail, and line of code was reviewed and verified by the author.
+Licensed under the [MIT License](LICENSE).
