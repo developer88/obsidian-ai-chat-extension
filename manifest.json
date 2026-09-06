@@ -1,7 +1,7 @@
 {
-  "id": "obsichat",
-  "name": "Obsichat",
-  "version": "2.0.0",
+  "id": "sidecar-ai",
+  "name": "Sidecar AI",
+  "version": "3.0.0",
   "minAppVersion": "0.15.0",
   "description": "Native AI chat sidebar supporting Google Antigravity, GitHub Copilot, and local AI CLI providers with zero API tokens needed.",
   "author": "Andrey",

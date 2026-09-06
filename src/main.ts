@@ -62,14 +62,14 @@ export default class AntigravityPlugin extends Plugin {
 		);
 
 		// Add Ribbon Icon
-		this.addRibbonIcon('bot', 'Obsichat', async () => {
+		this.addRibbonIcon('bot', 'Sidecar AI', async () => {
 			await this.activateView();
 		});
 
 		// Command: Open Chat Sidebar
 		this.addCommand({
 			id: 'open-antigravity-chat',
-			name: 'Open Obsichat Sidebar',
+			name: 'Open Sidecar AI Sidebar',
 			callback: async () => {
 				await this.activateView();
 			},
@@ -129,7 +129,7 @@ export default class AntigravityPlugin extends Plugin {
 		}
 
 		this.statusBarItemEl.setText(`⚡ ${label}${effortSuffix}`);
-		this.statusBarItemEl.setAttribute('aria-label', `Obsichat: ${label}${effortSuffix} (Click to switch)`);
+		this.statusBarItemEl.setAttribute('aria-label', `Sidecar AI: ${label}${effortSuffix} (Click to switch)`);
 	}
 
 	public async switchModelForActiveProvider(modelId: string, effort?: string): Promise<void> {
