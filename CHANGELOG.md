@@ -5,6 +5,22 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-09-06
+
+### Added
+- **Process Execution Disclaimer Modal & Setting**:
+  - Added an interactive first-launch acknowledgement modal (`ProcessExecutionNoticeModal`) explicitly notifying users about local CLI process execution (`shell: false`) with zero third-party proxies.
+  - Added a dedicated "Local process execution permission" toggle in plugin settings.
+
+### Security
+- **CLI Shell Metacharacter Sanitization & Validation**:
+  - Added strict metacharacter rejection (`/[;&|`$<>]/.test(...)`) in `AgyCliService.sanitizeCliCommand` to guard against command injection or command chaining.
+  - Added real-time input validation in settings to prevent saving commands with shell metacharacters.
+
+### Fixed
+- **Obsidian Linter Compliance (`obsidianmd/prefer-create-el`)**:
+  - Replaced `createEl('div')` calls with Obsidian's dedicated `createDiv()` helper in empty state rendering.
+
 ## [3.4.0] - 2026-09-06
 
 ### Added
