@@ -147,22 +147,24 @@ export class AgyCliService {
 					resolve(config.cachedModels || []);
 				});
 
-				child.on('close', async (code) => {
-					if (code === 0 && output.trim()) {
-						const parsed = targetProvider === 'copilot'
-							? this.parseCopilotModels(output)
-							: this.parseAntigravityModels(output);
+				child.on('close', (code) => {
+					void (async () => {
+						if (code === 0 && output.trim()) {
+							const parsed = targetProvider === 'copilot'
+								? this.parseCopilotModels(output)
+								: this.parseAntigravityModels(output);
 
-						if (parsed.length > 0) {
-							if (settings.providers && settings.providers[targetProvider]) {
-								settings.providers[targetProvider].cachedModels = parsed;
-								await this.saveSettings(settings);
+							if (parsed.length > 0) {
+								if (settings.providers && settings.providers[targetProvider]) {
+									settings.providers[targetProvider].cachedModels = parsed;
+									await this.saveSettings(settings);
+								}
+								resolve(parsed);
+								return;
 							}
-							resolve(parsed);
-							return;
 						}
-					}
-					resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : []));
+						resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : []));
+					})();
 				});
 			} catch {
 				resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : []));

@@ -18,10 +18,10 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName('Sidecar AI Settings')
-			.setDesc('Connects directly to your local AI CLI binaries (Google Antigravity & GitHub Copilot) without API tokens.')
-			.setHeading();
+		containerEl.createEl('p', {
+			text: 'Connects directly to your local AI CLI binaries (Google Antigravity & GitHub Copilot) without API tokens.',
+			cls: 'setting-item-description'
+		});
 
 		const activeProvId = this.plugin.settings.activeProvider || 'antigravity';
 		const provConfig = this.plugin.settings.providers?.[activeProvId];
@@ -129,9 +129,9 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					}
 				}));
 
-		// General Chat Settings Section
+		// Vault and display options
 		new Setting(containerEl)
-			.setName('General Chat Options')
+			.setName('Vault integration and display')
 			.setHeading();
 
 		// Auto-Attach Active Note
@@ -148,7 +148,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		// Auto-Scroll Chat
 		new Setting(containerEl)
 			.setName('Auto-Scroll Chat')
-			.setDesc('Automatically scroll to the bottom as the assistant streams responses.')
+			.setDesc('Automatically scroll to bottom as new response chunks arrive.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoScrollChat)
 				.onChange(async (value) => {
@@ -159,7 +159,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		// Show Status Bar Item
 		new Setting(containerEl)
 			.setName('Show Status Bar Item')
-			.setDesc('Display the active AI model and reasoning effort in Obsidian\'s bottom status bar.')
+			.setDesc('Display current provider and model widget in the bottom status bar.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showStatusBarItem)
 				.onChange(async (value) => {
@@ -175,7 +175,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			.addButton(button => button
 				.setButtonText('Reset Active Session')
 				.setDestructive()
-				.onClick(async () => {
+				.onClick(() => {
 					this.plugin.cliService.resetSession();
 					button.setButtonText('Session Reset!');
 					window.setTimeout(() => button.setButtonText('Reset Active Session'), 2000);

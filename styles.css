@@ -625,14 +625,14 @@
 	background-color: var(--text-error);
 }
 
-.agy-submit-btn svg,
-.agy-submit-btn .svg-icon {
-	width: 15px !important;
-	height: 15px !important;
-	stroke-width: 2.5 !important;
-	display: block !important;
-	color: var(--text-on-accent) !important;
-	stroke: currentColor !important;
+.agy-chat-root .agy-submit-btn svg,
+.agy-chat-root .agy-submit-btn .svg-icon {
+	width: 15px;
+	height: 15px;
+	stroke-width: 2.5;
+	display: block;
+	color: var(--text-on-accent);
+	stroke: currentColor;
 }
 
 

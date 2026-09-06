@@ -5,6 +5,18 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-09-06
+
+### Changed
+- **Linter & Style Polish**:
+  - Set `minAppVersion` to `1.13.0` to fully support modern Obsidian APIs (including `ButtonComponent.setDestructive()`).
+  - Removed redundant plugin title and "settings" from settings tab headings.
+  - Renamed general settings heading to "Vault integration and display" to avoid generic "General" naming.
+  - Replaced `createEl('span')` with `createSpan()`.
+  - Replaced all `!important` in CSS with increased selector specificity.
+  - Handled asynchronous operations in event handlers to avoid returning promises to void signatures.
+  - Automated release pipeline with GitHub Artifact Attestations (`actions/attest@v4`).
+
 ## [3.1.0] - 2026-09-06
 
 ### Changed

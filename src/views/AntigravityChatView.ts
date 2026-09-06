@@ -90,7 +90,7 @@ export class AntigravityChatView extends ItemView {
 		const titleGroup = header.createDiv({ cls: 'agy-title-group' });
 		const titleIcon = titleGroup.createSpan({ cls: 'agy-title-icon' });
 		setIcon(titleIcon, 'cpu');
-		titleGroup.createEl('span', { text: 'Sidecar AI', cls: 'agy-title-text' });
+		titleGroup.createSpan({ text: 'Sidecar AI', cls: 'agy-title-text' });
 
 		const convId = this.cliService.getConversationId();
 		this.sessionBadgeEl = titleGroup.createSpan({
