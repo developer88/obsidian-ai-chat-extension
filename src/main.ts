@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice, setIcon } from 'obsidian';
 import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
@@ -135,7 +135,10 @@ export default class AntigravityPlugin extends Plugin {
 			effortSuffix = ` (${effort})`;
 		}
 
-		this.statusBarItemEl.setText(`⚡ ${label}${effortSuffix}`);
+		this.statusBarItemEl.empty();
+		const iconSpan = this.statusBarItemEl.createSpan({ cls: 'agy-status-bar-icon' });
+		setIcon(iconSpan, 'bot');
+		this.statusBarItemEl.createSpan({ text: ` ${label}${effortSuffix}` });
 		this.statusBarItemEl.setAttribute('aria-label', `Sidecar AI: ${label}${effortSuffix} (Click to switch)`);
 	}
 

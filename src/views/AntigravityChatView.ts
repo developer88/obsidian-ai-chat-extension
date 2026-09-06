@@ -61,6 +61,14 @@ export class AntigravityChatView extends ItemView {
 
 		this.includeActiveNote = this.getSettings().autoAttachActiveNote;
 
+		// Native view header actions (top bar of the pane)
+		this.addAction('rotate-ccw', 'New session', () => {
+			void this.restartSession();
+		});
+		this.addAction('settings', 'Sidecar AI settings', () => {
+			this.openSettingsTab();
+		});
+
 		this.buildHeader(container);
 		this.buildToolbar(container);
 		this.buildMessageList(container);
@@ -89,7 +97,7 @@ export class AntigravityChatView extends ItemView {
 
 		const titleGroup = header.createDiv({ cls: 'agy-title-group' });
 		const titleIcon = titleGroup.createSpan({ cls: 'agy-title-icon' });
-		setIcon(titleIcon, 'cpu');
+		setIcon(titleIcon, 'bot');
 		titleGroup.createSpan({ text: 'Sidecar AI', cls: 'agy-title-text' });
 
 		const convId = this.cliService.getConversationId();
@@ -103,21 +111,18 @@ export class AntigravityChatView extends ItemView {
 
 		const actionsGroup = header.createDiv({ cls: 'agy-header-actions' });
 
-		// New Session Button
-		const newSessionBtn = actionsGroup.createEl('button', {
-			cls: 'agy-btn agy-btn-secondary',
-			attr: { 'aria-label': 'Start new conversation session' }
+		// New Session Icon Button
+		const newSessionBtn = actionsGroup.createDiv({
+			cls: 'clickable-icon agy-icon-btn',
+			attr: { 'aria-label': 'New session' }
 		});
-		const btnIcon = newSessionBtn.createSpan({ cls: 'agy-btn-icon' });
-		setIcon(btnIcon, 'rotate-ccw');
-		newSessionBtn.createSpan({ text: 'New Session' });
+		setIcon(newSessionBtn, 'rotate-ccw');
 		newSessionBtn.addEventListener('click', () => { void this.restartSession(); });
 
-
-		// Settings Action
+		// Settings Icon Button
 		const settingsBtn = actionsGroup.createDiv({
 			cls: 'clickable-icon agy-icon-btn',
-			attr: { 'aria-label': 'Sidecar AI settings' }
+			attr: { 'aria-label': 'Settings' }
 		});
 		setIcon(settingsBtn, 'settings');
 		settingsBtn.addEventListener('click', () => this.openSettingsTab());
@@ -137,7 +142,7 @@ export class AntigravityChatView extends ItemView {
 		});
 
 		const iconSpan = this.modelTriggerBtn.createSpan({ cls: 'agy-model-trigger-icon' });
-		setIcon(iconSpan, 'sparkles');
+		setIcon(iconSpan, 'sliders-horizontal');
 
 		this.modelTriggerLabel = this.modelTriggerBtn.createSpan({
 			cls: 'agy-model-trigger-label',
@@ -214,16 +219,16 @@ export class AntigravityChatView extends ItemView {
 		const emptyDiv = this.messagesContainerEl.createDiv({ cls: 'agy-empty-state' });
 
 		const icon = emptyDiv.createDiv({ cls: 'agy-empty-icon' });
-		setIcon(icon, 'bot');
+		setIcon(icon, 'messages-square');
 
-		emptyDiv.createEl('p', {
+		emptyDiv.createEl('div', {
 			cls: 'agy-empty-title',
-			text: 'Sidecar AI'
+			text: 'No messages yet'
 		});
 
-		emptyDiv.createEl('p', {
+		emptyDiv.createEl('div', {
 			cls: 'agy-empty-desc',
-			text: 'Connected directly to your local AI CLI without API tokens.'
+			text: 'Type a message below or pick a quick action to start chatting with your local AI CLI.'
 		});
 	}
 

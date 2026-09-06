@@ -1,4 +1,4 @@
-/* Sidecar AI - Premium Native Obsidian Styling */
+/* Sidecar AI - Clean Native Obsidian Styling */
 
 .agy-chat-root {
 	display: flex;
@@ -18,31 +18,39 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 8px 12px;
+	padding: var(--size-4-2) var(--size-4-3);
 	border-bottom: 1px solid var(--divider-color);
 	background-color: var(--background-primary);
-	min-height: 40px;
+	min-height: 38px;
+	box-sizing: border-box;
 }
 
 .agy-title-group {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: var(--size-4-2);
 	min-width: 0;
 }
 
 .agy-title-icon {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	color: var(--text-muted);
-	width: 16px;
-	height: 16px;
+	width: var(--icon-size-xs, 16px);
+	height: var(--icon-size-xs, 16px);
 	flex-shrink: 0;
 }
 
+.agy-title-icon svg {
+	width: var(--icon-size-xs, 16px);
+	height: var(--icon-size-xs, 16px);
+	display: block;
+}
+
 .agy-title-text {
-	font-size: 13px;
-	font-weight: 600;
+	font-size: var(--font-ui-small, 13px);
+	font-weight: var(--font-semibold, 600);
 	color: var(--text-normal);
 	white-space: nowrap;
 	overflow: hidden;
@@ -50,64 +58,36 @@
 }
 
 .agy-session-badge {
-	font-size: 10px;
-	padding: 1px 5px;
+	font-size: var(--font-ui-smaller, 11px);
+	padding: 1px 6px;
 	border-radius: var(--radius-s);
-	background-color: var(--background-modifier-form-field);
+	background-color: var(--background-secondary-alt);
 	border: 1px solid var(--divider-color);
 	color: var(--text-faint);
 	font-family: var(--font-monospace);
-	font-weight: 500;
+	line-height: 1.2;
 }
 
 .agy-header-actions {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--size-4-1);
 	flex-shrink: 0;
 }
 
-.agy-btn {
+.agy-icon-btn {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
-	font-size: 11.5px;
-	padding: 3px 8px;
-	border-radius: var(--radius-s);
-	border: 1px solid var(--divider-color);
-	background-color: var(--background-secondary);
-	color: var(--text-normal);
-	cursor: pointer;
-	line-height: 1.2;
-	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.agy-btn:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-accent);
-}
-
-.agy-btn:active {
-	background-color: var(--background-modifier-active-hover);
-}
-
-.agy-btn-icon {
-	display: flex;
-	align-items: center;
-	width: 12px;
-	height: 12px;
-}
-
-.agy-icon-btn {
-	display: flex;
-	align-items: center;
 	justify-content: center;
-	width: 26px;
-	height: 26px;
+	width: var(--size-4-7, 28px);
+	height: var(--size-4-7, 28px);
 	padding: 0;
 	border-radius: var(--radius-s);
 	color: var(--text-muted);
 	cursor: pointer;
+	background: transparent;
+	border: none;
+	transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .agy-icon-btn:hover {
@@ -119,17 +99,17 @@
 .agy-toolbar {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	padding: 6px 10px;
+	gap: var(--size-4-1);
+	padding: var(--size-4-2) var(--size-4-3);
 	background-color: var(--background-secondary);
 	border-bottom: 1px solid var(--divider-color);
-	font-size: 11.5px;
+	font-size: var(--font-ui-smaller, 11.5px);
 }
 
 .agy-toolbar-group {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--size-4-1);
 }
 
 .agy-toolbar-group.is-model-group {
@@ -141,19 +121,20 @@
 .agy-model-trigger-btn {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: var(--size-4-2);
 	width: 100%;
-	height: 28px;
-	padding: 3px 8px;
-	background-color: var(--background-primary);
+	height: var(--input-height, 30px);
+	padding: 0 var(--size-4-2);
+	background-color: var(--background-modifier-form-field);
 	border: 1px solid var(--divider-color);
 	border-radius: var(--radius-s);
 	color: var(--text-normal);
-	font-size: 11.5px;
+	font-size: var(--font-ui-smaller, 12px);
 	cursor: pointer;
 	text-align: left;
 	transition: border-color 0.15s ease, background-color 0.15s ease;
 	min-width: 0;
+	box-shadow: none;
 }
 
 .agy-model-trigger-btn:hover {
@@ -164,13 +145,13 @@
 .agy-model-trigger-icon {
 	display: inline-flex;
 	align-items: center;
-	color: var(--text-accent);
+	color: var(--text-muted);
 	flex-shrink: 0;
 }
 
 .agy-model-trigger-icon svg {
-	width: 13px;
-	height: 13px;
+	width: var(--icon-size-xs, 14px);
+	height: var(--icon-size-xs, 14px);
 }
 
 .agy-model-trigger-label {
@@ -179,7 +160,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	font-weight: 500;
+	font-weight: var(--font-normal, 400);
 }
 
 .agy-model-trigger-chevron {
@@ -195,16 +176,19 @@
 }
 
 .agy-refresh-btn {
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 26px;
-	height: 26px;
+	width: var(--size-4-7, 28px);
+	height: var(--size-4-7, 28px);
 	padding: 0;
 	border-radius: var(--radius-s);
 	color: var(--text-muted);
 	flex-shrink: 0;
 	cursor: pointer;
+	background: transparent;
+	border: none;
+	transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .agy-refresh-btn:hover {
@@ -225,10 +209,10 @@
 .agy-messages-container {
 	flex: 1;
 	overflow-y: auto;
-	padding: 12px;
+	padding: var(--size-4-3);
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: var(--size-4-3);
 }
 
 /* Empty State */
@@ -239,7 +223,7 @@
 	justify-content: center;
 	height: 100%;
 	text-align: center;
-	padding: 24px 16px;
+	padding: var(--size-4-6) var(--size-4-3);
 	color: var(--text-muted);
 }
 
@@ -247,7 +231,7 @@
 	width: 32px;
 	height: 32px;
 	color: var(--text-faint);
-	margin-bottom: 10px;
+	margin-bottom: var(--size-4-2);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -259,42 +243,41 @@
 }
 
 .agy-empty-title {
-	font-size: 13.5px;
-	font-weight: 600;
-	color: var(--text-normal);
-	margin: 0 0 4px 0;
+	font-size: var(--font-ui-small, 13px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-muted);
+	margin-bottom: var(--size-4-1);
 }
 
 .agy-empty-desc {
-	font-size: 11.5px;
-	color: var(--text-muted);
-	line-height: 1.45;
-	max-width: 260px;
-	margin: 0;
+	font-size: var(--font-ui-smaller, 11.5px);
+	color: var(--text-faint);
+	line-height: var(--line-height-normal, 1.45);
+	max-width: 240px;
 }
 
 /* Message Rows */
 .agy-message {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: var(--size-4-1);
 	width: 100%;
 }
 
 .agy-msg-meta {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	font-size: 11px;
+	gap: var(--size-4-2);
+	font-size: var(--font-ui-smaller, 11px);
 }
 
 .agy-msg-author {
-	font-weight: 600;
+	font-weight: var(--font-medium, 500);
 	color: var(--text-muted);
 }
 
 .agy-message.is-user .agy-msg-author {
-	color: var(--text-accent);
+	color: var(--text-normal);
 }
 
 .agy-msg-model-badge {
@@ -303,47 +286,51 @@
 	font-size: 10px;
 	padding: 1px 5px;
 	border-radius: var(--radius-s);
-	background-color: var(--background-secondary);
+	background-color: var(--background-secondary-alt);
 	border: 1px solid var(--divider-color);
 	color: var(--text-muted);
-	font-weight: 500;
 	line-height: 1.2;
 }
 
 .agy-msg-doc-ref {
 	display: inline-flex;
 	align-items: center;
-	gap: 3px;
-	font-size: 10.5px;
+	gap: var(--size-4-1);
+	font-size: var(--font-ui-smaller, 10.5px);
 	color: var(--text-accent);
-	background-color: var(--background-secondary);
+	background-color: var(--background-secondary-alt);
 	padding: 1px 6px;
-	border-radius: var(--radius-s);
+	border-radius: var(--tag-radius, var(--radius-s));
 	border: 1px solid var(--divider-color);
+	max-width: 200px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .agy-msg-doc-ref svg {
 	width: 11px;
 	height: 11px;
+	flex-shrink: 0;
 }
 
-/* User Message Box */
+/* User Message Box: cleanly contained with subtle secondary background, matching Obsidian quote/callout aesthetic */
 .agy-message.is-user .agy-user-content {
 	background-color: var(--background-secondary);
 	border: 1px solid var(--divider-color);
 	border-radius: var(--radius-m);
-	padding: 8px 12px;
-	font-size: 13px;
-	line-height: 1.5;
+	padding: var(--size-4-2) var(--size-4-3);
+	font-size: var(--font-ui-small, 13px);
+	line-height: var(--line-height-normal, 1.5);
 	color: var(--text-normal);
 	word-break: break-word;
 	white-space: pre-wrap;
 }
 
-/* Assistant Message Box */
+/* Assistant Message Box: clean reading typography */
 .agy-message.is-assistant .agy-assistant-content {
-	font-size: 13px;
-	line-height: 1.55;
+	font-size: var(--font-ui-small, 13px);
+	line-height: var(--line-height-normal, 1.55);
 	color: var(--text-normal);
 	word-break: break-word;
 	padding: 2px 0;
@@ -367,39 +354,7 @@
 	background-color: var(--background-modifier-error);
 	border: 1px solid var(--text-error);
 	border-radius: var(--radius-m);
-	padding: 8px 12px;
-}
-
-/* Response Actions */
-.agy-msg-actions {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	margin-top: 6px;
-}
-
-.agy-action-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	font-size: 10.5px;
-	padding: 2px 7px;
-	border-radius: var(--radius-s);
-	border: 1px solid var(--divider-color);
-	background-color: var(--background-secondary);
-	color: var(--text-muted);
-	cursor: pointer;
-	transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.agy-action-btn:hover {
-	color: var(--text-normal);
-	background-color: var(--background-modifier-hover);
-}
-
-.agy-action-btn svg {
-	width: 11px;
-	height: 11px;
+	padding: var(--size-4-2) var(--size-4-3);
 }
 
 /* Code Blocks & Inline Actions */
@@ -407,7 +362,7 @@
 	position: relative;
 	border-radius: var(--radius-s);
 	border: 1px solid var(--divider-color);
-	margin: 8px 0;
+	margin: var(--size-4-2) 0;
 	background-color: var(--background-primary-alt);
 }
 
@@ -417,7 +372,7 @@
 	top: 5px;
 	right: 5px;
 	display: flex;
-	gap: 4px;
+	gap: var(--size-4-1);
 	opacity: 0;
 	transition: opacity 0.15s ease;
 	z-index: 2;
@@ -443,25 +398,25 @@
 	background-color: var(--background-modifier-hover);
 }
 
-/* Quick Action Chips */
+/* Quick Action Chips: native Obsidian tags style */
 .agy-quick-actions {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 5px;
-	padding: 6px 10px;
+	gap: var(--size-4-1);
+	padding: var(--size-4-2) var(--size-4-3);
 	background-color: var(--background-primary);
 	border-top: 1px solid var(--divider-color);
 }
 
 .agy-chip-btn {
-	font-size: 11px;
-	padding: 3px 8px;
-	border-radius: var(--radius-s);
+	font-size: var(--font-ui-smaller, 11px);
+	padding: 2px 8px;
+	border-radius: var(--tag-radius, var(--radius-s));
 	border: 1px solid var(--divider-color);
 	background-color: var(--background-secondary);
 	color: var(--text-muted);
 	cursor: pointer;
-	line-height: 1.2;
+	line-height: var(--line-height-tight, 1.3);
 	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -473,17 +428,17 @@
 
 /* Active Context Document Badge */
 .agy-context-container {
-	padding: 4px 10px 0 10px;
+	padding: var(--size-4-1) var(--size-4-3) 0 var(--size-4-3);
 	background-color: var(--background-primary);
 }
 
 .agy-context-badge {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	font-size: 11.5px;
-	padding: 2px 6px 2px 8px;
-	border-radius: var(--radius-s);
+	gap: var(--size-4-1);
+	font-size: var(--font-ui-smaller, 11.5px);
+	padding: 2px var(--size-4-2);
+	border-radius: var(--tag-radius, var(--radius-s));
 	background-color: var(--background-secondary);
 	border: 1px solid var(--divider-color);
 	color: var(--text-normal);
@@ -494,7 +449,7 @@
 	cursor: pointer;
 	border-style: dashed;
 	color: var(--text-muted);
-	opacity: 0.8;
+	opacity: 0.85;
 }
 
 .agy-context-badge.is-detached:hover {
@@ -507,14 +462,14 @@
 	display: flex;
 	align-items: center;
 	color: var(--text-muted);
-	width: 13px;
-	height: 13px;
+	width: var(--icon-size-xs, 13px);
+	height: var(--icon-size-xs, 13px);
 	flex-shrink: 0;
 }
 
 .agy-badge-icon svg {
-	width: 13px;
-	height: 13px;
+	width: var(--icon-size-xs, 13px);
+	height: var(--icon-size-xs, 13px);
 	display: block;
 }
 
@@ -523,17 +478,17 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	color: var(--text-normal);
-	font-weight: 500;
+	font-weight: var(--font-medium, 500);
 }
 
 .agy-badge-dismiss {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 16px;
-	height: 16px;
+	width: 14px;
+	height: 14px;
 	padding: 0;
-	margin-left: 4px;
+	margin-left: 2px;
 	border-radius: var(--radius-s);
 	color: var(--text-muted);
 	cursor: pointer;
@@ -547,31 +502,32 @@
 }
 
 .agy-badge-dismiss svg {
-	width: 12px;
-	height: 12px;
+	width: 11px;
+	height: 11px;
 	stroke-width: 2.5;
 	display: block;
 }
 
 /* Input Section */
 .agy-input-section {
-	padding: 8px 10px 10px 10px;
+	padding: var(--size-4-2) var(--size-4-3) var(--size-4-3) var(--size-4-3);
 	background-color: var(--background-primary);
 }
 
 .agy-input-container {
 	display: flex;
 	align-items: flex-end;
-	gap: 6px;
+	gap: var(--size-4-2);
 	background-color: var(--background-modifier-form-field);
 	border: 1px solid var(--divider-color);
 	border-radius: var(--radius-m);
-	padding: 6px 8px;
-	transition: border-color 0.15s ease;
+	padding: var(--size-4-2);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .agy-input-container:focus-within {
 	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 
 .agy-textarea {
@@ -580,13 +536,18 @@
 	background: transparent;
 	resize: none;
 	outline: none;
-	font-size: 13px;
+	font-size: var(--font-ui-small, 13px);
 	font-family: inherit;
 	color: var(--text-normal);
 	padding: 2px 0;
 	min-height: 22px;
 	max-height: 180px;
-	line-height: 1.45;
+	line-height: var(--line-height-normal, 1.45);
+	box-shadow: none;
+}
+
+.agy-textarea:focus {
+	box-shadow: none;
 }
 
 .agy-textarea::placeholder {
@@ -598,10 +559,10 @@
 	color: var(--text-on-accent);
 	border: none;
 	border-radius: var(--radius-s);
-	width: 28px;
-	height: 28px;
-	min-width: 28px;
-	min-height: 28px;
+	width: 26px;
+	height: 26px;
+	min-width: 26px;
+	min-height: 26px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -609,15 +570,15 @@
 	flex-shrink: 0;
 	padding: 0;
 	margin: 0;
-	transition: background-color 0.15s ease, opacity 0.15s ease;
+	transition: opacity 0.15s ease;
 }
 
 .agy-submit-btn:hover {
-	opacity: 0.9;
+	opacity: 0.85;
 }
 
 .agy-submit-btn:disabled {
-	opacity: 0.4;
+	opacity: 0.35;
 	cursor: not-allowed;
 }
 
@@ -627,8 +588,8 @@
 
 .agy-chat-root .agy-submit-btn svg,
 .agy-chat-root .agy-submit-btn .svg-icon {
-	width: 15px;
-	height: 15px;
+	width: 14px;
+	height: 14px;
 	stroke-width: 2.5;
 	display: block;
 	color: var(--text-on-accent);
@@ -640,7 +601,21 @@
 .agy-status-bar-item {
 	cursor: pointer;
 	color: var(--text-muted);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
 	transition: color 0.15s ease;
+}
+
+.agy-status-bar-icon {
+	display: inline-flex;
+	align-items: center;
+}
+
+.agy-status-bar-icon svg {
+	width: var(--icon-size-xs, 14px);
+	height: var(--icon-size-xs, 14px);
+	display: block;
 }
 
 .agy-status-bar-item:hover {
