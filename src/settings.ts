@@ -93,14 +93,14 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			},
 			{
 				type: 'group',
-				heading: `${provName} Configuration`,
+				heading: 'CLI configuration',
 				items: [
 					{
-						name: `${provName} CLI command / path`,
-						desc: `The command or full path to the executable (e.g. "${defaultCmd}").`,
+						name: 'CLI command or path',
+						desc: `The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`,
 						render: (setting: Setting) => {
-							setting.setName(`${provName} CLI command / path`)
-								.setDesc(`The command or full path to the executable (e.g. "${defaultCmd}").`)
+							setting.setName('CLI command or path')
+								.setDesc(`The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`)
 								.addText(text => text
 									.setPlaceholder(defaultCmd)
 									.setValue(provConfig?.cliCommand || defaultCmd)
@@ -115,11 +115,11 @@ export class AntigravitySettingTab extends PluginSettingTab {
 						}
 					},
 					{
-						name: `Run ${provName} in WSL`,
-						desc: `Execute via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`,
+						name: 'Run in WSL',
+						desc: `Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`,
 						render: (setting: Setting) => {
-							setting.setName(`Run ${provName} in WSL`)
-								.setDesc(`Execute via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
+							setting.setName('Run in WSL')
+								.setDesc(`Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
 								.addToggle(toggle => toggle
 									.setValue(provConfig?.useWsl || false)
 									.onChange((value) => {
@@ -133,11 +133,11 @@ export class AntigravitySettingTab extends PluginSettingTab {
 						}
 					},
 					{
-						name: `Extra CLI flags for ${provName}`,
-						desc: 'Additional flags passed on each invocation (e.g. "--allow-all-tools", "--thinking high", or "--dangerously-skip-permissions").',
+						name: 'Extra CLI flags',
+						desc: `Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`,
 						render: (setting: Setting) => {
-							setting.setName(`Extra CLI flags for ${provName}`)
-								.setDesc('Additional flags passed on each invocation (e.g. "--allow-all-tools", "--thinking high", or "--dangerously-skip-permissions").')
+							setting.setName('Extra CLI flags')
+								.setDesc(`Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`)
 								.addText(text => text
 									.setPlaceholder(defaultExtraFlags)
 									.setValue(provConfig?.extraCliFlags || '')
