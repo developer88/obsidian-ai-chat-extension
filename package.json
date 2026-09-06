@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-ai-chat-extension",
+  "name": "ai-chat",
   "version": "2.0.0",
   "description": "Native Obsidian AI chat sidebar supporting Google Antigravity, GitHub Copilot, and local AI CLI providers",
   "main": "main.js",
@@ -26,6 +26,7 @@
     "typescript": "5.5.2"
   }
 }
+
 
 
 
