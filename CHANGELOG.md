@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the **AI Chat** Obsidian plugin will be documented in this file.
+All notable changes to the **Obsichat** Obsidian plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All three UI locations stay synchronized in real time.
 - **Provider & Model Attribution**:
   - Each assistant response displays the exact provider and model/effort used to generate that response.
-- **Renamed to AI Chat**:
-  - Renamed the plugin to **AI Chat** for a clean, provider-agnostic, and safe community presence.
+- **Renamed to Obsichat**:
+  - Renamed the plugin to **Obsichat** for a clean, provider-agnostic, and safe community presence.
 - **Auto-Migration**:
   - Automatically migrates existing v1.0 user configurations to the multi-provider system upon upgrade.

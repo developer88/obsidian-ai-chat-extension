@@ -50,7 +50,7 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return 'AI Chat';
+		return 'Obsichat';
 	}
 
 	getIcon(): string {
@@ -93,7 +93,7 @@ export class AntigravityChatView extends ItemView {
 		const titleGroup = header.createDiv({ cls: 'agy-title-group' });
 		const titleIcon = titleGroup.createSpan({ cls: 'agy-title-icon' });
 		setIcon(titleIcon, 'cpu');
-		titleGroup.createEl('span', { text: 'AI Chat', cls: 'agy-title-text' });
+		titleGroup.createEl('span', { text: 'Obsichat', cls: 'agy-title-text' });
 
 		const convId = this.cliService.getConversationId();
 		this.sessionBadgeEl = titleGroup.createSpan({
@@ -120,7 +120,7 @@ export class AntigravityChatView extends ItemView {
 		// Settings Action
 		const settingsBtn = actionsGroup.createEl('div', {
 			cls: 'clickable-icon agy-icon-btn',
-			attr: { 'aria-label': 'AI Chat settings' }
+			attr: { 'aria-label': 'Obsichat settings' }
 		});
 		setIcon(settingsBtn, 'settings');
 		settingsBtn.addEventListener('click', () => this.openSettingsTab());
@@ -221,7 +221,7 @@ export class AntigravityChatView extends ItemView {
 
 		emptyDiv.createEl('p', {
 			cls: 'agy-empty-title',
-			text: 'AI Chat for Obsidian'
+			text: 'Obsichat'
 		});
 
 		emptyDiv.createEl('p', {
@@ -303,7 +303,7 @@ export class AntigravityChatView extends ItemView {
 		this.inputEl = inputWrapper.createEl('textarea', {
 			cls: 'agy-textarea',
 			attr: {
-				placeholder: 'Ask AI Chat... (Enter to send, Shift+Enter for newline)',
+				placeholder: 'Ask Obsichat... (Enter to send, Shift+Enter for newline)',
 				rows: '1'
 			}
 		});
@@ -546,7 +546,7 @@ export class AntigravityChatView extends ItemView {
 			contentDiv.setText(msg.content);
 		} else {
 			const metaRow = msgRow.createDiv({ cls: 'agy-msg-meta' });
-			const authorLabel = msg.providerName ? msg.providerName : 'AI Chat';
+			const authorLabel = msg.providerName ? msg.providerName : 'Obsichat';
 			metaRow.createSpan({ text: authorLabel, cls: 'agy-msg-author' });
 
 			if (msg.modelLabel) {

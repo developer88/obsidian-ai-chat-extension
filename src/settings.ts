@@ -18,7 +18,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'AI Chat Settings' });
+		containerEl.createEl('h2', { text: 'Obsichat Settings' });
 		containerEl.createEl('p', {
 			text: 'Connects directly to your local AI CLI binaries (Google Antigravity & GitHub Copilot) without API tokens.',
 			cls: 'setting-item-description'

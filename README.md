@@ -1,4 +1,4 @@
-# AI Chat for Obsidian
+# Obsichat for Obsidian
 
 [![Obsidian](https://img.shields.io/badge/Obsidian-v1.0.0+-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
 [![Version](https://img.shields.io/badge/Version-v2.0.0-blue)](https://github.com)
@@ -9,11 +9,11 @@ A native, privacy-first AI chat companion for **[Obsidian](https://obsidian.md)*
 
 ---
 
-## ✨ Why AI Chat?
+## ✨ Why Obsichat?
 
 Most AI plugins for Obsidian require you to manage paid third-party API tokens, configure proxies, or paste secret keys into plugin settings.
 
-**AI Chat** connects directly to authenticated local command-line tools already installed on your machine. It utilizes your existing subscriptions (such as **Google AI subscriptions** or **GitHub Copilot**) and provides a native, unified chat sidebar that integrates directly with your vault workflow.
+**Obsichat** connects directly to authenticated local command-line tools already installed on your machine. It utilizes your existing subscriptions (such as **Google AI subscriptions** or **GitHub Copilot**) and provides a native, unified chat sidebar that integrates directly with your vault workflow.
 
 ---
 
@@ -46,7 +46,7 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
    ```text
    https://github.com/<your-username>/agy-in-obsidian
    ```
-4. Enable **AI Chat** in Settings → Community Plugins.
+4. Enable **Obsichat** in Settings → Community Plugins.
 
 ---
 
@@ -54,10 +54,10 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub Release](../../releases).
 2. Create a folder in your vault:
    ```text
-   <Your-Vault>/.obsidian/plugins/agy-in-obsidian/
+   <Your-Vault>/.obsidian/plugins/obsichat/
    ```
 3. Copy the 3 downloaded files into that folder.
-4. Reload plugins in Obsidian **Settings → Community Plugins** and toggle on **AI Chat**.
+4. Reload plugins in Obsidian **Settings → Community Plugins** and toggle on **Obsichat**.
 
 ---
 
@@ -71,7 +71,7 @@ cd agy-in-obsidian
 npm install
 npm run build
 ```
-Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plugins/agy-in-obsidian/`.
+Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plugins/obsichat/`.
 
 ---
 
@@ -118,9 +118,9 @@ Copy `main.js`, `manifest.json`, and `styles.css` to `<Your-Vault>/.obsidian/plu
 
 | Command | Action |
 | :--- | :--- |
-| `AI Chat: Open AI Chat Sidebar` | Opens or reveals the AI chat sidebar view. |
-| `AI Chat: Switch Model, Provider & Effort` | Opens the fuzzy search modal to switch models and effort. |
-| `AI Chat: Restart Session (New Chat)` | Resets the conversation context and starts fresh. |
+| `Obsichat: Open Obsichat Sidebar` | Opens or reveals the Obsichat sidebar view. |
+| `Obsichat: Switch Model, Provider & Effort` | Opens the fuzzy search modal to switch models and effort. |
+| `Obsichat: Restart Session (New Chat)` | Resets the conversation context and starts fresh. |
 
 ---
 
