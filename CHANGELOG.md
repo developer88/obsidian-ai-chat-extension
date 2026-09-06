@@ -5,6 +5,32 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2026-09-06
+
+### Added
+- **Native Obsidian View Actions**:
+  - Registered view actions (`New session`, `Sidecar AI settings`) directly into Obsidian's native pane header bar.
+- **Marketplace Visual Assets**:
+  - Embedded hero interface screenshot into `README.md` for in-app Obsidian Marketplace discovery.
+
+### Changed
+- **Native Obsidian UI Polish**:
+  - Refactored model switcher, quick action suggestion chips, and view components to strictly use native Obsidian design system tokens (`--background-modifier-form-field`, `--tag-radius`, `--interactive-accent`, `--font-ui-smaller`).
+  - Replaced generic AI-style `sparkles` icon with Obsidian's native `sliders-horizontal` configuration icon.
+  - Replaced status bar emoji with native `bot` Lucide icon.
+  - Streamlined empty state to match native Obsidian sidebars (Backlinks / Search).
+  - Stabilized settings section heading to "CLI configuration" across all AI providers.
+- **Documentation Overhaul**:
+  - Streamlined `README.md` for the Obsidian Marketplace directory and extracted manual/BRAT developer setup into `docs/DEVELOPMENT.md`.
+  - Unified all AI provider documentation across repository manifests to strictly feature Google Antigravity, GitHub Copilot, and Pi Coding Agent.
+
+### Fixed
+- **Attached Note Context Badge**:
+  - Formatted attached document badge to display the clean file basename instead of long absolute/vault paths.
+  - Added native tooltip (`aria-label`) displaying the full path and enabled smooth ellipsis text truncation (`...`).
+- **Settings Dropdown Text Clipping**:
+  - Resolved baseline clipping of dropdown text across Obsidian themes by adjusting vertical padding and minimum height.
+
 ## [3.3.1] - 2026-09-06
 
 ### Changed
