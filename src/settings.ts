@@ -88,13 +88,22 @@ export class AntigravitySettingTab extends PluginSettingTab {
 							void (async () => {
 								button.setButtonText('Querying...');
 								button.setDisabled(true);
-								const fetched = await this.plugin.cliService.fetchAvailableModels();
-								if (fetched && fetched.length > 0) {
-									new Notice(`Loaded ${fetched.length} models for ${provName}.`);
-								} else {
-									new Notice(`No models retrieved. Ensure "${provConfig?.cliCommand || provName}" is installed and working.`);
+								try {
+									const res = await this.plugin.cliService.fetchAvailableModels();
+									if (res.success) {
+										new Notice(`Loaded ${res.models.length} models for ${provName}.`);
+									} else {
+										const detail = res.error ? `: ${res.error}` : '';
+										new Notice(`Could not retrieve models for ${provName}${detail}`);
+									}
+								} catch (err: unknown) {
+									const msg = err instanceof Error ? err.message : String(err);
+									new Notice(`Error retrieving models for ${provName}: ${msg}`);
+								} finally {
+									button.setButtonText('Retrieve from CLI');
+									button.setDisabled(false);
+									this.update();
 								}
-								this.update();
 							})();
 						}));
 				}

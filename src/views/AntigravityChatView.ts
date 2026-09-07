@@ -190,20 +190,22 @@ export class AntigravityChatView extends ItemView {
 	private async refreshAvailableModels(showNotice = true): Promise<void> {
 		this.refreshModelsBtn.addClass('is-spinning');
 		try {
-			const fetched = await this.cliService.fetchAvailableModels();
-			if (fetched && fetched.length > 0) {
+			const res = await this.cliService.fetchAvailableModels();
+			if (res.success) {
 				this.updateModelSelectionFromSettings();
 				if (showNotice) {
-					new Notice(`Loaded ${fetched.length} models.`);
+					new Notice(`Loaded ${res.models.length} models.`);
 				}
 			} else {
 				if (showNotice) {
-					new Notice('No models found from active provider.');
+					const detail = res.error ? `: ${res.error}` : '';
+					new Notice(`Could not refresh models${detail}`);
 				}
 			}
-		} catch {
+		} catch (err: unknown) {
 			if (showNotice) {
-				new Notice('Could not refresh models from CLI.');
+				const msg = err instanceof Error ? err.message : 'CLI error';
+				new Notice(`Could not refresh models: ${msg}`);
 			}
 		} finally {
 			this.refreshModelsBtn.removeClass('is-spinning');

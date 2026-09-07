@@ -8,6 +8,13 @@ export interface ModelDefinition {
 	effortModelMap?: Record<string, string>; // e.g. { 'low': 'gemini-3.8-flash-low', 'medium': 'gemini-3.8-flash-medium' }
 }
 
+export interface ModelDiscoveryResult {
+	success: boolean;
+	models: ModelDefinition[];
+	isFallback: boolean;
+	error?: string;
+}
+
 export interface ProviderConfig {
 	id: AiProviderId;
 	name: string;
@@ -90,37 +97,20 @@ export const ANTIGRAVITY_MODELS: ModelDefinition[] = [
 
 export const PI_DEFAULT_MODELS: ModelDefinition[] = [
 	{
-		id: 'gemini-3.1-pro-preview',
-		label: 'Gemini 3.1 Pro Preview (Google)',
-		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
+		id: 'github-copilot/claude-sonnet-4.5',
+		label: 'Claude Sonnet 4.5 (GitHub Copilot)',
+		efforts: ['Off', 'Low', 'Medium', 'High'],
 		defaultEffort: 'High'
 	},
 	{
-		id: 'gemini-2.5-pro',
-		label: 'Gemini 2.5 Pro (Google)',
-		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
+		id: 'github-copilot/claude-haiku-4.5',
+		label: 'Claude Haiku 4.5 (GitHub Copilot)',
+		efforts: ['Off', 'Low', 'Medium', 'High'],
 		defaultEffort: 'High'
 	},
 	{
-		id: 'gemini-2.5-flash',
-		label: 'Gemini 2.5 Flash (Google)',
-		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
-		defaultEffort: 'High'
-	},
-	{
-		id: 'claude-3-7-sonnet',
-		label: 'Claude 3.7 Sonnet (Anthropic)',
-		efforts: ['Off', 'Low', 'Medium', 'High', 'Max'],
-		defaultEffort: 'High'
-	},
-	{
-		id: 'claude-3-5-sonnet',
-		label: 'Claude 3.5 Sonnet (Anthropic)',
-		efforts: []
-	},
-	{
-		id: 'gpt-4o',
-		label: 'GPT-4o (OpenAI)',
+		id: 'github-copilot/gpt-4o',
+		label: 'GPT-4o (GitHub Copilot)',
 		efforts: []
 	}
 ];
@@ -197,9 +187,9 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 		cliCommand: 'pi',
 		useWsl: false,
 		extraCliFlags: '',
-		selectedModel: 'gemini-3.1-pro-preview',
+		selectedModel: 'github-copilot/claude-sonnet-4.5',
 		modelEfforts: {
-			'gemini-3.1-pro-preview': 'High'
+			'github-copilot/claude-sonnet-4.5': 'High'
 		},
 		cachedModels: PI_DEFAULT_MODELS,
 		defaultMode: '',

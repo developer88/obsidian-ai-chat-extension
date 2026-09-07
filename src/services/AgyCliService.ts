@@ -4,6 +4,7 @@ import {
 	AiChatPluginSettings,
 	CliStreamCallbacks,
 	ModelDefinition,
+	ModelDiscoveryResult,
 	AiProviderId,
 	ProviderConfig,
 	ANTIGRAVITY_MODELS,
@@ -97,6 +98,37 @@ export class AgyCliService {
 		return trimmed;
 	}
 
+	public static getSpawnEnvironment(): NodeJS.ProcessEnv {
+		const env: NodeJS.ProcessEnv = {
+			...process.env,
+			PAGER: 'cat',
+			CI: '1',
+		};
+		// On macOS/Linux GUI apps (like Obsidian launched via Finder/Dock), PATH often lacks Homebrew and user binaries.
+		// Prepend standard binary paths so node, pi, agy, copilot can be located by /usr/bin/env shebangs.
+		if (process.platform === 'darwin' || process.platform === 'linux') {
+			const extraPaths = [
+				'/opt/homebrew/bin',
+				'/opt/homebrew/sbin',
+				'/usr/local/bin',
+				'/usr/local/sbin',
+				'/usr/bin',
+				'/bin',
+				'/usr/sbin',
+				'/sbin'
+			];
+			const currentPath = env.PATH || env.Path || '';
+			const currentSegments = currentPath.split(':').filter(Boolean);
+			for (const p of extraPaths) {
+				if (!currentSegments.includes(p)) {
+					currentSegments.push(p);
+				}
+			}
+			env.PATH = currentSegments.join(':');
+		}
+		return env;
+	}
+
 	private resolveExecution(
 		config: ProviderConfig,
 		targetProvider: AiProviderId,
@@ -137,6 +169,7 @@ export class AgyCliService {
 
 			try {
 				const child = spawn(command, args, {
+					env: AgyCliService.getSpawnEnvironment(),
 					shell: false,
 					timeout: 5000,
 					stdio: ['ignore', 'pipe', 'pipe']
@@ -149,10 +182,13 @@ export class AgyCliService {
 		});
 	}
 
-	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDefinition[]> {
+	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDiscoveryResult> {
 		const settings = this.getSettings();
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
 		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
+		const fallbackModels = config.cachedModels && config.cachedModels.length > 0
+			? config.cachedModels
+			: (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : []));
 
 		const queryFlag = targetProvider === 'copilot'
 			? '--help'
@@ -163,9 +199,11 @@ export class AgyCliService {
 
 		return new Promise((resolve) => {
 			let output = '';
+			let stderrOutput = '';
 
 			try {
 				const child = spawn(command, args, {
+					env: AgyCliService.getSpawnEnvironment(),
 					shell: false,
 					timeout: 10000,
 					stdio: ['ignore', 'pipe', 'pipe']
@@ -175,9 +213,18 @@ export class AgyCliService {
 					output += data.toString();
 				});
 
+				child.stderr?.on('data', (data: Buffer | string) => {
+					stderrOutput += data.toString();
+				});
+
 				child.on('error', (err: Error) => {
 					console.warn(`[Sidecar AI] Could not query ${targetProvider} CLI:`, err);
-					resolve(config.cachedModels || []);
+					resolve({
+						success: false,
+						models: fallbackModels,
+						isFallback: true,
+						error: `Failed to execute "${command}": ${err.message}. Check your CLI path and PATH environment variable.`
+					});
 				});
 
 				child.on('close', (code) => {
@@ -194,18 +241,50 @@ export class AgyCliService {
 
 							if (parsed.length > 0) {
 								if (settings.providers && settings.providers[targetProvider]) {
-									settings.providers[targetProvider].cachedModels = parsed;
+									const targetConf = settings.providers[targetProvider];
+									targetConf.cachedModels = parsed;
+
+									// Validate selectedModel against newly discovered models
+									const modelExists = targetConf.selectedModel && parsed.some(m => m.id === targetConf.selectedModel);
+									if (!modelExists) {
+										targetConf.selectedModel = parsed[0].id;
+										if (!targetConf.modelEfforts) {
+											targetConf.modelEfforts = {};
+										}
+										if (parsed[0].defaultEffort) {
+											targetConf.modelEfforts[parsed[0].id] = parsed[0].defaultEffort;
+										}
+									}
+
 									await this.saveSettings(settings);
 								}
-								resolve(parsed);
+								resolve({
+									success: true,
+									models: parsed,
+									isFallback: false
+								});
 								return;
 							}
 						}
-						resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : [])));
+
+						const errDetail = stderrOutput.trim() || `CLI exited with code ${code}`;
+						console.warn(`[Sidecar AI] Model discovery non-zero or empty for ${targetProvider}: ${errDetail}`);
+						resolve({
+							success: false,
+							models: fallbackModels,
+							isFallback: true,
+							error: errDetail
+						});
 					})();
 				});
-			} catch {
-				resolve(config.cachedModels || (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : [])));
+			} catch (err: unknown) {
+				const errMsg = err instanceof Error ? err.message : String(err);
+				resolve({
+					success: false,
+					models: fallbackModels,
+					isFallback: true,
+					error: errMsg
+				});
 			}
 		});
 	}
@@ -258,24 +337,16 @@ export class AgyCliService {
 
 				if (!grouped.has(baseId)) {
 					const baseLabel = label.replace(/\s*\((low|medium|high|max)\)/i, '').trim();
-					grouped.set(baseId, {
-						label: baseLabel,
-						efforts: [],
-						map: {}
-					});
+					grouped.set(baseId, { label: baseLabel, efforts: [], map: {} });
 				}
-				const entry = grouped.get(baseId)!;
-				if (!entry.efforts.includes(effortTitle)) {
-					entry.efforts.push(effortTitle);
+				const item = grouped.get(baseId)!;
+				if (!item.efforts.includes(effortTitle)) {
+					item.efforts.push(effortTitle);
+					item.map[effortRaw] = id;
 				}
-				entry.map[effortRaw] = id;
 			} else {
 				if (!grouped.has(id)) {
-					grouped.set(id, {
-						label,
-						efforts: [],
-						map: {}
-					});
+					grouped.set(id, { label, efforts: [], map: {} });
 				}
 			}
 		}
@@ -300,7 +371,7 @@ export class AgyCliService {
 
 		for (const rawLine of lines) {
 			const line = rawLine.trim();
-			if (!line || line.startsWith('provider') || line.startsWith('---') || line.startsWith('ID')) {
+			if (!line || line.toLowerCase().startsWith('provider') || line.startsWith('---') || line.startsWith('ID')) {
 				continue;
 			}
 
@@ -309,19 +380,22 @@ export class AgyCliService {
 
 			const provider = parts[0];
 			const model = parts[1];
+			// Preserve unambiguous combined identifier <provider>/<model> (e.g. github-copilot/claude-haiku-4.5)
+			const scopedId = `${provider}/${model}`;
 			const isThinking = parts.length >= 5 && parts[4].toLowerCase() === 'yes';
 
-			const providerFormatted = provider.charAt(0).toUpperCase() + provider.slice(1);
+			const providerFormatted = provider.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 			const cleanModel = model
 				.split('-')
 				.map(w => w.charAt(0).toUpperCase() + w.slice(1))
 				.join(' ');
 
 			const label = `${cleanModel} (${providerFormatted})`;
-			const efforts = isThinking ? ['Off', 'Low', 'Medium', 'High', 'Max'] : [];
+			// Pi supports off, low, medium, high when model supports thinking
+			const efforts = isThinking ? ['Off', 'Low', 'Medium', 'High'] : [];
 
 			models.push({
-				id: model,
+				id: scopedId,
 				label,
 				efforts,
 				defaultEffort: isThinking ? 'High' : undefined
@@ -420,11 +494,7 @@ export class AgyCliService {
 		try {
 			const child = spawn(command, args, {
 				cwd: config.useWsl ? undefined : vaultPath,
-				env: {
-					...process.env,
-					PAGER: 'cat',
-					CI: '1',
-				},
+				env: AgyCliService.getSpawnEnvironment(),
 				shell: false,
 				stdio: ['pipe', 'pipe', 'pipe']
 			});
