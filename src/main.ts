@@ -220,7 +220,11 @@ export default class AntigravityPlugin extends Plugin {
 		}
 
 		const rawData = (await this.loadData()) as (Partial<AiChatPluginSettings> & LegacySettingsMigration) | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, rawData);
+		this.settings = {
+			...DEFAULT_SETTINGS,
+			providers: JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)),
+			...(rawData || {})
+		};
 
 		if (!this.settings.providers) {
 			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)) as Record<AiProviderId, ProviderConfig>;

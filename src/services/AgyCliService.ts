@@ -1,5 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
-import { App, FileSystemAdapter } from 'obsidian';
+import type { App, FileSystemAdapter } from 'obsidian';
 import {
 	AiChatPluginSettings,
 	CliStreamCallbacks,
@@ -71,8 +71,8 @@ export class AgyCliService {
 	}
 
 	private getVaultBasePath(): string {
-		const adapter = this.app.vault.adapter;
-		if (adapter instanceof FileSystemAdapter) {
+		const adapter = this.app.vault.adapter as { getBasePath?: () => string } | undefined;
+		if (adapter && typeof adapter.getBasePath === 'function') {
 			return adapter.getBasePath();
 		}
 		return typeof process !== 'undefined' && process.cwd ? process.cwd() : '';
@@ -292,21 +292,17 @@ export class AgyCliService {
 	private parseCopilotModels(rawOutput: string): ModelDefinition[] {
 		// Parse models from copilot CLI help/output if available
 		const models: ModelDefinition[] = [];
-		const modelMatch = rawOutput.match(/--model\s+<model>\s+.*?(?:\n\s{2,}.*?)*/i);
-		if (modelMatch) {
-			const text = modelMatch[0];
-			const choicesMatch = text.match(/\(choices:\s*([^)]+)\)/i);
-			if (choicesMatch) {
-				const items = choicesMatch[1].split(/,\s*/);
-				for (const item of items) {
-					const cleaned = item.replace(/['"]/g, '').trim();
-					if (cleaned) {
-						models.push({
-							id: cleaned,
-							label: cleaned,
-							efforts: []
-						});
-					}
+		const modelMatch = rawOutput.match(/--model\s+<model>[\s\S]*?\((?:choices|allowed values):\s*([^)]+)\)/i);
+		if (modelMatch && modelMatch[1]) {
+			const items = modelMatch[1].split(/,\s*/);
+			for (const item of items) {
+				const cleaned = item.replace(/['"]/g, '').trim();
+				if (cleaned) {
+					models.push({
+						id: cleaned,
+						label: cleaned,
+						efforts: []
+					});
 				}
 			}
 		}
