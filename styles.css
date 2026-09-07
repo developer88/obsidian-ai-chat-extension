@@ -363,6 +363,49 @@
 	margin-bottom: 0;
 }
 
+/* Animated Typing Indicator (Waiting for Response) */
+.agy-typing-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 4px;
+	height: 20px;
+	box-sizing: border-box;
+}
+
+.agy-typing-dot {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background-color: var(--text-muted);
+	display: inline-block;
+	animation: agy-typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.agy-typing-dot:nth-child(1) {
+	animation-delay: -0.32s;
+}
+
+.agy-typing-dot:nth-child(2) {
+	animation-delay: -0.16s;
+}
+
+.agy-typing-dot:nth-child(3) {
+	animation-delay: 0s;
+}
+
+@keyframes agy-typing-bounce {
+	0%, 80%, 100% {
+		transform: scale(0.6);
+		opacity: 0.35;
+	}
+	40% {
+		transform: scale(1.15);
+		opacity: 1;
+		background-color: var(--text-accent);
+	}
+}
+
 /* Assistant Error Message */
 .agy-message.is-error .agy-assistant-content {
 	color: var(--text-error);

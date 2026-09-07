@@ -587,11 +587,23 @@ export class AntigravityChatView extends ItemView {
 			}
 
 			const contentDiv = msgRow.createDiv({ cls: 'agy-assistant-content markdown-rendered' });
-			this.renderMarkdownTo(contentDiv, msg.content);
+			if (!msg.content && msg.isStreaming) {
+				this.renderWaitingIndicator(contentDiv);
+			} else {
+				this.renderMarkdownTo(contentDiv, msg.content);
+			}
 		}
 
 		this.scrollToBottom();
 		return msgRow;
+	}
+
+	private renderWaitingIndicator(targetEl: HTMLElement): void {
+		targetEl.empty();
+		const indicator = targetEl.createDiv({ cls: 'agy-typing-indicator' });
+		indicator.createSpan({ cls: 'agy-typing-dot' });
+		indicator.createSpan({ cls: 'agy-typing-dot' });
+		indicator.createSpan({ cls: 'agy-typing-dot' });
 	}
 
 	private updateAssistantMessageContent(msgRow: HTMLElement, content: string, isFinal = false): void {
@@ -599,7 +611,11 @@ export class AntigravityChatView extends ItemView {
 		if (!contentDiv) return;
 
 		contentDiv.empty();
-		this.renderMarkdownTo(contentDiv, content);
+		if (!content && !isFinal) {
+			this.renderWaitingIndicator(contentDiv);
+		} else {
+			this.renderMarkdownTo(contentDiv, content);
+		}
 
 		if (isFinal) {
 			this.attachCodeBlockActions(contentDiv);
@@ -609,7 +625,7 @@ export class AntigravityChatView extends ItemView {
 	private renderMarkdownTo(targetEl: HTMLElement, markdownText: string): void {
 		void MarkdownRenderer.render(
 			this.app,
-			markdownText || '...',
+			markdownText || '',
 			targetEl,
 			'',
 			this
