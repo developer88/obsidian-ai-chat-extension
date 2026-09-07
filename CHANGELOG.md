@@ -5,6 +5,18 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.1] - 2026-09-07
+
+### Fixed
+- **macOS GUI PATH Environment**:
+  - Automatically resolved Homebrew and user binary search paths (`/opt/homebrew/bin`, `/usr/local/bin`, etc.) when Obsidian runs as a macOS GUI application, enabling seamless detection of `pi`, `node`, and other local AI CLI tools.
+- **Dynamic Model Retrieval & Diagnostics**:
+  - Replaced silent fallback responses with explicit status reporting; CLI discovery errors or missing tools now surface descriptive notice messages.
+  - Resolved model selection resetting by validating existing selections against dynamically discovered models.
+- **Pi Coding Agent Provider Support**:
+  - Maintained provider-scoped model identifiers (`<provider>/<model>`) to eliminate namespace conflicts when querying or prompting Pi models.
+  - Adjusted reasoning effort levels to match Pi CLI's supported thinking modes (`Off`, `Low`, `Medium`, `High`).
+
 ## [3.5.0] - 2026-09-06
 
 ### Added
