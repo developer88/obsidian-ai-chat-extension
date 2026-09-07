@@ -57,7 +57,15 @@ When preparing a release, updating `CHANGELOG.md`, generating GitHub release not
 
 ---
 
-## 4. Release Checklist
+## 4. No Local GitHub CLI (`gh`) Usage
+
+- **Never invoke `gh` locally** (neither in Windows PowerShell nor in WSL). The user does not have `gh` installed locally.
+- Creating GitHub Releases is handled automatically in GitHub Actions by pushing git tags (`git push origin <tag>`).
+- If inspecting release runs or API data is needed, use standard `curl` or Node `fetch` against GitHub's public API, never `gh`.
+
+---
+
+## 5. Release Checklist
 
 1. [ ] Run `wsl -- npm run typecheck`.
 2. [ ] Run `wsl -- npm test`. Ensure all tests pass. If any test fails, notify user and pause.
