@@ -5,6 +5,15 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-09-08
+
+### Added
+- **Custom CLI Provider**:
+  - Added support for arbitrary, custom AI coding agent CLIs (e.g. `super-ai tell "<prompt>"`).
+  - Configurable command argument templates using `{prompt}` placeholder (e.g. `tell {prompt}`, `run --query {prompt}`, or `{prompt}`).
+  - Streamlined UI for custom agents: automatically hides model selectors and displays a clean custom agent indicator badge in the chat sidebar and status bar.
+  - Seamless execution compatibility across Windows, WSL, and macOS/Linux.
+
 ## [3.5.2] - 2026-09-08
 
 ### Added
