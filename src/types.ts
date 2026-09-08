@@ -215,6 +215,37 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 	}
 };
 
+export function cloneProviderConfig(config: ProviderConfig): ProviderConfig {
+	return {
+		id: config.id,
+		name: config.name,
+		cliCommand: config.cliCommand,
+		useWsl: config.useWsl,
+		extraCliFlags: config.extraCliFlags,
+		selectedModel: config.selectedModel,
+		modelEfforts: { ...config.modelEfforts },
+		cachedModels: config.cachedModels.map((m) => ({
+			id: m.id,
+			label: m.label,
+			efforts: [...m.efforts],
+			defaultEffort: m.defaultEffort,
+			effortModelMap: m.effortModelMap ? { ...m.effortModelMap } : undefined
+		})),
+		defaultMode: config.defaultMode,
+		conversationId: config.conversationId,
+		promptTemplate: config.promptTemplate
+	};
+}
+
+export function cloneDefaultProviderConfigs(): Record<AiProviderId, ProviderConfig> {
+	return {
+		antigravity: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.antigravity),
+		copilot: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.copilot),
+		pi: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.pi),
+		custom: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.custom)
+	};
+}
+
 export const DEFAULT_SETTINGS: AiChatPluginSettings = {
 	activeProvider: 'antigravity',
 	providers: DEFAULT_PROVIDER_CONFIGS,

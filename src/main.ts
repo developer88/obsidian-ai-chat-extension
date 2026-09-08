@@ -3,9 +3,10 @@ import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
 	AiProviderId,
-	ProviderConfig,
 	ModelDefinition,
-	DEFAULT_PROVIDER_CONFIGS
+	DEFAULT_PROVIDER_CONFIGS,
+	cloneProviderConfig,
+	cloneDefaultProviderConfigs
 } from './types';
 import { AgyCliService } from './services/AgyCliService';
 import { AntigravityChatView, ANTIGRAVITY_CHAT_VIEW_TYPE } from './views/AntigravityChatView';
@@ -173,10 +174,10 @@ export default class AntigravityPlugin extends Plugin {
 		const provId = this.settings.activeProvider || 'antigravity';
 
 		if (!this.settings.providers) {
-			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)) as Record<AiProviderId, ProviderConfig>;
+			this.settings.providers = cloneDefaultProviderConfigs();
 		}
 		if (!this.settings.providers[provId]) {
-			this.settings.providers[provId] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[provId])) as ProviderConfig;
+			this.settings.providers[provId] = cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS[provId]);
 		}
 
 		const provConfig = this.settings.providers[provId];
@@ -249,16 +250,16 @@ export default class AntigravityPlugin extends Plugin {
 		const rawData = (await this.loadData()) as (Partial<AiChatPluginSettings> & LegacySettingsMigration) | null;
 		this.settings = {
 			...DEFAULT_SETTINGS,
-			providers: JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)),
+			providers: cloneDefaultProviderConfigs(),
 			...(rawData || {})
 		};
 
 		if (!this.settings.providers) {
-			this.settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)) as Record<AiProviderId, ProviderConfig>;
+			this.settings.providers = cloneDefaultProviderConfigs();
 		} else {
 			for (const provKey of Object.keys(DEFAULT_PROVIDER_CONFIGS) as AiProviderId[]) {
 				if (!this.settings.providers[provKey]) {
-					this.settings.providers[provKey] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[provKey])) as ProviderConfig;
+					this.settings.providers[provKey] = cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS[provKey]);
 				}
 			}
 		}

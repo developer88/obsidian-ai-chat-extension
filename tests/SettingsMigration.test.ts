@@ -7,23 +7,25 @@ import {
 	PI_DEFAULT_MODELS,
 	AiChatPluginSettings,
 	ProviderConfig,
-	AiProviderId
+	AiProviderId,
+	cloneProviderConfig,
+	cloneDefaultProviderConfigs
 } from '../src/types';
 
 // Migration function mirroring the logic in AntigravityPlugin.prototype.loadSettings
-function migrateSettings(rawData: Record<string, any> | null): AiChatPluginSettings {
+function migrateSettings(rawData: Record<string, unknown> | null): AiChatPluginSettings {
 	const settings: AiChatPluginSettings = {
 		...DEFAULT_SETTINGS,
-		providers: JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)),
-		...(rawData || {})
+		providers: cloneDefaultProviderConfigs(),
+		...((rawData as Partial<AiChatPluginSettings>) || {})
 	};
 
 	if (!settings.providers) {
-		settings.providers = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS)) as Record<AiProviderId, ProviderConfig>;
+		settings.providers = cloneDefaultProviderConfigs();
 	} else {
 		for (const provKey of Object.keys(DEFAULT_PROVIDER_CONFIGS) as AiProviderId[]) {
 			if (!settings.providers[provKey]) {
-				settings.providers[provKey] = JSON.parse(JSON.stringify(DEFAULT_PROVIDER_CONFIGS[provKey])) as ProviderConfig;
+				settings.providers[provKey] = cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS[provKey]);
 			}
 		}
 	}

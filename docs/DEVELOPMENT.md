@@ -64,6 +64,9 @@ Copy these three files to your vault's plugin directory (`.obsidian/plugins/side
 # Typecheck
 npm run typecheck
 
+# Lint (Obsidian developer guidelines)
+npm run lint
+
 # Run test suite
 npm test
 

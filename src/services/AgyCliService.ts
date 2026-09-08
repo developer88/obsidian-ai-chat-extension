@@ -1,5 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
-import type { App, FileSystemAdapter } from 'obsidian';
+import type { App } from 'obsidian';
 import {
 	AiChatPluginSettings,
 	CliStreamCallbacks,
