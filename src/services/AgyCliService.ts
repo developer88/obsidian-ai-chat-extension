@@ -13,6 +13,88 @@ import {
 	PROVIDER_METADATA
 } from '../types';
 
+export interface HistoryTurn {
+	role: 'user' | 'assistant';
+	content: string;
+	attachedNotePath?: string;
+	attachedSelection?: string;
+}
+
+export interface HistoryFormatOptions {
+	maxHistoryTurns?: number;
+	maxHistoryChars?: number;
+}
+
+export function formatPromptWithHistory(
+	currentPrompt: string,
+	history: HistoryTurn[],
+	options?: HistoryFormatOptions
+): string {
+	const maxTurns = options?.maxHistoryTurns ?? 6;
+	const maxChars = options?.maxHistoryChars ?? 16000;
+
+	// Filter out empty or whitespace-only messages
+	const validTurns = history.filter(turn => turn.content && turn.content.trim().length > 0);
+	if (validTurns.length === 0) {
+		return currentPrompt;
+	}
+
+	// Slice the most recent turns up to maxTurns
+	const recentTurns = validTurns.slice(-maxTurns);
+
+	// Format each turn
+	const formattedTurns: string[] = [];
+	for (const turn of recentTurns) {
+		if (turn.role === 'user') {
+			let userBody = turn.content.trim();
+			if (turn.attachedNotePath && !userBody.includes(turn.attachedNotePath)) {
+				if (turn.attachedSelection) {
+					userBody = `Regarding the selected text in file "${turn.attachedNotePath}":\n"""\n${turn.attachedSelection}\n"""\n\n${userBody}`;
+				} else {
+					userBody = `The context: "${turn.attachedNotePath}":\n\n${userBody}`;
+				}
+			}
+			formattedTurns.push(`User:\n${userBody}`);
+		} else {
+			formattedTurns.push(`Assistant:\n${turn.content.trim()}`);
+		}
+	}
+
+	// Work backwards from latest turn to ensure total length does not exceed maxChars
+	const selectedTurns: string[] = [];
+	let currentLength = 0;
+
+	for (let i = formattedTurns.length - 1; i >= 0; i--) {
+		let turnText = formattedTurns[i];
+		// If a single turn itself is larger than maxChars, truncate it
+		if (turnText.length > maxChars) {
+			turnText = turnText.slice(0, maxChars - 80) + '\n\n[... content truncated for length ...]';
+		}
+
+		if (currentLength + turnText.length + 2 > maxChars && selectedTurns.length > 0) {
+			break;
+		}
+
+		selectedTurns.unshift(turnText);
+		currentLength += turnText.length + 2;
+	}
+
+	if (selectedTurns.length === 0) {
+		return currentPrompt;
+	}
+
+	const historyBlock = selectedTurns.join('\n\n');
+
+	return `Previous conversation history:
+
+${historyBlock}
+
+---
+
+Current request:
+${currentPrompt}`;
+}
+
 export class AgyCliService {
 	private activeProcess: ChildProcess | null = null;
 

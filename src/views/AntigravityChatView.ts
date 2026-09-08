@@ -13,7 +13,7 @@ import {
 	ActiveNoteContext,
 	PROVIDER_METADATA
 } from '../types';
-import { AgyCliService } from '../services/AgyCliService';
+import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../services/AgyCliService';
 import { ProcessExecutionNoticeModal } from '../modals/ModelSuggestModal';
 
 export const ANTIGRAVITY_CHAT_VIEW_TYPE = 'antigravity-chat-view';
@@ -441,11 +441,22 @@ export class AntigravityChatView extends ItemView {
 			if (attachedSelection) {
 				noteContextPrefix = `Regarding the selected text in file "${targetFilePath}":\n"""\n${attachedSelection}\n"""\n\n`;
 			} else {
-				noteContextPrefix = `Please read and analyze the file "${targetFilePath}":\n\n`;
+				noteContextPrefix = `The context: "${targetFilePath}":\n\n`;
 			}
 		}
 
-		const fullPromptForCli = `${noteContextPrefix}${userText}`;
+		const rawCurrentPrompt = `${noteContextPrefix}${userText}`;
+
+		const historyTurns: HistoryTurn[] = this.messages
+			.filter(m => (m.role === 'user' || m.role === 'assistant') && !m.isStreaming && m.content && m.content.trim().length > 0)
+			.map(m => ({
+				role: m.role as 'user' | 'assistant',
+				content: m.content,
+				attachedNotePath: m.attachedNotePath,
+				attachedSelection: m.attachedSelection
+			}));
+
+		const fullPromptForCli = formatPromptWithHistory(rawCurrentPrompt, historyTurns);
 
 		// Clear input
 		this.inputEl.value = '';

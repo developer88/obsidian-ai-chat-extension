@@ -5,6 +5,17 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2] - 2026-09-08
+
+### Added
+- **Multi-Turn Conversation Memory**:
+  - Subsequent messages within a chat session now retain full context from prior user requests, attached note paths, and assistant responses across all supported providers (Google Antigravity, GitHub Copilot, and Pi Coding Agent).
+  - Enables multi-turn workflows such as reviewing or revising note content in one turn and instructing the AI to write the output directly back to the active file in the next.
+
+### Changed
+- **Direct Note Context Framing**:
+  - Updated note attachment prompt framing to concise syntax (`The context: "<path>":`), improving clarity and reducing token overhead.
+
 ## [3.5.1] - 2026-09-07
 
 ### Fixed

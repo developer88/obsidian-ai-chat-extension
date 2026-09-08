@@ -1,6 +1,6 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { AgyCliService } from '../src/services/AgyCliService';
+import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../src/services/AgyCliService';
 import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
@@ -226,3 +226,97 @@ describe('AgyCliService - resolveExecution', () => {
 		}
 	});
 });
+
+describe('formatPromptWithHistory - Multi-Turn Conversation Context', () => {
+	test('returns raw prompt when history is empty (Turn 1)', () => {
+		const rawPrompt = 'The context: "/path/to/note.md":\n\nImprove the writing of this note';
+		const result = formatPromptWithHistory(rawPrompt, []);
+		assert.equal(result, rawPrompt);
+	});
+
+	test('formats previous turns with context and assistant responses (Turn 2)', () => {
+		const history: HistoryTurn[] = [
+			{
+				role: 'user',
+				content: 'Improve the writing of this note',
+				attachedNotePath: '/path/to/note.md'
+			},
+			{
+				role: 'assistant',
+				content: 'Here is the improved note:\n# Summary\nMuch better text.'
+			}
+		];
+		const currentPrompt = 'The context: "/path/to/note.md":\n\nWrite it back to the original file';
+		const result = formatPromptWithHistory(currentPrompt, history);
+
+		assert.ok(result.includes('Previous conversation history:'));
+		assert.ok(result.includes('User:\nThe context: "/path/to/note.md":\n\nImprove the writing of this note'));
+		assert.ok(result.includes('Assistant:\nHere is the improved note:\n# Summary\nMuch better text.'));
+		assert.ok(result.includes('---\n\nCurrent request:\nThe context: "/path/to/note.md":\n\nWrite it back to the original file'));
+	});
+
+	test('formats selection context in previous turns', () => {
+		const history: HistoryTurn[] = [
+			{
+				role: 'user',
+				content: 'Translate this snippet',
+				attachedNotePath: '/path/to/note.md',
+				attachedSelection: 'const foo = 42;'
+			},
+			{
+				role: 'assistant',
+				content: 'Translated snippet.'
+			}
+		];
+		const result = formatPromptWithHistory('Now optimize it', history);
+		assert.ok(result.includes('Regarding the selected text in file "/path/to/note.md":\n"""\nconst foo = 42;\n"""\n\nTranslate this snippet'));
+	});
+
+	test('does not duplicate context prefix if user content already has it', () => {
+		const history: HistoryTurn[] = [
+			{
+				role: 'user',
+				content: 'The context: "/path/to/note.md":\n\nAlready prefixed',
+				attachedNotePath: '/path/to/note.md'
+			}
+		];
+		const result = formatPromptWithHistory('Next turn', history);
+		assert.ok(!result.includes('The context: "/path/to/note.md":\n\nThe context:'));
+	});
+
+	test('ignores empty or whitespace-only messages', () => {
+		const history: HistoryTurn[] = [
+			{ role: 'user', content: '   ' },
+			{ role: 'assistant', content: '' }
+		];
+		const result = formatPromptWithHistory('Hello', history);
+		assert.equal(result, 'Hello');
+	});
+
+	test('limits history to maxHistoryTurns', () => {
+		const history: HistoryTurn[] = [
+			{ role: 'user', content: 'Turn 1' },
+			{ role: 'assistant', content: 'Reply 1' },
+			{ role: 'user', content: 'Turn 2' },
+			{ role: 'assistant', content: 'Reply 2' },
+			{ role: 'user', content: 'Turn 3' },
+			{ role: 'assistant', content: 'Reply 3' }
+		];
+		const result = formatPromptWithHistory('Turn 4', history, { maxHistoryTurns: 2 });
+		assert.ok(!result.includes('Turn 1'));
+		assert.ok(!result.includes('Turn 2'));
+		assert.ok(result.includes('Turn 3'));
+		assert.ok(result.includes('Reply 3'));
+	});
+
+	test('limits history length when exceeding maxHistoryChars', () => {
+		const history: HistoryTurn[] = [
+			{ role: 'user', content: 'A'.repeat(500) },
+			{ role: 'assistant', content: 'B'.repeat(500) }
+		];
+		const result = formatPromptWithHistory('Turn 2', history, { maxHistoryChars: 600 });
+		assert.ok(result.length < 1000);
+		assert.ok(result.includes('Turn 2'));
+	});
+});
+
