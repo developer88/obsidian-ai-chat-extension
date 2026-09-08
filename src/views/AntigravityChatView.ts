@@ -28,6 +28,7 @@ export class AntigravityChatView extends ItemView {
 	private modelTriggerLabel!: HTMLElement;
 	private sessionBadgeEl!: HTMLElement;
 	private refreshModelsBtn!: HTMLElement;
+	private customProviderBadge!: HTMLElement;
 	private isStreaming = false;
 	private includeActiveNote = true;
 	private currentActiveContext: ActiveNoteContext | null = null;
@@ -164,12 +165,40 @@ export class AntigravityChatView extends ItemView {
 		});
 		setIcon(this.refreshModelsBtn, 'refresh-cw');
 		this.refreshModelsBtn.addEventListener('click', () => { void this.refreshAvailableModels(true); });
+
+		// Custom Provider Badge (shown instead of model dropdown when custom provider is active)
+		this.customProviderBadge = modelGroup.createDiv({
+			cls: 'agy-custom-provider-badge',
+			text: 'Custom CLI'
+		});
+		this.customProviderBadge.setCssStyles({ display: 'none' });
 	}
 
 	public updateModelSelectionFromSettings(): void {
 		const settings = this.getSettings();
 		const provId = settings.activeProvider || 'antigravity';
 		const provConfig = settings.providers?.[provId];
+
+		if (provId === 'custom') {
+			if (this.modelTriggerBtn) this.modelTriggerBtn.setCssStyles({ display: 'none' });
+			if (this.refreshModelsBtn) this.refreshModelsBtn.setCssStyles({ display: 'none' });
+			if (this.customProviderBadge) {
+				const cmd = provConfig?.cliCommand || 'super-ai';
+				this.customProviderBadge.setText(`Custom CLI (${cmd})`);
+				this.customProviderBadge.setCssStyles({ display: 'inline-flex' });
+			}
+			return;
+		}
+
+		if (this.customProviderBadge) {
+			this.customProviderBadge.setCssStyles({ display: 'none' });
+		}
+		if (this.modelTriggerBtn) {
+			this.modelTriggerBtn.setCssStyles({ display: '' });
+		}
+		if (this.refreshModelsBtn) {
+			this.refreshModelsBtn.setCssStyles({ display: '' });
+		}
 
 		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
@@ -478,13 +507,13 @@ export class AntigravityChatView extends ItemView {
 		const settings = this.getSettings();
 		const provId = settings.activeProvider || 'antigravity';
 		const provConfig = settings.providers?.[provId];
-		const provName = PROVIDER_METADATA[provId]?.name || (provId === 'copilot' ? 'GitHub Copilot' : (provId === 'pi' ? 'Pi Coding Agent' : 'Google Antigravity'));
+		const provName = PROVIDER_METADATA[provId]?.name || (provId === 'copilot' ? 'GitHub Copilot' : (provId === 'pi' ? 'Pi Coding Agent' : (provId === 'custom' ? 'Custom CLI' : 'Google Antigravity')));
 
 		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
-		const currentModelLabel = modelDef ? modelDef.label : currentModelId;
-		const currentEffort = (modelDef && modelDef.efforts && modelDef.efforts.length > 1)
+		const currentModelLabel = provId === 'custom' ? (provConfig?.cliCommand || 'Custom CLI') : (modelDef ? modelDef.label : currentModelId);
+		const currentEffort = (provId !== 'custom' && modelDef && modelDef.efforts && modelDef.efforts.length > 1)
 			? (provConfig?.modelEfforts?.[currentModelId] || modelDef.defaultEffort || 'Medium')
 			: undefined;
 

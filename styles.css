@@ -200,6 +200,23 @@
 	animation: agy-spin 0.8s linear infinite;
 }
 
+.agy-custom-provider-badge {
+	display: inline-flex;
+	align-items: center;
+	height: var(--input-height, 30px);
+	padding: 0 var(--size-4-3);
+	font-size: var(--font-ui-smaller, 11.5px);
+	border-radius: var(--radius-s);
+	background-color: var(--background-modifier-form-field);
+	border: 1px solid var(--divider-color);
+	color: var(--text-muted);
+	font-weight: var(--font-medium, 500);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
 @keyframes agy-spin {
 	from { transform: rotate(0deg); }
 	to { transform: rotate(360deg); }

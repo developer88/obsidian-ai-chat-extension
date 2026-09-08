@@ -21,7 +21,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const defaultCmd = PROVIDER_METADATA[activeProvId]?.defaultCmd || 'agy';
 		const defaultExtraFlags = activeProvId === 'copilot'
 			? '--allow-all-tools'
-			: (activeProvId === 'pi' ? '--thinking high' : '--dangerously-skip-permissions');
+			: (activeProvId === 'pi' ? '--thinking high' : (activeProvId === 'custom' ? '' : '--dangerously-skip-permissions'));
 
 		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
@@ -34,7 +34,98 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			currentEffortStr = ` (${effort} effort)`;
 		}
 
-		return [
+		const cliConfigItems = [
+			{
+				name: 'CLI command or path',
+				desc: `The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`,
+				render: (setting: Setting) => {
+					setting.setName('CLI command or path')
+						.setDesc(`The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`)
+						.addText(text => text
+							.setPlaceholder(defaultCmd)
+							.setValue(provConfig?.cliCommand || defaultCmd)
+							.onChange((value) => {
+								void (async () => {
+									if (provConfig) {
+										const trimmed = value.trim();
+										if (/[;&|`$<>]/.test(trimmed)) {
+											new Notice('Shell metacharacters (;, &, |, `, $, <, >) are not permitted for security.');
+											provConfig.cliCommand = defaultCmd;
+											text.setValue(defaultCmd);
+										} else {
+											provConfig.cliCommand = trimmed || defaultCmd;
+										}
+										await this.plugin.saveSettings();
+									}
+								})();
+							}));
+				}
+			}
+		];
+
+		if (activeProvId === 'custom') {
+			cliConfigItems.push({
+				name: 'Command arguments format',
+				desc: 'Arguments template passed to the CLI. Use "{prompt}" as placeholder (e.g. "tell {prompt}").',
+				render: (setting: Setting) => {
+					setting.setName('Command arguments format')
+						.setDesc('Arguments template passed to the CLI. Use "{prompt}" as placeholder (e.g. "tell {prompt}").')
+						.addText(text => text
+							.setPlaceholder('tell {prompt}')
+							.setValue(provConfig?.promptTemplate || 'tell {prompt}')
+							.onChange((value) => {
+								void (async () => {
+									if (provConfig) {
+										provConfig.promptTemplate = value.trim() || 'tell {prompt}';
+										await this.plugin.saveSettings();
+									}
+								})();
+							}));
+				}
+			});
+		}
+
+		cliConfigItems.push(
+			{
+				name: 'Run in WSL',
+				desc: `Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`,
+				render: (setting: Setting) => {
+					setting.setName('Run in WSL')
+						.setDesc(`Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
+						.addToggle(toggle => toggle
+							.setValue(provConfig?.useWsl || false)
+							.onChange((value) => {
+								void (async () => {
+									if (provConfig) {
+										provConfig.useWsl = value;
+										await this.plugin.saveSettings();
+									}
+								})();
+							}));
+				}
+			},
+			{
+				name: 'Extra CLI flags',
+				desc: `Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`,
+				render: (setting: Setting) => {
+					setting.setName('Extra CLI flags')
+						.setDesc(`Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`)
+						.addText(text => text
+							.setPlaceholder(defaultExtraFlags)
+							.setValue(provConfig?.extraCliFlags || '')
+							.onChange((value) => {
+								void (async () => {
+									if (provConfig) {
+										provConfig.extraCliFlags = value.trim();
+										await this.plugin.saveSettings();
+									}
+								})();
+							}));
+				}
+			}
+		);
+
+		const definitions: SettingDefinitionItem[] = [
 			{
 				name: 'Active AI provider',
 				desc: 'Select which AI CLI provider powers your chat sessions.',
@@ -53,6 +144,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 							dropdown.addOption('antigravity', 'Google Antigravity (agy)');
 							dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
 							dropdown.addOption('pi', 'Pi Coding Agent (pi)');
+							dropdown.addOption('custom', 'Custom CLI (custom agent)');
 							dropdown.setValue(activeProvId);
 							dropdown.onChange((value: string) => {
 								void (async () => {
@@ -64,8 +156,11 @@ export class AntigravitySettingTab extends PluginSettingTab {
 							});
 						});
 				}
-			},
-			{
+			}
+		];
+
+		if (activeProvId !== 'custom') {
+			definitions.push({
 				name: 'Active model and reasoning effort',
 				desc: `Currently: ${currentModelLabel}${currentEffortStr}`,
 				render: (setting: Setting) => {
@@ -107,79 +202,18 @@ export class AntigravitySettingTab extends PluginSettingTab {
 							})();
 						}));
 				}
-			},
-			{
-				type: 'group',
-				heading: 'CLI configuration',
-				items: [
-					{
-						name: 'CLI command or path',
-						desc: `The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`,
-						render: (setting: Setting) => {
-							setting.setName('CLI command or path')
-								.setDesc(`The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`)
-								.addText(text => text
-									.setPlaceholder(defaultCmd)
-									.setValue(provConfig?.cliCommand || defaultCmd)
-									.onChange((value) => {
-										void (async () => {
-											if (provConfig) {
-												const trimmed = value.trim();
-												if (/[;&|`$<>]/.test(trimmed)) {
-													new Notice('Shell metacharacters (;, &, |, `, $, <, >) are not permitted for security.');
-													provConfig.cliCommand = defaultCmd;
-													text.setValue(defaultCmd);
-												} else {
-													provConfig.cliCommand = trimmed || defaultCmd;
-												}
-												await this.plugin.saveSettings();
-											}
-										})();
-									}));
-						}
-					},
-					{
-						name: 'Run in WSL',
-						desc: `Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`,
-						render: (setting: Setting) => {
-							setting.setName('Run in WSL')
-								.setDesc(`Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
-								.addToggle(toggle => toggle
-									.setValue(provConfig?.useWsl || false)
-									.onChange((value) => {
-										void (async () => {
-											if (provConfig) {
-												provConfig.useWsl = value;
-												await this.plugin.saveSettings();
-											}
-										})();
-									}));
-						}
-					},
-					{
-						name: 'Extra CLI flags',
-						desc: `Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`,
-						render: (setting: Setting) => {
-							setting.setName('Extra CLI flags')
-								.setDesc(`Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`)
-								.addText(text => text
-									.setPlaceholder(defaultExtraFlags)
-									.setValue(provConfig?.extraCliFlags || '')
-									.onChange((value) => {
-										void (async () => {
-											if (provConfig) {
-												provConfig.extraCliFlags = value.trim();
-												await this.plugin.saveSettings();
-											}
-										})();
-									}));
-						}
-					}
-				]
-			},
-			{
-				type: 'group',
-				heading: 'Vault integration and display',
+			});
+		}
+
+		definitions.push({
+			type: 'group',
+			heading: 'CLI configuration',
+			items: cliConfigItems
+		});
+
+		definitions.push({
+			type: 'group',
+			heading: 'Vault integration and display',
 				items: [
 					{
 						name: 'Auto-attach active note',
@@ -265,8 +299,9 @@ export class AntigravitySettingTab extends PluginSettingTab {
 						}
 					}
 				]
-			}
-		];
+			});
+
+		return definitions;
 	}
 }
 

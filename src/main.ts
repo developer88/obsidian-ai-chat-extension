@@ -34,6 +34,19 @@ export default class AntigravityPlugin extends Plugin {
 		this.statusBarItemEl = this.addStatusBarItem();
 		this.statusBarItemEl.addClass('agy-status-bar-item');
 		this.statusBarItemEl.addEventListener('click', () => {
+			if (this.settings.activeProvider === 'custom') {
+				const appWithSetting = this.app as unknown as {
+					setting?: {
+						open(): void;
+						openTabById(id: string): void;
+					};
+				};
+				if (appWithSetting.setting) {
+					appWithSetting.setting.open();
+					appWithSetting.setting.openTabById(this.manifest.id);
+				}
+				return;
+			}
 			new ModelSuggestModal(this.app, this).open();
 		});
 		this.updateStatusBar();
@@ -87,6 +100,10 @@ export default class AntigravityPlugin extends Plugin {
 			id: 'switch-antigravity-model',
 			name: 'Switch model & effort',
 			callback: () => {
+				if (this.settings.activeProvider === 'custom') {
+					new Notice('Custom CLI provider does not use model selection.');
+					return;
+				}
 				new ModelSuggestModal(this.app, this).open();
 			},
 		});
@@ -122,8 +139,18 @@ export default class AntigravityPlugin extends Plugin {
 
 		const provId = this.settings.activeProvider || 'antigravity';
 		const provConfig = this.settings.providers?.[provId];
-		const models = provConfig?.cachedModels || [];
 
+		if (provId === 'custom') {
+			const cmd = provConfig?.cliCommand || 'super-ai';
+			this.statusBarItemEl.empty();
+			const iconSpan = this.statusBarItemEl.createSpan({ cls: 'agy-status-bar-icon' });
+			setIcon(iconSpan, 'bot');
+			this.statusBarItemEl.createSpan({ text: ` Custom (${cmd})` });
+			this.statusBarItemEl.setAttribute('aria-label', `Sidecar AI: Custom CLI (${cmd}) (Click to configure)`);
+			return;
+		}
+
+		const models = provConfig?.cachedModels || [];
 		const currentId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentId || currentId.startsWith(m.id));
 

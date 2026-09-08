@@ -16,6 +16,7 @@ function createMockService(initialSettings: Partial<AiChatPluginSettings> = {}) 
 			antigravity: { ...DEFAULT_SETTINGS.providers.antigravity },
 			copilot: { ...DEFAULT_SETTINGS.providers.copilot },
 			pi: { ...DEFAULT_SETTINGS.providers.pi },
+			custom: { ...DEFAULT_SETTINGS.providers.custom },
 			...(initialSettings.providers || {})
 		}
 	};
@@ -221,9 +222,51 @@ describe('AgyCliService - resolveExecution', () => {
 			const agyResolved = resolverService.resolveExecution(agyConfig, 'antigravity');
 			assert.equal(agyResolved.command, 'agy.exe');
 			assert.deepEqual(agyResolved.prefixArgs, []);
+
+			// custom agent (e.g. super-ai) on win32 defaults to cmd.exe /c super-ai
+			const customConfig = { ...DEFAULT_SETTINGS.providers.custom, cliCommand: 'super-ai' };
+			const customResolved = resolverService.resolveExecution(customConfig, 'custom');
+			assert.equal(customResolved.command, 'cmd.exe');
+			assert.deepEqual(customResolved.prefixArgs, ['/c', 'super-ai']);
 		} finally {
 			Object.defineProperty(process, 'platform', { value: originalPlatform });
 		}
+	});
+
+	test('custom provider returns empty model discovery without error', async () => {
+		const { service } = createMockService({ activeProvider: 'custom' });
+		const res = await service.fetchAvailableModels('custom');
+		assert.equal(res.success, true);
+		assert.deepEqual(res.models, []);
+		assert.equal(res.isFallback, false);
+	});
+});
+
+describe('AgyCliService - buildCustomCliArgs', () => {
+	test('formats default template "tell {prompt}" into arguments', () => {
+		const args = AgyCliService.buildCustomCliArgs('tell {prompt}', 'Hello world');
+		assert.deepEqual(args, ['tell', 'Hello world']);
+	});
+
+	test('formats prompt when {prompt} is standalone or embedded', () => {
+		const args1 = AgyCliService.buildCustomCliArgs('{prompt}', 'Test prompt');
+		assert.deepEqual(args1, ['Test prompt']);
+
+		const args2 = AgyCliService.buildCustomCliArgs('run --query={prompt}', 'Search query');
+		assert.deepEqual(args2, ['run', '--query=Search query']);
+	});
+
+	test('appends prompt when template omits {prompt}', () => {
+		const args = AgyCliService.buildCustomCliArgs('ask', 'Hello');
+		assert.deepEqual(args, ['ask', 'Hello']);
+	});
+
+	test('falls back to "tell {prompt}" when template is undefined or blank', () => {
+		const args1 = AgyCliService.buildCustomCliArgs(undefined, 'Draft text');
+		assert.deepEqual(args1, ['tell', 'Draft text']);
+
+		const args2 = AgyCliService.buildCustomCliArgs('   ', 'Draft text');
+		assert.deepEqual(args2, ['tell', 'Draft text']);
 	});
 });
 

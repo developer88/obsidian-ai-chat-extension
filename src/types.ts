@@ -1,4 +1,4 @@
-export type AiProviderId = 'antigravity' | 'copilot' | 'pi';
+export type AiProviderId = 'antigravity' | 'copilot' | 'pi' | 'custom';
 
 export interface ModelDefinition {
 	id: string;
@@ -26,6 +26,7 @@ export interface ProviderConfig {
 	cachedModels: ModelDefinition[];
 	defaultMode: string;
 	conversationId: string | null;
+	promptTemplate?: string;
 }
 
 export const ANTIGRAVITY_MODELS: ModelDefinition[] = [
@@ -127,6 +128,10 @@ export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd:
 	pi: {
 		name: 'Pi Coding Agent',
 		defaultCmd: 'pi'
+	},
+	custom: {
+		name: 'Custom CLI',
+		defaultCmd: 'super-ai'
 	}
 };
 
@@ -194,6 +199,19 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 		cachedModels: PI_DEFAULT_MODELS,
 		defaultMode: '',
 		conversationId: null
+	},
+	custom: {
+		id: 'custom',
+		name: 'Custom CLI',
+		cliCommand: 'super-ai',
+		useWsl: false,
+		extraCliFlags: '',
+		selectedModel: '',
+		modelEfforts: {},
+		cachedModels: [],
+		defaultMode: '',
+		conversationId: null,
+		promptTemplate: 'tell {prompt}'
 	}
 };
 

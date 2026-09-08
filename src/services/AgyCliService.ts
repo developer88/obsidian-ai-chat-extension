@@ -180,6 +180,31 @@ export class AgyCliService {
 		return trimmed;
 	}
 
+	public static buildCustomCliArgs(template: string | undefined, prompt: string): string[] {
+		const rawTemplate = template?.trim() || 'tell {prompt}';
+		const args: string[] = [];
+
+		if (rawTemplate.includes('{prompt}')) {
+			const parts = rawTemplate.split(/\s+/);
+			for (const part of parts) {
+				if (part === '{prompt}') {
+					args.push(prompt);
+				} else if (part.includes('{prompt}')) {
+					args.push(part.replace('{prompt}', prompt));
+				} else {
+					args.push(part);
+				}
+			}
+		} else {
+			if (rawTemplate.length > 0) {
+				args.push(...rawTemplate.split(/\s+/));
+			}
+			args.push(prompt);
+		}
+
+		return args;
+	}
+
 	public static getSpawnEnvironment(): NodeJS.ProcessEnv {
 		const env: NodeJS.ProcessEnv = {
 			...process.env,
@@ -229,7 +254,13 @@ export class AgyCliService {
 		}
 
 		if (process.platform === 'win32') {
-			if (targetProvider === 'pi' || rawCmd.toLowerCase() === 'pi' || rawCmd.toLowerCase().endsWith('.cmd') || rawCmd.toLowerCase().endsWith('.bat')) {
+			if (
+				targetProvider === 'pi' ||
+				targetProvider === 'custom' ||
+				rawCmd.toLowerCase() === 'pi' ||
+				rawCmd.toLowerCase().endsWith('.cmd') ||
+				rawCmd.toLowerCase().endsWith('.bat')
+			) {
 				return { command: 'cmd.exe', prefixArgs: ['/c', rawCmd] };
 			}
 			if (!rawCmd.toLowerCase().endsWith('.exe') && !rawCmd.includes('\\') && !rawCmd.includes('/')) {
@@ -267,6 +298,14 @@ export class AgyCliService {
 	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDiscoveryResult> {
 		const settings = this.getSettings();
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
+
+		if (targetProvider === 'custom') {
+			return {
+				success: true,
+				models: [],
+				isFallback: false
+			};
+		}
 		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 		const fallbackModels = config.cachedModels && config.cachedModels.length > 0
 			? config.cachedModels
@@ -498,60 +537,64 @@ export class AgyCliService {
 		const { command, prefixArgs } = this.resolveExecution(config, providerId, vaultPath);
 		args.push(...prefixArgs);
 
-		// Prompt argument
-		args.push('-p', prompt);
-
-		if (providerId === 'copilot') {
-			// Copilot CLI flags
-			args.push('-s'); // Silent mode (only response)
-			args.push('--allow-all-tools'); // Allow tools non-interactively
-			args.push('--output-format', 'text');
-
-			if (config.selectedModel) {
-				args.push('--model', config.selectedModel);
-			}
-
-			// Resume session if exists
-			if (config.conversationId) {
-				args.push(`--resume=${config.conversationId}`);
-			}
-		} else if (providerId === 'pi') {
-			// Pi Coding Agent flags
-			if (config.selectedModel) {
-				args.push('--model', config.selectedModel);
-			}
-
-			const selectedEffort = (config.modelEfforts?.[config.selectedModel] || 'high').toLowerCase();
-			if (selectedEffort && selectedEffort !== 'off') {
-				args.push('--thinking', selectedEffort);
-			} else if (selectedEffort === 'off') {
-				args.push('--thinking', 'off');
-			}
-
-			if (config.conversationId) {
-				args.push('--session', config.conversationId);
-			}
+		if (providerId === 'custom') {
+			args.push(...AgyCliService.buildCustomCliArgs(config.promptTemplate, prompt));
 		} else {
-			// Antigravity CLI flags
-			args.push('--output-format', 'text');
-			args.push('--dangerously-skip-permissions');
+			// Standard providers use -p
+			args.push('-p', prompt);
 
-			if (config.selectedModel) {
-				const models = config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS;
-				const modelDef = models.find(m => m.id === config.selectedModel);
-				const selectedEffort = (config.modelEfforts?.[config.selectedModel] || modelDef?.defaultEffort || 'Medium').toLowerCase();
+			if (providerId === 'copilot') {
+				// Copilot CLI flags
+				args.push('-s'); // Silent mode (only response)
+				args.push('--allow-all-tools'); // Allow tools non-interactively
+				args.push('--output-format', 'text');
 
-				let exactCliModelId = config.selectedModel;
-				if (modelDef && modelDef.effortModelMap && modelDef.effortModelMap[selectedEffort]) {
-					exactCliModelId = modelDef.effortModelMap[selectedEffort];
+				if (config.selectedModel) {
+					args.push('--model', config.selectedModel);
 				}
 
-				args.push('--model', exactCliModelId);
-			}
+				// Resume session if exists
+				if (config.conversationId) {
+					args.push(`--resume=${config.conversationId}`);
+				}
+			} else if (providerId === 'pi') {
+				// Pi Coding Agent flags
+				if (config.selectedModel) {
+					args.push('--model', config.selectedModel);
+				}
 
-			// Resume session if exists
-			if (config.conversationId) {
-				args.push('--conversation', config.conversationId);
+				const selectedEffort = (config.modelEfforts?.[config.selectedModel] || 'high').toLowerCase();
+				if (selectedEffort && selectedEffort !== 'off') {
+					args.push('--thinking', selectedEffort);
+				} else if (selectedEffort === 'off') {
+					args.push('--thinking', 'off');
+				}
+
+				if (config.conversationId) {
+					args.push('--session', config.conversationId);
+				}
+			} else {
+				// Antigravity CLI flags
+				args.push('--output-format', 'text');
+				args.push('--dangerously-skip-permissions');
+
+				if (config.selectedModel) {
+					const models = config.cachedModels && config.cachedModels.length > 0 ? config.cachedModels : ANTIGRAVITY_MODELS;
+					const modelDef = models.find(m => m.id === config.selectedModel);
+					const selectedEffort = (config.modelEfforts?.[config.selectedModel] || modelDef?.defaultEffort || 'Medium').toLowerCase();
+
+					let exactCliModelId = config.selectedModel;
+					if (modelDef && modelDef.effortModelMap && modelDef.effortModelMap[selectedEffort]) {
+						exactCliModelId = modelDef.effortModelMap[selectedEffort];
+					}
+
+					args.push('--model', exactCliModelId);
+				}
+
+				// Resume session if exists
+				if (config.conversationId) {
+					args.push('--conversation', config.conversationId);
+				}
 			}
 		}
 
