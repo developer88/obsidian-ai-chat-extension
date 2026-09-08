@@ -59,8 +59,14 @@ Copy these three files to your vault's plugin directory (`.obsidian/plugins/side
 
 ---
 
-## 🧪 Verification & Typechecking
+## 🧪 Verification & Testing
 ```bash
-npx tsc --noEmit --skipLibCheck
+# Typecheck
+npm run typecheck
+
+# Run test suite
+npm test
+
+# Production build
 npm run build
 ```
