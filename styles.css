@@ -1,5 +1,12 @@
 /* Sidecar AI - Clean Native Obsidian Styling */
 
+.workspace-leaf-content[data-type="antigravity-chat-view"],
+.workspace-leaf-content[data-type="antigravity-chat-view"] .view-content,
+.agy-chat-root {
+	user-select: text;
+	-webkit-user-select: text;
+}
+
 .agy-chat-root {
 	display: flex;
 	flex-direction: column;
@@ -230,6 +237,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-3);
+	user-select: text !important;
+	-webkit-user-select: text !important;
 }
 
 /* Empty State */
@@ -242,6 +251,8 @@
 	text-align: center;
 	padding: var(--size-4-6) var(--size-4-3);
 	color: var(--text-muted);
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .agy-empty-icon {
@@ -279,6 +290,8 @@
 	flex-direction: column;
 	gap: var(--size-4-1);
 	width: 100%;
+	user-select: text !important;
+	-webkit-user-select: text !important;
 }
 
 .agy-msg-meta {
@@ -286,6 +299,8 @@
 	align-items: center;
 	gap: var(--size-4-2);
 	font-size: var(--font-ui-smaller, 11px);
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .agy-msg-author {
@@ -295,6 +310,49 @@
 
 .agy-message.is-user .agy-msg-author {
 	color: var(--text-normal);
+}
+
+.agy-msg-actions {
+	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	opacity: 0.6;
+	transition: opacity 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.agy-message:hover .agy-msg-actions {
+	opacity: 1;
+}
+
+.agy-msg-action-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--size-4-6, 24px);
+	height: var(--size-4-6, 24px);
+	padding: 0;
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	transition: color 0.15s ease, background-color 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.agy-msg-action-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.agy-msg-action-btn svg {
+	width: 13px;
+	height: 13px;
+	display: block;
 }
 
 .agy-msg-model-badge {
@@ -357,6 +415,9 @@
 	color: var(--text-normal);
 	word-break: break-word;
 	white-space: pre-wrap;
+	user-select: text !important;
+	-webkit-user-select: text !important;
+	cursor: text;
 }
 
 /* Assistant Message Box: clean reading typography */
@@ -366,6 +427,21 @@
 	color: var(--text-normal);
 	word-break: break-word;
 	padding: 2px 0;
+	user-select: text !important;
+	-webkit-user-select: text !important;
+	cursor: text;
+}
+
+.agy-assistant-content *:not(button):not(svg):not(path):not(a) {
+	user-select: text !important;
+	-webkit-user-select: text !important;
+	cursor: text;
+}
+
+.agy-assistant-content a {
+	cursor: pointer;
+	user-select: text;
+	-webkit-user-select: text;
 }
 
 .agy-message.is-assistant .agy-assistant-content p {
@@ -439,6 +515,13 @@
 	border: 1px solid var(--divider-color);
 	margin: var(--size-4-2) 0;
 	background-color: var(--background-primary-alt);
+	user-select: text !important;
+	-webkit-user-select: text !important;
+}
+
+.agy-assistant-content code {
+	user-select: text !important;
+	-webkit-user-select: text !important;
 }
 
 .agy-code-actions,
@@ -451,6 +534,8 @@
 	opacity: 0;
 	transition: opacity 0.15s ease;
 	z-index: 2;
+	user-select: none !important;
+	-webkit-user-select: none !important;
 }
 
 .agy-assistant-content pre:hover .agy-code-actions,
@@ -466,6 +551,8 @@
 	background-color: var(--background-primary);
 	color: var(--text-muted);
 	cursor: pointer;
+	user-select: none !important;
+	-webkit-user-select: none !important;
 }
 
 .agy-code-btn:hover {

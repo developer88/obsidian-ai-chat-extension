@@ -5,7 +5,8 @@ import {
 	MarkdownView,
 	setIcon,
 	Notice,
-	FileSystemAdapter
+	FileSystemAdapter,
+	Menu
 } from 'obsidian';
 import {
 	AiChatPluginSettings,
@@ -243,6 +244,7 @@ export class AntigravityChatView extends ItemView {
 
 	private buildMessageList(parent: HTMLElement): void {
 		this.messagesContainerEl = parent.createDiv({ cls: 'agy-messages-container' });
+		this.setupMessagesContextMenu();
 		this.renderEmptyState();
 	}
 
@@ -615,6 +617,20 @@ export class AntigravityChatView extends ItemView {
 				contextBadge.createSpan({ cls: 'agy-msg-doc-label', text: labelText });
 			}
 
+			const actionsEl = metaRow.createDiv({ cls: 'agy-msg-actions' });
+			const copyBtn = actionsEl.createEl('button', {
+				cls: 'agy-msg-action-btn',
+				attr: { 'aria-label': 'Copy message' }
+			});
+			setIcon(copyBtn, 'copy');
+			copyBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				void navigator.clipboard.writeText(msg.content);
+				new Notice('Message copied to clipboard');
+				setIcon(copyBtn, 'check');
+				window.setTimeout(() => setIcon(copyBtn, 'copy'), 1500);
+			});
+
 			const contentDiv = msgRow.createDiv({ cls: 'agy-user-content' });
 			contentDiv.setText(msg.content);
 		} else {
@@ -633,6 +649,7 @@ export class AntigravityChatView extends ItemView {
 				this.renderWaitingIndicator(contentDiv);
 			} else {
 				this.renderMarkdownTo(contentDiv, msg.content);
+				this.attachAssistantMessageActions(msgRow, msg.content);
 			}
 		}
 
@@ -661,7 +678,114 @@ export class AntigravityChatView extends ItemView {
 
 		if (isFinal) {
 			this.attachCodeBlockActions(contentDiv);
+			this.attachAssistantMessageActions(msgRow, content);
 		}
+	}
+
+	private attachAssistantMessageActions(msgRow: HTMLElement, content: string): void {
+		if (!content) return;
+		msgRow.setAttribute('data-raw-content', content);
+
+		const metaRow = msgRow.querySelector('.agy-msg-meta');
+		if (!metaRow) return;
+
+		let actionsEl = metaRow.querySelector<HTMLElement>('.agy-msg-actions');
+		if (actionsEl) {
+			actionsEl.empty();
+		} else {
+			actionsEl = metaRow.createDiv({ cls: 'agy-msg-actions' });
+		}
+
+		// Copy response button
+		const copyBtn = actionsEl.createEl('button', {
+			cls: 'agy-msg-action-btn',
+			attr: { 'aria-label': 'Copy response' }
+		});
+		setIcon(copyBtn, 'copy');
+		copyBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			void navigator.clipboard.writeText(content);
+			new Notice('Response copied to clipboard');
+			setIcon(copyBtn, 'check');
+			window.setTimeout(() => setIcon(copyBtn, 'copy'), 1500);
+		});
+
+		// Insert response into active note button
+		const insertBtn = actionsEl.createEl('button', {
+			cls: 'agy-msg-action-btn',
+			attr: { 'aria-label': 'Insert response into note' }
+		});
+		setIcon(insertBtn, 'file-text');
+		insertBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.insertTextIntoActiveNote(content);
+		});
+	}
+
+	private setupMessagesContextMenu(): void {
+		this.messagesContainerEl.addEventListener('contextmenu', (e: MouseEvent) => {
+			const selection = window.getSelection()?.toString().trim();
+			if (selection && selection.length > 0) {
+				const menu = new Menu();
+				menu.addItem((item) => {
+					item.setTitle('Copy')
+						.setIcon('copy')
+						.onClick(() => {
+							void navigator.clipboard.writeText(selection);
+							new Notice('Copied selection to clipboard');
+						});
+				});
+				menu.addItem((item) => {
+					item.setTitle('Insert into note')
+						.setIcon('file-text')
+						.onClick(() => {
+							this.insertTextIntoActiveNote(selection);
+						});
+				});
+				menu.showAtMouseEvent(e);
+				e.preventDefault();
+				return;
+			}
+
+			const target = e.target as HTMLElement | null;
+			const msgRow = target?.closest('.agy-message') as HTMLElement | null;
+			if (msgRow) {
+				const userContent = msgRow.querySelector<HTMLElement>('.agy-user-content');
+				const assistantContent = msgRow.querySelector<HTMLElement>('.agy-assistant-content');
+
+				const menu = new Menu();
+				if (assistantContent) {
+					const textToCopy = msgRow.getAttribute('data-raw-content') || assistantContent.innerText;
+					menu.addItem((item) => {
+						item.setTitle('Copy full response')
+							.setIcon('copy')
+							.onClick(() => {
+								void navigator.clipboard.writeText(textToCopy);
+								new Notice('Response copied to clipboard');
+							});
+					});
+					menu.addItem((item) => {
+						item.setTitle('Insert response into note')
+							.setIcon('file-text')
+							.onClick(() => {
+								this.insertTextIntoActiveNote(textToCopy);
+							});
+					});
+				} else if (userContent) {
+					const textToCopy = userContent.innerText;
+					menu.addItem((item) => {
+						item.setTitle('Copy message')
+							.setIcon('copy')
+							.onClick(() => {
+								void navigator.clipboard.writeText(textToCopy);
+								new Notice('Message copied to clipboard');
+							});
+					});
+				}
+				menu.showAtMouseEvent(e);
+				e.preventDefault();
+			}
+		});
 	}
 
 	private renderMarkdownTo(targetEl: HTMLElement, markdownText: string): void {
