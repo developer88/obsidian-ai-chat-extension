@@ -5,6 +5,18 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2026-09-15
+
+### Added
+- **Text Selection & Native Copying**:
+  - Full text selection enabled across all chat messages, paragraphs, and code blocks in the sidebar. Any text can now be highlighted with the mouse and copied via standard keyboard shortcuts (`Ctrl+C` / `Cmd+C`).
+- **Right-Click Context Menu**:
+  - Right-clicking highlighted text opens a native context menu with options to **Copy** or **Insert into note** at the current editor cursor.
+  - Right-clicking any message without an active selection provides quick actions to **Copy full response** / **Copy message** (preserving original Markdown formatting) or **Insert into note**.
+- **Message Action Toolbars**:
+  - Added 1-click **Copy response** / **Copy message** buttons in each message's header bar with visual checkmark confirmation.
+  - Added 1-click **Insert into note** buttons on assistant messages to immediately insert responses into the active note.
+
 ## [3.6.0] - 2026-09-08
 
 ### Added
