@@ -5,6 +5,21 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-09-20
+
+### Added
+- **Additional Context Attachment (File or Folder)**:
+  - Attach a link/path to an additional context document or entire folder directly to chat prompts.
+  - **Context Pill Controls**: Displays an interactive context pill next to the active note pill in the chat sidebar. Easily toggle attachment state on or off with a single click (`x` to detach, click to re-link).
+  - **Smart Session Deduplication**: When attached, the context reference is sent on the first message of a chat session. Subsequent turns in the conversation remember the context through conversation history without repeating the prefix in new prompts, keeping prompt requests clean and concise.
+  - **Session Reset Support**: Clicking *New session* or resetting chat messages re-arms the context link for the next conversation.
+  - **Customizable Context Settings**:
+    - Master toggle to enable or disable the context attachment feature.
+    - Setting to automatically attach context by default on new sessions.
+    - Scope selector choosing between **Single file** and **Whole folder**.
+    - Configurable context path (e.g., `docs/context.md` or `notes/`). Defaults to the active note or active note's directory when left blank.
+  - **Visual Message Attribution**: Sent user messages display a dedicated `Context: <title>` badge indicating the context file or folder that was attached.
+
 ## [3.7.0] - 2026-09-15
 
 ### Added

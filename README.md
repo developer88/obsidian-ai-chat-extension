@@ -48,6 +48,7 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 * 🌐 **Cross-Platform & WSL Support**: Native execution on Windows, macOS, Linux, and Windows Subsystem for Linux (`wsl`).
 * 🎯 **Unified Model & Reasoning Switcher**: A single fuzzy-search modal accessible from the chat header, the bottom status bar widget, and plugin settings to switch providers, models, and reasoning effort levels on the fly.
 * 📄 **Active Note & Selection Tracking**: Automatically references your currently focused note path (`The context: "<path>":`) and text selection as context.
+* 📚 **Additional Context Attachment**: Link an additional context file or entire vault folder to prompts with interactive sidebar pill controls and smart session deduplication.
 * 🏷️ **Clear Attribution**: Every assistant response clearly displays the provider, model, and reasoning effort used.
 * 🔘 **Quick Action Bar**: One-click prompt chips to **Summarize**, **Polish writing**, **Extract tasks**, and **Explain concepts** from your active note.
 * 🔄 **Session Management**: Dedicated *New session* button to clear conversation memory and restart context on demand.
@@ -67,6 +68,10 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 | **Run in WSL** | `false` | Enable if the provider CLI is installed inside Ubuntu/WSL on Windows. |
 | **Extra CLI flags** | *(empty)* | Custom arguments passed on each invocation (e.g. `--thinking high`, `--allow-all-tools`). |
 | **Auto-attach active note** | `true` | Automatically includes the active note file reference and selection in prompts. |
+| **Enable context link attachment** | `false` | Enable attaching an additional context file or folder reference when sending prompts. |
+| **Attach context by default** | `true` | Automatically include the context reference when starting a new chat session. |
+| **Context scope** | `Single file` | Choose whether to attach a single file or a whole folder. |
+| **Context path** | *(empty)* | Vault path to the context file or folder. Defaults to active note or folder if blank. |
 | **Auto-scroll chat** | `true` | Automatically scrolls the chat container as responses stream in. |
 | **Show status bar item** | `true` | Shows the active provider and model status bar widget. |
 | **Reset conversation memory** | — | Clears saved session ID and starts fresh on the next prompt. |
