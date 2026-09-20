@@ -143,6 +143,10 @@ export interface AiChatPluginSettings {
 	autoScrollChat: boolean;
 	showStatusBarItem: boolean;
 	hasAcceptedProcessExecutionDisclaimer?: boolean;
+	enableContextAttachment: boolean;
+	autoAttachContext: boolean;
+	contextScope: 'file' | 'folder';
+	contextPath: string;
 
 	// Legacy backward-compatibility fields (migrated to active provider)
 	cliCommand?: string;
@@ -253,7 +257,11 @@ export const DEFAULT_SETTINGS: AiChatPluginSettings = {
 	autoIncludeSelection: true,
 	autoScrollChat: true,
 	showStatusBarItem: true,
-	hasAcceptedProcessExecutionDisclaimer: false
+	hasAcceptedProcessExecutionDisclaimer: false,
+	enableContextAttachment: false,
+	autoAttachContext: true,
+	contextScope: 'file',
+	contextPath: ''
 };
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'error';
@@ -266,6 +274,9 @@ export interface ChatMessage {
 	attachedNotePath?: string;
 	attachedNoteTitle?: string;
 	attachedSelection?: string;
+	attachedContextPath?: string;
+	attachedContextTitle?: string;
+	attachedContextScope?: 'file' | 'folder';
 	providerId?: AiProviderId;
 	providerName?: string;
 	modelLabel?: string;

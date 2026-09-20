@@ -232,6 +232,73 @@ export class AntigravitySettingTab extends PluginSettingTab {
 						}
 					},
 					{
+						name: 'Enable context link attachment',
+						desc: 'Allow attaching an additional context file or folder reference when sending prompts.',
+						render: (setting: Setting) => {
+							setting.setName('Enable context link attachment')
+								.setDesc('Allow attaching an additional context file or folder reference when sending prompts.')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.enableContextAttachment)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.enableContextAttachment = value;
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Attach context by default',
+						desc: 'Automatically include the context reference when starting a new chat session.',
+						render: (setting: Setting) => {
+							setting.setName('Attach context by default')
+								.setDesc('Automatically include the context reference when starting a new chat session.')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.autoAttachContext)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.autoAttachContext = value;
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Context scope',
+						desc: 'Choose whether to attach a single file or a whole folder.',
+						render: (setting: Setting) => {
+							setting.setName('Context scope')
+								.setDesc('Choose whether to attach a single file or a whole folder.')
+								.addDropdown(drop => drop
+									.addOption('file', 'Single file')
+									.addOption('folder', 'Whole folder')
+									.setValue(this.plugin.settings.contextScope || 'file')
+									.onChange((value: string) => {
+										void (async () => {
+											this.plugin.settings.contextScope = value as 'file' | 'folder';
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Context path',
+						desc: 'Vault path to the context file or folder (e.g. "docs/context.md" or "notes/").',
+						render: (setting: Setting) => {
+							setting.setName('Context path')
+								.setDesc('Vault path to the context file or folder (e.g. "docs/context.md" or "notes/").')
+								.addText(text => text
+									.setPlaceholder('docs/context.md')
+									.setValue(this.plugin.settings.contextPath || '')
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.contextPath = value.trim();
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
 						name: 'Auto-scroll chat',
 						desc: 'Automatically scroll to bottom as new response chunks arrive.',
 						render: (setting: Setting) => {

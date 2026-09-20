@@ -18,6 +18,8 @@ export interface HistoryTurn {
 	content: string;
 	attachedNotePath?: string;
 	attachedSelection?: string;
+	attachedContextPath?: string;
+	attachedContextScope?: 'file' | 'folder';
 }
 
 export interface HistoryFormatOptions {
@@ -47,14 +49,18 @@ export function formatPromptWithHistory(
 	for (const turn of recentTurns) {
 		if (turn.role === 'user') {
 			let userBody = turn.content.trim();
+			let prefixes = '';
+			if (turn.attachedContextPath && !userBody.includes(turn.attachedContextPath)) {
+				prefixes += `Here is the context: "${turn.attachedContextPath}":\n\n`;
+			}
 			if (turn.attachedNotePath && !userBody.includes(turn.attachedNotePath)) {
 				if (turn.attachedSelection) {
-					userBody = `Regarding the selected text in file "${turn.attachedNotePath}":\n"""\n${turn.attachedSelection}\n"""\n\n${userBody}`;
+					prefixes += `Regarding the selected text in file "${turn.attachedNotePath}":\n"""\n${turn.attachedSelection}\n"""\n\n`;
 				} else {
-					userBody = `The context: "${turn.attachedNotePath}":\n\n${userBody}`;
+					prefixes += `The context: "${turn.attachedNotePath}":\n\n`;
 				}
 			}
-			formattedTurns.push(`User:\n${userBody}`);
+			formattedTurns.push(`User:\n${prefixes}${userBody}`);
 		} else {
 			formattedTurns.push(`Assistant:\n${turn.content.trim()}`);
 		}

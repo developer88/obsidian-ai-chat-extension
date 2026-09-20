@@ -404,6 +404,10 @@
 	min-width: 0;
 }
 
+.agy-msg-doc-ref.is-context {
+	border-color: var(--interactive-accent);
+}
+
 /* User Message Box: cleanly contained with subtle secondary background, matching Obsidian quote/callout aesthetic */
 .agy-message.is-user .agy-user-content {
 	background-color: var(--background-secondary);
@@ -590,6 +594,10 @@
 
 /* Active Context Document Badge */
 .agy-context-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-1);
+	align-items: center;
 	padding: var(--size-4-1) var(--size-4-3) 0 var(--size-4-3);
 	background-color: var(--background-primary);
 }
@@ -605,6 +613,22 @@
 	border: 1px solid var(--divider-color);
 	color: var(--text-normal);
 	max-width: 100%;
+}
+
+.agy-context-badge.is-context {
+	border-color: var(--interactive-accent);
+}
+
+.agy-context-badge.is-context.is-sent {
+	opacity: 0.75;
+	border-style: solid;
+	border-color: var(--divider-color);
+	color: var(--text-muted);
+}
+
+.agy-context-badge.is-context.is-detached {
+	border-color: var(--divider-color);
+	border-style: dashed;
 }
 
 .agy-context-badge.is-detached {

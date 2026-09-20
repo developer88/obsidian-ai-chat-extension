@@ -32,6 +32,8 @@ export class AntigravityChatView extends ItemView {
 	private customProviderBadge!: HTMLElement;
 	private isStreaming = false;
 	private includeActiveNote = true;
+	private includeContext = true;
+	private contextSentInSession = false;
 	private currentActiveContext: ActiveNoteContext | null = null;
 
 	constructor(
@@ -63,6 +65,8 @@ export class AntigravityChatView extends ItemView {
 		container.addClass('agy-chat-root');
 
 		this.includeActiveNote = this.getSettings().autoAttachActiveNote;
+		this.includeContext = this.getSettings().autoAttachContext ?? true;
+		this.contextSentInSession = false;
 
 		// Native view header actions (top bar of the pane)
 		this.addAction('rotate-ccw', 'New session', () => {
@@ -294,6 +298,55 @@ export class AntigravityChatView extends ItemView {
 		this.renderContextPill();
 	}
 
+	public resolveContextTarget(): { title: string; path: string; fullPath: string; scope: 'file' | 'folder' } | null {
+		const settings = this.getSettings();
+		if (!settings.enableContextAttachment) {
+			return null;
+		}
+		const scope = settings.contextScope || 'file';
+		let targetPath = (settings.contextPath || '').trim();
+
+		if (scope === 'folder') {
+			if (!targetPath) {
+				const activeFile = this.app.workspace.getActiveFile();
+				targetPath = activeFile?.parent?.path || '';
+			}
+			const adapter = this.app.vault.adapter;
+			let fullPath = targetPath;
+			if (adapter instanceof FileSystemAdapter) {
+				fullPath = adapter.getFullPath(targetPath);
+			}
+			const folderName = targetPath ? (targetPath.split('/').pop() || targetPath) : 'Vault root';
+			return {
+				title: folderName,
+				path: targetPath,
+				fullPath,
+				scope: 'folder'
+			};
+		} else {
+			if (!targetPath) {
+				const activeFile = this.app.workspace.getActiveFile();
+				if (activeFile) {
+					targetPath = activeFile.path;
+				} else {
+					return null;
+				}
+			}
+			const adapter = this.app.vault.adapter;
+			let fullPath = targetPath;
+			if (adapter instanceof FileSystemAdapter) {
+				fullPath = adapter.getFullPath(targetPath);
+			}
+			const fileName = targetPath.split('/').pop()?.replace(/\.md$/, '') || targetPath;
+			return {
+				title: fileName,
+				path: targetPath,
+				fullPath,
+				scope: 'file'
+			};
+		}
+	}
+
 	private renderContextPill(): void {
 		this.contextPillEl.empty();
 
@@ -306,30 +359,68 @@ export class AntigravityChatView extends ItemView {
 				this.includeActiveNote = true;
 				this.updateActiveDocumentContext();
 			});
-			return;
+		} else {
+			const badge = this.contextPillEl.createDiv({ cls: 'agy-context-badge' });
+			const fileIcon = badge.createSpan({ cls: 'agy-badge-icon' });
+			setIcon(fileIcon, 'file-text');
+
+			const title = this.currentActiveContext.title;
+			const selectionText = this.currentActiveContext.selection
+				? `${title} (selection)`
+				: title;
+
+			badge.createSpan({ cls: 'agy-badge-title', text: selectionText });
+
+			const dismissBtn = badge.createSpan({
+				cls: 'agy-badge-dismiss',
+				attr: { 'aria-label': 'Detach active note' }
+			});
+			setIcon(dismissBtn, 'x');
+			dismissBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				this.includeActiveNote = false;
+				this.renderContextPill();
+			});
 		}
 
-		const badge = this.contextPillEl.createDiv({ cls: 'agy-context-badge' });
-		const fileIcon = badge.createSpan({ cls: 'agy-badge-icon' });
-		setIcon(fileIcon, 'file-text');
-
-		const title = this.currentActiveContext.title;
-		const selectionText = this.currentActiveContext.selection
-			? `${title} (selection)`
-			: title;
-
-		badge.createSpan({ cls: 'agy-badge-title', text: selectionText });
-
-		const dismissBtn = badge.createSpan({
-			cls: 'agy-badge-dismiss',
-			attr: { 'aria-label': 'Detach active note' }
-		});
-		setIcon(dismissBtn, 'x');
-		dismissBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			this.includeActiveNote = false;
-			this.renderContextPill();
-		});
+		const settings = this.getSettings();
+		if (settings.enableContextAttachment) {
+			const contextTarget = this.resolveContextTarget();
+			if (this.contextSentInSession) {
+				const sentBadge = this.contextPillEl.createDiv({ cls: 'agy-context-badge is-context is-sent' });
+				const icon = sentBadge.createSpan({ cls: 'agy-badge-icon' });
+				setIcon(icon, 'check');
+				const title = contextTarget ? contextTarget.title : 'Context';
+				sentBadge.createSpan({ text: `Context sent (${title})`, cls: 'agy-badge-title' });
+			} else if (!this.includeContext || !contextTarget) {
+				const detachedBadge = this.contextPillEl.createDiv({ cls: 'agy-context-badge is-context is-detached' });
+				const icon = detachedBadge.createSpan({ cls: 'agy-badge-icon' });
+				setIcon(icon, settings.contextScope === 'folder' ? 'folder' : 'book-open');
+				detachedBadge.createSpan({ text: 'Context detached (click to link)' });
+				detachedBadge.addEventListener('click', () => {
+					this.includeContext = true;
+					this.renderContextPill();
+				});
+			} else {
+				const badge = this.contextPillEl.createDiv({ cls: 'agy-context-badge is-context' });
+				const icon = badge.createSpan({ cls: 'agy-badge-icon' });
+				setIcon(icon, contextTarget.scope === 'folder' ? 'folder' : 'book-open');
+				badge.createSpan({
+					cls: 'agy-badge-title',
+					text: `Context: ${contextTarget.title} (${contextTarget.scope})`
+				});
+				const dismissBtn = badge.createSpan({
+					cls: 'agy-badge-dismiss',
+					attr: { 'aria-label': 'Detach context' }
+				});
+				setIcon(dismissBtn, 'x');
+				dismissBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.includeContext = false;
+					this.renderContextPill();
+				});
+			}
+		}
 	}
 
 	private buildInputArea(parent: HTMLElement): void {
@@ -408,8 +499,11 @@ export class AntigravityChatView extends ItemView {
 
 	public restartSession(): void {
 		this.cliService.resetSession();
+		this.contextSentInSession = false;
+		this.includeContext = this.getSettings().autoAttachContext ?? true;
 		this.updateSessionBadge('');
 		this.clearMessages();
+		this.renderContextPill();
 		new Notice('Session reset.');
 	}
 
@@ -427,7 +521,10 @@ export class AntigravityChatView extends ItemView {
 
 	public clearMessages(): void {
 		this.messages = [];
+		this.contextSentInSession = false;
+		this.includeContext = this.getSettings().autoAttachContext ?? true;
 		this.renderEmptyState();
+		this.renderContextPill();
 	}
 
 	private async handleSend(): Promise<void> {
@@ -476,7 +573,26 @@ export class AntigravityChatView extends ItemView {
 			}
 		}
 
-		const rawCurrentPrompt = `${noteContextPrefix}${userText}`;
+		let additionalContextPrefix = '';
+		let attachedContextPath: string | undefined;
+		let attachedContextTitle: string | undefined;
+		let attachedContextScope: 'file' | 'folder' | undefined;
+
+		const settings = this.getSettings();
+		if (settings.enableContextAttachment && this.includeContext && !this.contextSentInSession) {
+			const contextTarget = this.resolveContextTarget();
+			if (contextTarget) {
+				const targetContextPath = contextTarget.fullPath || contextTarget.path;
+				additionalContextPrefix = `Here is the context: "${targetContextPath}":\n\n`;
+				attachedContextPath = contextTarget.path;
+				attachedContextTitle = contextTarget.title;
+				attachedContextScope = contextTarget.scope;
+				this.contextSentInSession = true;
+				this.renderContextPill();
+			}
+		}
+
+		const rawCurrentPrompt = `${additionalContextPrefix}${noteContextPrefix}${userText}`;
 
 		const historyTurns: HistoryTurn[] = this.messages
 			.filter(m => (m.role === 'user' || m.role === 'assistant') && !m.isStreaming && m.content && m.content.trim().length > 0)
@@ -484,7 +600,9 @@ export class AntigravityChatView extends ItemView {
 				role: m.role as 'user' | 'assistant',
 				content: m.content,
 				attachedNotePath: m.attachedNotePath,
-				attachedSelection: m.attachedSelection
+				attachedSelection: m.attachedSelection,
+				attachedContextPath: m.attachedContextPath,
+				attachedContextScope: m.attachedContextScope
 			}));
 
 		const fullPromptForCli = formatPromptWithHistory(rawCurrentPrompt, historyTurns);
@@ -501,12 +619,14 @@ export class AntigravityChatView extends ItemView {
 			timestamp: Date.now(),
 			attachedNotePath,
 			attachedNoteTitle,
-			attachedSelection
+			attachedSelection,
+			attachedContextPath,
+			attachedContextTitle,
+			attachedContextScope
 		};
 		this.appendMessage(userMsg);
 
 		// Provider and model info for this response
-		const settings = this.getSettings();
 		const provId = settings.activeProvider || 'antigravity';
 		const provConfig = settings.providers?.[provId];
 		const provName = PROVIDER_METADATA[provId]?.name || (provId === 'copilot' ? 'GitHub Copilot' : (provId === 'pi' ? 'Pi Coding Agent' : (provId === 'custom' ? 'Custom CLI' : 'Google Antigravity')));
@@ -615,6 +735,21 @@ export class AntigravityChatView extends ItemView {
 					? `${displayTitle} (selection)`
 					: displayTitle;
 				contextBadge.createSpan({ cls: 'agy-msg-doc-label', text: labelText });
+			}
+
+			if (msg.attachedContextPath) {
+				const displayTitle = msg.attachedContextTitle || msg.attachedContextPath.split('/').pop()?.replace(/\.md$/, '') || msg.attachedContextPath;
+				const scopeLabel = msg.attachedContextScope === 'folder' ? 'Folder' : 'File';
+				const fullTooltip = `Context (${scopeLabel}): ${msg.attachedContextPath}`;
+
+				const contextBadge = metaRow.createSpan({
+					cls: 'agy-msg-doc-ref is-context',
+					attr: { 'aria-label': fullTooltip }
+				});
+				const icon = contextBadge.createSpan({ cls: 'agy-msg-doc-icon' });
+				setIcon(icon, msg.attachedContextScope === 'folder' ? 'folder' : 'book-open');
+
+				contextBadge.createSpan({ cls: 'agy-msg-doc-label', text: `Context: ${displayTitle}` });
 			}
 
 			const actionsEl = metaRow.createDiv({ cls: 'agy-msg-actions' });

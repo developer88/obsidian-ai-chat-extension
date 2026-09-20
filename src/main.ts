@@ -292,6 +292,12 @@ export default class AntigravityPlugin extends Plugin {
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 		this.updateStatusBar();
+		const leaves = this.app.workspace.getLeavesOfType(ANTIGRAVITY_CHAT_VIEW_TYPE);
+		leaves.forEach((leaf) => {
+			if (leaf.view instanceof AntigravityChatView) {
+				leaf.view.updateActiveDocumentContext();
+			}
+		});
 	}
 
 	onunload(): void {
