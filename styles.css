@@ -448,6 +448,21 @@
 	-webkit-user-select: text;
 }
 
+.agy-assistant-content a.agy-file-link,
+.agy-assistant-content a[href^="file:"] {
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	color: var(--link-color, var(--text-accent));
+	transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.agy-assistant-content a.agy-file-link:hover,
+.agy-assistant-content a[href^="file:"]:hover {
+	color: var(--link-color-hover, var(--text-accent-hover));
+	filter: brightness(1.15);
+}
+
 .agy-message.is-assistant .agy-assistant-content p {
 	margin: 0.5em 0;
 }

@@ -16,6 +16,14 @@ import {
 } from '../types';
 import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../services/AgyCliService';
 import { ProcessExecutionNoticeModal } from '../modals/ModelSuggestModal';
+import {
+	isFileUrl,
+	parseFileUrl,
+	linkifyFileUrls,
+	openFileUrl,
+	revealFileInFolder,
+	decorateFileLinks
+} from '../utils/FileLinkHelper';
 
 export const ANTIGRAVITY_CHAT_VIEW_TYPE = 'antigravity-chat-view';
 
@@ -249,7 +257,37 @@ export class AntigravityChatView extends ItemView {
 	private buildMessageList(parent: HTMLElement): void {
 		this.messagesContainerEl = parent.createDiv({ cls: 'agy-messages-container' });
 		this.setupMessagesContextMenu();
+		this.setupFileLinkClickHandler();
 		this.renderEmptyState();
+	}
+
+	private setupFileLinkClickHandler(): void {
+		const handleLinkEvent = (e: MouseEvent) => {
+			const target = e.target as HTMLElement | null;
+			const linkEl = target?.closest('a') as HTMLAnchorElement | null;
+			if (!linkEl) return;
+
+			const href = linkEl.getAttribute('href');
+			if (!href || !isFileUrl(href)) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			const openInNewLeaf = e.ctrlKey || e.metaKey || e.button === 1;
+			void openFileUrl(this.app, href, {
+				activeFilePath: this.currentActiveContext?.fullPath,
+				contextPath: this.resolveContextTarget()?.fullPath,
+				openInNewLeaf,
+				notify: (msg) => new Notice(msg)
+			});
+		};
+
+		this.messagesContainerEl.addEventListener('click', handleLinkEvent);
+		this.messagesContainerEl.addEventListener('auxclick', (e: MouseEvent) => {
+			if (e.button === 1) {
+				handleLinkEvent(e);
+			}
+		});
 	}
 
 	private renderEmptyState(): void {
@@ -859,6 +897,69 @@ export class AntigravityChatView extends ItemView {
 
 	private setupMessagesContextMenu(): void {
 		this.messagesContainerEl.addEventListener('contextmenu', (e: MouseEvent) => {
+			const target = e.target as HTMLElement | null;
+			const linkEl = target?.closest('a') as HTMLAnchorElement | null;
+			const href = linkEl?.getAttribute('href');
+
+			if (linkEl && href && isFileUrl(href)) {
+				const parsed = parseFileUrl(href);
+				if (parsed) {
+					const menu = new Menu();
+					menu.addItem((item) => {
+						item.setTitle('Open file')
+							.setIcon('file-text')
+							.onClick(() => {
+								void openFileUrl(this.app, href, {
+									activeFilePath: this.currentActiveContext?.fullPath,
+									contextPath: this.resolveContextTarget()?.fullPath,
+									openInNewLeaf: false,
+									notify: (msg) => new Notice(msg)
+								});
+							});
+					});
+					menu.addItem((item) => {
+						item.setTitle('Open in new tab')
+							.setIcon('plus')
+							.onClick(() => {
+								void openFileUrl(this.app, href, {
+									activeFilePath: this.currentActiveContext?.fullPath,
+									contextPath: this.resolveContextTarget()?.fullPath,
+									openInNewLeaf: true,
+									notify: (msg) => new Notice(msg)
+								});
+							});
+					});
+					menu.addItem((item) => {
+						item.setTitle('Reveal in system folder')
+							.setIcon('folder')
+							.onClick(() => {
+								void revealFileInFolder(parsed.filePath);
+							});
+					});
+					menu.addSeparator();
+					menu.addItem((item) => {
+						item.setTitle('Copy file path')
+							.setIcon('copy')
+							.onClick(() => {
+								void navigator.clipboard.writeText(parsed.filePath);
+								new Notice('File path copied to clipboard');
+							});
+					});
+					menu.addItem((item) => {
+						item.setTitle('Copy link address')
+							.setIcon('link')
+							.onClick(() => {
+								void navigator.clipboard.writeText(href);
+								new Notice('Link address copied to clipboard');
+							});
+					});
+					menu.showAtMouseEvent(e);
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
+			}
+
 			const selection = window.getSelection()?.toString().trim();
 			if (selection && selection.length > 0) {
 				const menu = new Menu();
@@ -882,7 +983,6 @@ export class AntigravityChatView extends ItemView {
 				return;
 			}
 
-			const target = e.target as HTMLElement | null;
 			const msgRow = target?.closest('.agy-message') as HTMLElement | null;
 			if (msgRow) {
 				const userContent = msgRow.querySelector<HTMLElement>('.agy-user-content');
@@ -924,13 +1024,16 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	private renderMarkdownTo(targetEl: HTMLElement, markdownText: string): void {
+		const linkifiedText = linkifyFileUrls(markdownText || '');
 		void MarkdownRenderer.render(
 			this.app,
-			markdownText || '',
+			linkifiedText,
 			targetEl,
-			'',
+			this.currentActiveContext?.path || '',
 			this
-		);
+		).then(() => {
+			decorateFileLinks(targetEl);
+		});
 	}
 
 	private attachCodeBlockActions(container: HTMLElement): void {
