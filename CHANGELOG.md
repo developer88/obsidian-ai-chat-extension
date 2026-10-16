@@ -5,6 +5,23 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0] - 2026-10-16
+
+### Added
+- **Clickable File Links in Chat**:
+  - `file://` URLs produced by AI assistants are now fully interactive and clickable inside the chat sidebar.
+  - **Smart File & Vault Navigation**:
+    - **Vault Notes**: Clicking a link to any file inside your vault opens the note directly in an active Obsidian leaf (or a new tab when `Ctrl`/`Cmd` or middle-clicked).
+    - **Line & Range Navigation**: Links containing line numbers or ranges (e.g., `#L42`, `#L42-L55`, `#line=42`) automatically focus the editor and scroll the referenced line into view.
+    - **External Files**: Links to files outside your vault seamlessly open in your operating system's default application (such as VS Code or text editor).
+    - **Heading & Block Anchors**: Obsidian heading anchors and block references inside vault file links are resolved and navigated to natively.
+  - **File Link Context Menu**:
+    - Right-clicking any file link in chat provides quick actions: **Open file**, **Open in new tab**, **Reveal in system folder**, **Copy file path**, and **Copy link address**.
+  - **Hover Tooltips & Visual Cues**:
+    - File links display informative hover tooltips showing the resolved path and target line number.
+  - **Bare URL Detection**:
+    - Bare `file://` links in assistant responses are automatically detected and converted into interactive links.
+
 ## [3.8.0] - 2026-09-20
 
 ### Added
