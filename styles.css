@@ -230,15 +230,15 @@
 }
 
 /* Messages List */
-.agy-messages-container {
+.agy-chat-root .agy-messages-container {
 	flex: 1;
 	overflow-y: auto;
 	padding: var(--size-4-3);
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-3);
-	user-select: text !important;
-	-webkit-user-select: text !important;
+	user-select: text;
+	-webkit-user-select: text;
 }
 
 /* Empty State */
@@ -285,13 +285,13 @@
 }
 
 /* Message Rows */
-.agy-message {
+.agy-chat-root .agy-message {
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-1);
 	width: 100%;
-	user-select: text !important;
-	-webkit-user-select: text !important;
+	user-select: text;
+	-webkit-user-select: text;
 }
 
 .agy-msg-meta {
@@ -409,7 +409,7 @@
 }
 
 /* User Message Box: cleanly contained with subtle secondary background, matching Obsidian quote/callout aesthetic */
-.agy-message.is-user .agy-user-content {
+.agy-chat-root .agy-message.is-user .agy-user-content {
 	background-color: var(--background-secondary);
 	border: 1px solid var(--divider-color);
 	border-radius: var(--radius-m);
@@ -419,26 +419,26 @@
 	color: var(--text-normal);
 	word-break: break-word;
 	white-space: pre-wrap;
-	user-select: text !important;
-	-webkit-user-select: text !important;
+	user-select: text;
+	-webkit-user-select: text;
 	cursor: text;
 }
 
 /* Assistant Message Box: clean reading typography */
-.agy-message.is-assistant .agy-assistant-content {
+.agy-chat-root .agy-message.is-assistant .agy-assistant-content {
 	font-size: var(--font-ui-small, 13px);
 	line-height: var(--line-height-normal, 1.55);
 	color: var(--text-normal);
 	word-break: break-word;
 	padding: 2px 0;
-	user-select: text !important;
-	-webkit-user-select: text !important;
+	user-select: text;
+	-webkit-user-select: text;
 	cursor: text;
 }
 
-.agy-assistant-content *:not(button):not(svg):not(path):not(a) {
-	user-select: text !important;
-	-webkit-user-select: text !important;
+.agy-chat-root .agy-assistant-content *:not(button):not(svg):not(path):not(a) {
+	user-select: text;
+	-webkit-user-select: text;
 	cursor: text;
 }
 
@@ -528,23 +528,23 @@
 }
 
 /* Code Blocks & Inline Actions */
-.agy-assistant-content pre {
+.agy-chat-root .agy-assistant-content pre {
 	position: relative;
 	border-radius: var(--radius-s);
 	border: 1px solid var(--divider-color);
 	margin: var(--size-4-2) 0;
 	background-color: var(--background-primary-alt);
-	user-select: text !important;
-	-webkit-user-select: text !important;
+	user-select: text;
+	-webkit-user-select: text;
 }
 
-.agy-assistant-content code {
-	user-select: text !important;
-	-webkit-user-select: text !important;
+.agy-chat-root .agy-assistant-content code {
+	user-select: text;
+	-webkit-user-select: text;
 }
 
-.agy-code-actions,
-.agy-code-toolbar {
+.agy-chat-root .agy-code-actions,
+.agy-chat-root .agy-code-toolbar {
 	position: absolute;
 	top: 5px;
 	right: 5px;
@@ -553,8 +553,8 @@
 	opacity: 0;
 	transition: opacity 0.15s ease;
 	z-index: 2;
-	user-select: none !important;
-	-webkit-user-select: none !important;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .agy-assistant-content pre:hover .agy-code-actions,
@@ -562,7 +562,7 @@
 	opacity: 1;
 }
 
-.agy-code-btn {
+.agy-chat-root .agy-code-btn {
 	font-size: 10px;
 	padding: 2px 6px;
 	border-radius: var(--radius-s);
@@ -570,8 +570,8 @@
 	background-color: var(--background-primary);
 	color: var(--text-muted);
 	cursor: pointer;
-	user-select: none !important;
-	-webkit-user-select: none !important;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .agy-code-btn:hover {

@@ -5,6 +5,12 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.1] - 2026-10-16
+
+### Fixed
+- **Obsidian Community Plugin CSS Compliance**:
+  - Eliminated all `!important` flags across message containers, message rows, and code toolbars. Replaced them with scoped selectors (`.agy-chat-root`) to adhere to official Obsidian theme and community plugin guidelines while ensuring seamless text selection and copying.
+
 ## [3.9.0] - 2026-10-16
 
 ### Added
