@@ -44,6 +44,10 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 
 * 🔐 **Zero API Keys Needed**: Interacts directly with authenticated local CLI processes. No keys or billing details are ever stored in Obsidian.
 * 💬 **Multi-Turn Conversation Memory**: Subsequent messages within a chat session retain full dialogue history and note context across all providers.
+* 🔗 **Clickable File Links & Deep Navigation**: `file://` links produced by the AI assistant are fully interactive. Clicking vault notes opens them directly in Obsidian and scrolls to referenced lines (e.g. `#L42`) or headings; clicking external files opens them in your system's default editor (e.g. VS Code).
+* 🖱️ **File Link Context Menu**: Right-click any file link in chat to **Open file**, **Open in new tab**, **Reveal in system folder** (Windows Explorer / macOS Finder), **Copy file path**, or **Copy link address**.
+* 📝 **Full Text Selection & Context Actions**: Select any text across messages and code blocks. Right-click selected text or full messages to **Copy** or **Insert into note** at the current cursor position.
+* 📋 **Message & Code Action Buttons**: 1-click header buttons to copy entire user prompts or assistant responses, insert responses directly into your active note, and copy individual code snippets.
 * 🛠️ **Custom CLI & Agent Support**: Plug in any custom coding agent or local CLI with configurable arguments templates (e.g. `tell {prompt}`).
 * 🌐 **Cross-Platform & WSL Support**: Native execution on Windows, macOS, Linux, and Windows Subsystem for Linux (`wsl`).
 * 🎯 **Unified Model & Reasoning Switcher**: A single fuzzy-search modal accessible from the chat header, the bottom status bar widget, and plugin settings to switch providers, models, and reasoning effort levels on the fly.
@@ -52,7 +56,6 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 * 🏷️ **Clear Attribution**: Every assistant response clearly displays the provider, model, and reasoning effort used.
 * 🔘 **Quick Action Bar**: One-click prompt chips to **Summarize**, **Polish writing**, **Extract tasks**, and **Explain concepts** from your active note.
 * 🔄 **Session Management**: Dedicated *New session* button to clear conversation memory and restart context on demand.
-* 📋 **Code Snippet Actions**: One-click buttons to *Copy* code blocks or *Insert into note at cursor*.
 * 🎨 **Obsidian Native Design**: Strictly styled with Obsidian theme CSS variables for seamless Dark and Light mode support.
 
 ---
@@ -87,7 +90,7 @@ Sidecar AI uses a privacy-first, zero-telemetry architecture:
   - It executes exclusively the command configured in Settings (prefixed with `wsl` if enabled), passing user prompts via standard CLI arguments and reading streaming output via stdout. No background scripts, remote downloads, or arbitrary commands are executed.
 - **Clipboard Access (`navigator.clipboard.writeText`)**:
   - Clipboard access is strictly **write-only**.
-  - It is triggered solely when you explicitly click the "Copy" button on code blocks in the chat UI.
+  - It is triggered solely when you explicitly click a user-initiated copy action (such as the "Copy" button on code blocks, "Copy response" / "Copy message" buttons on message headers, or the right-click context menu "Copy" options).
   - The plugin **never** reads, inspects, or monitors system clipboard contents.
 
 ---
@@ -96,9 +99,9 @@ Sidecar AI uses a privacy-first, zero-telemetry architecture:
 
 | Command | Action |
 | :--- | :--- |
-| `Sidecar AI: Open Sidecar AI Sidebar` | Opens or reveals the Sidecar AI sidebar view. |
-| `Sidecar AI: Switch Model, Provider & Effort` | Opens the fuzzy search modal to switch models and effort. |
-| `Sidecar AI: Restart Session (New Chat)` | Resets the conversation context and starts fresh. |
+| `Sidecar AI: Open chat sidebar` | Opens or reveals the Sidecar AI sidebar view. |
+| `Sidecar AI: Switch model & effort` | Opens the fuzzy search modal to switch models and effort. |
+| `Sidecar AI: Restart session (new chat)` | Resets the conversation context and starts fresh. |
 
 ---
 
