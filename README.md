@@ -26,6 +26,7 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
    - Click the **Sidecar AI bot icon** in the left ribbon, or
    - Press `Ctrl/Cmd + P` and select `Sidecar AI: Open chat sidebar`.
 4. **Chat with Context**: Ask questions, summarize notes, or select text in your active note to query the AI assistant.
+5. **Navigate Referenced Files**: Click any `file://` link produced in chat to jump directly to referenced notes and lines in Obsidian, or open external files in your default code editor.
 
 ---
 
@@ -57,6 +58,22 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 * 🔘 **Quick Action Bar**: One-click prompt chips to **Summarize**, **Polish writing**, **Extract tasks**, and **Explain concepts** from your active note.
 * 🔄 **Session Management**: Dedicated *New session* button to clear conversation memory and restart context on demand.
 * 🎨 **Obsidian Native Design**: Strictly styled with Obsidian theme CSS variables for seamless Dark and Light mode support.
+
+---
+
+## 💡 Interactive Workflows
+
+### 🔗 Deep File Navigation
+When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/main.ts#L42-L60)`), Sidecar AI makes them native and clickable:
+* **In-Vault Notes**: Clicking a link to a file inside your vault opens the note directly in an Obsidian leaf and scrolls immediately to the target line number (`#L42`) or heading.
+* **External Files**: Files outside the vault automatically open in your operating system's default application (such as VS Code or text editor).
+* **Open in New Tab**: Hold `Ctrl`/`Cmd` or middle-click on any link to open it in a new tab.
+* **Right-Click Menu**: Right-click any file link to reveal the file in Windows Explorer or macOS Finder, open in a new tab, or copy the path/URL.
+
+### 📝 Text Selection & Note Insertion
+* **Full Text Selection**: Highlight any portion of assistant responses or prompts using standard mouse drag and copy via `Ctrl+C` / `Cmd+C`.
+* **Right-Click Context Menu**: Right-click selected text or full messages to **Insert into note** at your cursor position, or **Copy response**.
+* **1-Click Header Buttons**: Header buttons on each message allow quick copying or inserting without selecting text.
 
 ---
 
