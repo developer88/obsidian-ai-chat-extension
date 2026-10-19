@@ -30,6 +30,7 @@ export const ANTIGRAVITY_CHAT_VIEW_TYPE = 'antigravity-chat-view';
 export class AntigravityChatView extends ItemView {
 	private messages: ChatMessage[] = [];
 	private messagesContainerEl!: HTMLElement;
+	private inputContainerEl!: HTMLElement;
 	private inputEl!: HTMLTextAreaElement;
 	private sendBtnEl!: HTMLButtonElement;
 	private contextPillEl!: HTMLElement;
@@ -325,6 +326,10 @@ export class AntigravityChatView extends ItemView {
 				attr: { 'type': 'button' }
 			});
 			chip.addEventListener('click', () => {
+				if (this.isStreaming) {
+					new Notice('Sidecar AI is currently generating a response. Click the stop button (■) if you want to cancel.');
+					return;
+				}
 				this.inputEl.value = action.prompt;
 				void this.handleSend();
 			});
@@ -463,9 +468,9 @@ export class AntigravityChatView extends ItemView {
 
 	private buildInputArea(parent: HTMLElement): void {
 		const inputSection = parent.createDiv({ cls: 'agy-input-section' });
-		const inputWrapper = inputSection.createDiv({ cls: 'agy-input-container' });
+		this.inputContainerEl = inputSection.createDiv({ cls: 'agy-input-container' });
 
-		this.inputEl = inputWrapper.createEl('textarea', {
+		this.inputEl = this.inputContainerEl.createEl('textarea', {
 			cls: 'agy-textarea',
 			attr: {
 				placeholder: 'Ask Sidecar AI... (Enter to send, Shift+Enter for newline)',
@@ -481,11 +486,15 @@ export class AntigravityChatView extends ItemView {
 		this.inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
+				if (this.isStreaming) {
+					new Notice('Sidecar AI is still generating a response. Click the stop button (■) if you want to cancel.');
+					return;
+				}
 				void this.handleSend();
 			}
 		});
 
-		this.sendBtnEl = inputWrapper.createEl('button', {
+		this.sendBtnEl = this.inputContainerEl.createEl('button', {
 			cls: 'agy-submit-btn',
 			attr: {
 				'aria-label': 'Send prompt',
@@ -497,6 +506,8 @@ export class AntigravityChatView extends ItemView {
 		this.sendBtnEl.addEventListener('click', () => {
 			if (this.isStreaming) {
 				this.cliService.abort();
+				this.isStreaming = false;
+				this.setSendButtonState(false);
 			} else {
 				void this.handleSend();
 			}
@@ -537,6 +548,8 @@ export class AntigravityChatView extends ItemView {
 
 	public restartSession(): void {
 		this.cliService.resetSession();
+		this.isStreaming = false;
+		this.setSendButtonState(false);
 		this.contextSentInSession = false;
 		this.includeContext = this.getSettings().autoAttachContext ?? true;
 		this.updateSessionBadge('');
@@ -567,9 +580,6 @@ export class AntigravityChatView extends ItemView {
 
 	private async handleSend(): Promise<void> {
 		if (this.isStreaming) {
-			this.cliService.abort();
-			this.isStreaming = false;
-			this.setSendButtonState(false);
 			return;
 		}
 
@@ -734,10 +744,22 @@ export class AntigravityChatView extends ItemView {
 			this.sendBtnEl.addClass('is-stopping');
 			this.sendBtnEl.setAttribute('aria-label', 'Stop generation');
 			setIcon(this.sendBtnEl, 'square');
+			if (this.inputContainerEl) {
+				this.inputContainerEl.addClass('is-generating');
+			}
+			if (this.inputEl) {
+				this.inputEl.setAttribute('placeholder', 'Sidecar AI is generating a response... (Click ■ to stop)');
+			}
 		} else {
 			this.sendBtnEl.removeClass('is-stopping');
 			this.sendBtnEl.setAttribute('aria-label', 'Send prompt');
 			setIcon(this.sendBtnEl, 'arrow-up');
+			if (this.inputContainerEl) {
+				this.inputContainerEl.removeClass('is-generating');
+			}
+			if (this.inputEl) {
+				this.inputEl.setAttribute('placeholder', 'Ask Sidecar AI... (Enter to send, Shift+Enter for newline)');
+			}
 		}
 	}
 
@@ -817,12 +839,26 @@ export class AntigravityChatView extends ItemView {
 				modelBadge.setText(msg.modelLabel + effortStr);
 			}
 
+			if (msg.isStreaming) {
+				const statusBadge = metaRow.createSpan({ cls: 'agy-msg-status-badge is-streaming' });
+				statusBadge.createSpan({ cls: 'agy-status-dot' });
+				statusBadge.createSpan({ cls: 'agy-status-text', text: 'Thinking & working...' });
+			}
+
 			const contentDiv = msgRow.createDiv({ cls: 'agy-assistant-content markdown-rendered' });
+			const indicatorDiv = msgRow.createDiv({ cls: 'agy-streaming-indicator' });
+
 			if (!msg.content && msg.isStreaming) {
 				this.renderWaitingIndicator(contentDiv);
+				indicatorDiv.setCssStyles({ display: 'none' });
 			} else {
 				this.renderMarkdownTo(contentDiv, msg.content);
-				this.attachAssistantMessageActions(msgRow, msg.content);
+				if (msg.isStreaming) {
+					this.renderStreamingWorkingIndicator(indicatorDiv);
+				} else {
+					indicatorDiv.setCssStyles({ display: 'none' });
+					this.attachAssistantMessageActions(msgRow, msg.content);
+				}
 			}
 		}
 
@@ -836,20 +872,65 @@ export class AntigravityChatView extends ItemView {
 		indicator.createSpan({ cls: 'agy-typing-dot' });
 		indicator.createSpan({ cls: 'agy-typing-dot' });
 		indicator.createSpan({ cls: 'agy-typing-dot' });
+		indicator.createSpan({ cls: 'agy-typing-label', text: 'Thinking...' });
+	}
+
+	private renderStreamingWorkingIndicator(targetEl: HTMLElement): void {
+		targetEl.empty();
+		targetEl.setCssStyles({ display: 'flex' });
+		const bubble = targetEl.createDiv({ cls: 'agy-streaming-working-bubble' });
+		const dots = bubble.createDiv({ cls: 'agy-typing-indicator' });
+		dots.createSpan({ cls: 'agy-typing-dot' });
+		dots.createSpan({ cls: 'agy-typing-dot' });
+		dots.createSpan({ cls: 'agy-typing-dot' });
+		bubble.createSpan({ cls: 'agy-streaming-label', text: 'Thinking & working...' });
 	}
 
 	private updateAssistantMessageContent(msgRow: HTMLElement, content: string, isFinal = false): void {
-		const contentDiv = msgRow.querySelector('.agy-assistant-content') as HTMLElement;
+		const contentDiv = msgRow.querySelector<HTMLElement>('.agy-assistant-content');
 		if (!contentDiv) return;
 
-		contentDiv.empty();
-		if (!content && !isFinal) {
-			this.renderWaitingIndicator(contentDiv);
-		} else {
-			this.renderMarkdownTo(contentDiv, content);
+		let indicatorDiv = msgRow.querySelector<HTMLElement>('.agy-streaming-indicator');
+		if (!indicatorDiv && !isFinal) {
+			indicatorDiv = msgRow.createDiv({ cls: 'agy-streaming-indicator' });
 		}
 
-		if (isFinal) {
+		const metaRow = msgRow.querySelector<HTMLElement>('.agy-msg-meta');
+
+		if (!isFinal) {
+			if (metaRow && !metaRow.querySelector('.agy-msg-status-badge')) {
+				const statusBadge = metaRow.createSpan({ cls: 'agy-msg-status-badge is-streaming' });
+				statusBadge.createSpan({ cls: 'agy-status-dot' });
+				statusBadge.createSpan({ cls: 'agy-status-text', text: 'Thinking & working...' });
+			}
+
+			if (!content) {
+				this.renderWaitingIndicator(contentDiv);
+				if (indicatorDiv) {
+					indicatorDiv.setCssStyles({ display: 'none' });
+				}
+			} else {
+				contentDiv.empty();
+				this.renderMarkdownTo(contentDiv, content);
+				if (indicatorDiv) {
+					this.renderStreamingWorkingIndicator(indicatorDiv);
+				}
+			}
+		} else {
+			contentDiv.empty();
+			this.renderMarkdownTo(contentDiv, content);
+
+			if (indicatorDiv) {
+				indicatorDiv.remove();
+			}
+
+			if (metaRow) {
+				const statusBadge = metaRow.querySelector('.agy-msg-status-badge');
+				if (statusBadge) {
+					statusBadge.remove();
+				}
+			}
+
 			this.attachCodeBlockActions(contentDiv);
 			this.attachAssistantMessageActions(msgRow, content);
 		}
