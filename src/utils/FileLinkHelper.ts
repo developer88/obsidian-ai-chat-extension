@@ -1,7 +1,5 @@
 import type { App, TFile } from 'obsidian';
 import * as path from 'path';
-import * as fs from 'fs';
-import { spawn } from 'child_process';
 
 export interface ParsedFileUrl {
 	rawUrl: string;
@@ -290,13 +288,6 @@ export async function openSystemPath(
 	targetPath: string,
 	options?: { line?: number; notify?: (message: string) => void }
 ): Promise<boolean> {
-	if (fs && typeof fs.existsSync === 'function') {
-		if (!fs.existsSync(targetPath)) {
-			options?.notify?.(`File not found: ${targetPath}`);
-			return false;
-		}
-	}
-
 	let opened = false;
 
 	// 1. Electron shell.openPath
@@ -306,6 +297,9 @@ export async function openSystemPath(
 			const error = await electronShell.openPath(targetPath);
 			if (!error) {
 				opened = true;
+			} else {
+				options?.notify?.(`Could not open file: ${targetPath}`);
+				return false;
 			}
 		} catch {
 			// Electron openPath error
@@ -319,24 +313,6 @@ export async function openSystemPath(
 			opened = true;
 		} catch {
 			// app.openWithDefaultApp failed
-		}
-	}
-
-	// 3. Fallback to child_process spawn
-	if (!opened) {
-		try {
-			if (typeof process !== 'undefined' && process.platform === 'win32') {
-				spawn('cmd.exe', ['/c', 'start', '""', targetPath], { detached: true, stdio: 'ignore' }).unref();
-				opened = true;
-			} else if (typeof process !== 'undefined' && process.platform === 'darwin') {
-				spawn('open', [targetPath], { detached: true, stdio: 'ignore' }).unref();
-				opened = true;
-			} else {
-				spawn('xdg-open', [targetPath], { detached: true, stdio: 'ignore' }).unref();
-				opened = true;
-			}
-		} catch {
-			// child_process spawn failed
 		}
 	}
 
@@ -365,14 +341,6 @@ export async function revealFileInFolder(targetPath: string): Promise<boolean> {
 		}
 	}
 
-	try {
-		if (typeof process !== 'undefined' && process.platform === 'win32') {
-			spawn('explorer.exe', [`/select,${targetPath}`], { detached: true, stdio: 'ignore' }).unref();
-			return true;
-		}
-	} catch {
-		// Ignore
-	}
 	return false;
 }
 
@@ -437,28 +405,19 @@ export async function openFileUrl(
 	let targetPath = parsed.filePath;
 
 	if (parsed.isRelative) {
-		const candidates: string[] = [];
 		if (options?.activeFilePath) {
-			candidates.push(path.resolve(path.dirname(options.activeFilePath), targetPath));
-		}
-		if (options?.contextPath) {
-			candidates.push(path.resolve(options.contextPath, targetPath));
-		}
-		const adapter = app.vault.adapter;
-		const vaultBasePath = (adapter && typeof (adapter as unknown as { getBasePath?: () => string }).getBasePath === 'function')
-			? (adapter as unknown as { getBasePath: () => string }).getBasePath()
-			: '';
-		if (vaultBasePath) {
-			candidates.push(path.resolve(vaultBasePath, targetPath));
-		}
-		if (typeof process !== 'undefined' && process.cwd) {
-			candidates.push(path.resolve(process.cwd(), targetPath));
-		}
-
-		for (const cand of candidates) {
-			if (fs.existsSync(cand)) {
-				targetPath = cand;
-				break;
+			targetPath = path.resolve(path.dirname(options.activeFilePath), targetPath);
+		} else if (options?.contextPath) {
+			targetPath = path.resolve(options.contextPath, targetPath);
+		} else {
+			const adapter = app.vault.adapter;
+			const vaultBasePath = (adapter && typeof (adapter as unknown as { getBasePath?: () => string }).getBasePath === 'function')
+				? (adapter as unknown as { getBasePath: () => string }).getBasePath()
+				: '';
+			if (vaultBasePath) {
+				targetPath = path.resolve(vaultBasePath, targetPath);
+			} else if (typeof process !== 'undefined' && process.cwd) {
+				targetPath = path.resolve(process.cwd(), targetPath);
 			}
 		}
 	}
