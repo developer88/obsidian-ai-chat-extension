@@ -5,6 +5,21 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.10.0] - 2026-10-21
+
+### Added
+- **Persistent Thinking & Tool Execution Indicators**:
+  - Real-time visual feedback remains visible throughout long-running assistant generations, even after introductory text has streamed in and background tools or subagents (such as file creation, web browsing, or image synthesis) are executing.
+  - **Ongoing Working Indicator**: An animated bubble (`Thinking & working...`) remains rendered beneath partially streamed content as long as the CLI process is active, preventing ambiguity during multi-step tool calls.
+  - **Header Status Badge**: An animated pulsating badge (`Thinking & working...`) is displayed in the assistant message header during generation and automatically clears when the turn finishes.
+  - **Generating Input State**: The input container displays a subtle accent glow (`is-generating`) and dynamically updates the placeholder (`Sidecar AI is generating a response... (Click ■ to stop)`).
+
+### Improved
+- **Accidental Cancellation Safeguards**:
+  - Pressing `Enter` in the chat input while a generation is running preserves your typed text and displays an informative notice rather than prematurely aborting the active turn.
+  - Quick action chips are similarly protected against interrupting active generations.
+  - Generation cancellation is strictly reserved for clicking the dedicated Stop button (■) or resetting the session.
+
 ## [3.9.1] - 2026-10-16
 
 ### Fixed
@@ -197,7 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Built-in GitHub Copilot model catalog: `gpt-5.2`, `gpt-5`, `claude-3.7-sonnet` (with reasoning effort), `claude-3.5-sonnet`, `o1`, and `o3-mini`.
 - **Unified Model & Effort Switcher**:
   - Replaced static select dropdowns with a unified, searchable fuzzy modal.
-  - Seamlessly switch provider, model, and reasoning effort (`Low`, `Medium`, `High`) from the **Chat Toolbar**, the **Bottom Status Bar Widget**, or **Settings**.
+  - Seamless switch provider, model, and reasoning effort (`Low`, `Medium`, `High`) from the **Chat Toolbar**, the **Bottom Status Bar Widget**, or **Settings**.
   - All three UI locations stay synchronized in real time.
 - **Provider & Model Attribution**:
   - Each assistant response displays the exact provider and model/effort used to generate that response.
