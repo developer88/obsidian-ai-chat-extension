@@ -317,12 +317,12 @@ export class AgyCliService {
 			? config.cachedModels
 			: (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : []));
 
-		const queryFlag = targetProvider === 'copilot'
-			? '--help'
-			: (targetProvider === 'pi' ? '--list-models' : 'models');
+		const queryArgs = targetProvider === 'copilot'
+			? ['help', 'config']
+			: [targetProvider === 'pi' ? '--list-models' : 'models'];
 
 		const { command, prefixArgs } = this.resolveExecution(config, targetProvider);
-		const args = [...prefixArgs, queryFlag];
+		const args = [...prefixArgs, ...queryArgs];
 
 		return new Promise((resolve) => {
 			let output = '';
@@ -417,8 +417,23 @@ export class AgyCliService {
 	}
 
 	private parseCopilotModels(rawOutput: string): ModelDefinition[] {
-		// Parse models from copilot CLI help/output if available
 		const models: ModelDefinition[] = [];
+
+		// `copilot help config` lists models as `- "id"` bullets under the `model` setting
+		const configMatch = rawOutput.match(/^\s*`model`:[^\n]*(?:\n(?![ \t]*-|[ \t]*`)[^\n]*)*\n((?:[ \t]*-[ \t]*"[^"\n]+"[ \t]*\r?\n?)+)/m);
+		if (configMatch && configMatch[1]) {
+			for (const line of configMatch[1].split('\n')) {
+				const id = line.match(/-\s*"([^"]+)"/)?.[1]?.trim();
+				if (id && !models.some(m => m.id === id)) {
+					models.push({ id, label: id, efforts: [] });
+				}
+			}
+			if (models.length > 0) {
+				return models;
+			}
+		}
+
+		// Legacy `copilot --help` format: --model <model> ... (choices: ...)
 		const modelMatch = rawOutput.match(/--model\s+<model>[\s\S]*?\((?:choices|allowed values):\s*([^)]+)\)/i);
 		if (modelMatch && modelMatch[1]) {
 			const items = modelMatch[1].split(/,\s*/);

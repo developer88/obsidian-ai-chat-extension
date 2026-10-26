@@ -157,6 +157,24 @@ Options:
 		assert.equal(parsed[1].id, 'gpt-4o');
 		assert.equal(parsed[2].id, 'o1-mini');
 	});
+
+	test('parseCopilotModels extracts models from `copilot help config` output', () => {
+		const configText = `
+Configuration Settings:
+
+  \`includeCoAuthoredBy\`: whether to add a Co-authored-by trailer; defaults to \`true\`.
+
+  \`model\`: AI model to use for Copilot CLI; can be changed with /model command or --model flag option.
+    - "claude-sonnet-4.6"
+    - "gpt-5.4-mini"
+    - "gemini-3.5-flash"
+
+  \`contextTier\`: context window tier for tiered-pricing models (e.g., "default" or "long_context").
+    - Can also be set with --context flag (overrides persisted setting)
+`;
+		const parsed = parserService.parseCopilotModels(configText);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-sonnet-4.6', 'gpt-5.4-mini', 'gemini-3.5-flash']);
+	});
 });
 
 describe('AgyCliService - Session & Provider State', () => {
