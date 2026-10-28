@@ -104,6 +104,15 @@ describe('AgyCliService - Path & Command Sanitization', () => {
 			assert.ok(linuxEnv.PATH?.includes('/usr/bin'));
 			assert.ok(linuxEnv.PATH?.includes('/usr/local/bin'));
 			assert.ok(linuxEnv.PATH?.includes('/home/user/bin'));
+
+			Object.defineProperty(process, 'platform', { value: 'win32' });
+			const origUserProfile = process.env.USERPROFILE;
+			process.env.USERPROFILE = 'C:\\Users\\testuser';
+			process.env.PATH = 'C:\\Windows\\system32;C:\\Windows';
+			const winEnv = AgyCliService.getSpawnEnvironment();
+			assert.ok(winEnv.PATH?.includes('C:\\Users\\testuser\\.pi\\agent\\bin'));
+			assert.ok(winEnv.PATH?.includes('C:\\Windows\\system32'));
+			process.env.USERPROFILE = origUserProfile;
 		} finally {
 			Object.defineProperty(process, 'platform', { value: originalPlatform });
 			process.env.PATH = originalPath;
@@ -339,11 +348,12 @@ describe('AgyCliService - resolveExecution', () => {
 		try {
 			Object.defineProperty(process, 'platform', { value: 'win32' });
 
-			// Pi on win32 defaults to cmd.exe /c pi
+			// Pi on win32 defaults to cmd.exe /c pi (or ~/.pi/agent/bin/pi.cmd if standalone is installed)
 			const piConfig = { ...DEFAULT_SETTINGS.providers.pi, cliCommand: 'pi' };
 			const piResolved = resolverService.resolveExecution(piConfig, 'pi');
 			assert.equal(piResolved.command, 'cmd.exe');
-			assert.deepEqual(piResolved.prefixArgs, ['/c', 'pi']);
+			assert.equal(piResolved.prefixArgs[0], '/c');
+			assert.ok(piResolved.prefixArgs[1].endsWith('pi') || piResolved.prefixArgs[1].endsWith('pi.cmd'));
 
 			// .cmd/.bat script
 			const batConfig = { ...DEFAULT_SETTINGS.providers.copilot, cliCommand: 'my-copilot.bat' };
@@ -369,8 +379,10 @@ describe('AgyCliService - resolveExecution', () => {
 
 	test('resolves command for Unix/Linux/macOS standard executables without cmd.exe or .exe', () => {
 		const originalPlatform = process.platform;
+		const originalHome = process.env.HOME;
 		try {
 			Object.defineProperty(process, 'platform', { value: 'linux' });
+			process.env.HOME = '/nonexistent_test_home';
 
 			// Pi on Linux/macOS runs 'pi' directly (no cmd.exe wrapper)
 			const piConfig = { ...DEFAULT_SETTINGS.providers.pi, cliCommand: 'pi', useWsl: false };
@@ -403,6 +415,7 @@ describe('AgyCliService - resolveExecution', () => {
 			assert.deepEqual(homebrewResolved.prefixArgs, []);
 		} finally {
 			Object.defineProperty(process, 'platform', { value: originalPlatform });
+			process.env.HOME = originalHome;
 		}
 	});
 

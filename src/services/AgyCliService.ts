@@ -1,4 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { App } from 'obsidian';
 import {
 	AiChatPluginSettings,
@@ -221,7 +223,11 @@ export class AgyCliService {
 		// On macOS/Linux GUI apps (like Obsidian launched via Finder/Dock), PATH often lacks Homebrew and user binaries.
 		// Prepend standard binary paths so node, pi, agy, copilot can be located by /usr/bin/env shebangs.
 		if (process.platform === 'darwin' || process.platform === 'linux') {
+			const home = process.env.HOME || '';
 			const extraPaths = [
+				home ? path.join(home, '.pi', 'agent', 'bin') : '',
+				home ? path.join(home, '.local', 'bin') : '',
+				home ? path.join(home, '.cargo', 'bin') : '',
 				'/opt/homebrew/bin',
 				'/opt/homebrew/sbin',
 				'/usr/local/bin',
@@ -230,7 +236,7 @@ export class AgyCliService {
 				'/bin',
 				'/usr/sbin',
 				'/sbin'
-			];
+			].filter(Boolean);
 			const currentPath = env.PATH || env.Path || '';
 			const currentSegments = currentPath.split(':').filter(Boolean);
 			for (const p of extraPaths) {
@@ -239,6 +245,32 @@ export class AgyCliService {
 				}
 			}
 			env.PATH = currentSegments.join(':');
+		} else if (process.platform === 'win32') {
+			// On Windows Electron apps, PATH often lacks user-installed CLI paths when launched from Desktop or Start Menu
+			// (e.g. Pi agent non-npm install in ~/.pi/agent/bin, Antigravity in LocalAppData, etc.)
+			const userProfile = process.env.USERPROFILE || '';
+			const localAppData = process.env.LOCALAPPDATA || '';
+			const appData = process.env.APPDATA || '';
+
+			const winExtraPaths = [
+				userProfile ? path.join(userProfile, '.pi', 'agent', 'bin') : '',
+				localAppData ? path.join(localAppData, 'agy', 'bin') : '',
+				localAppData ? path.join(localAppData, 'Programs', 'Antigravity', 'bin') : '',
+				localAppData ? path.join(localAppData, 'Programs', 'Antigravity IDE', 'bin') : '',
+				localAppData ? path.join(localAppData, 'Programs', 'experienced-llms', 'bin') : '',
+				localAppData ? path.join(localAppData, 'Microsoft', 'WinGet', 'Links') : '',
+				userProfile ? path.join(userProfile, '.cargo', 'bin') : '',
+				appData ? path.join(appData, 'npm') : ''
+			].filter(Boolean);
+
+			const currentPath = env.PATH || env.Path || '';
+			const currentSegments = currentPath.split(';').filter(Boolean);
+			for (const p of winExtraPaths) {
+				if (!currentSegments.some(s => s.toLowerCase() === p.toLowerCase())) {
+					currentSegments.unshift(p);
+				}
+			}
+			env.PATH = currentSegments.join(';');
 		}
 		return env;
 	}
@@ -261,17 +293,37 @@ export class AgyCliService {
 		}
 
 		if (process.platform === 'win32') {
+			let resolvedCmd = rawCmd;
+			// Pi Agent standalone updater installs into ~/.pi/agent/bin/pi.cmd instead of global npm
+			if (targetProvider === 'pi' && (rawCmd.toLowerCase() === 'pi' || rawCmd.toLowerCase() === 'pi.cmd')) {
+				const userProfile = process.env.USERPROFILE || '';
+				const piCmdCandidate = userProfile ? path.join(userProfile, '.pi', 'agent', 'bin', 'pi.cmd') : '';
+				if (piCmdCandidate && fs.existsSync(piCmdCandidate)) {
+					resolvedCmd = piCmdCandidate;
+				}
+			}
+
 			if (
 				targetProvider === 'pi' ||
 				targetProvider === 'custom' ||
 				rawCmd.toLowerCase() === 'pi' ||
-				rawCmd.toLowerCase().endsWith('.cmd') ||
-				rawCmd.toLowerCase().endsWith('.bat')
+				resolvedCmd.toLowerCase().endsWith('.cmd') ||
+				resolvedCmd.toLowerCase().endsWith('.bat')
 			) {
-				return { command: 'cmd.exe', prefixArgs: ['/c', rawCmd] };
+				return { command: 'cmd.exe', prefixArgs: ['/c', resolvedCmd] };
 			}
-			if (!rawCmd.toLowerCase().endsWith('.exe') && !rawCmd.includes('\\') && !rawCmd.includes('/')) {
-				return { command: `${rawCmd}.exe`, prefixArgs: [] };
+			if (!resolvedCmd.toLowerCase().endsWith('.exe') && !resolvedCmd.includes('\\') && !resolvedCmd.includes('/')) {
+				return { command: `${resolvedCmd}.exe`, prefixArgs: [] };
+			}
+			return { command: resolvedCmd, prefixArgs: [] };
+		}
+
+		// On Unix/Linux/macOS, check if Pi standalone binary exists in ~/.pi/agent/bin/pi
+		if (targetProvider === 'pi' && rawCmd === 'pi') {
+			const home = process.env.HOME || '';
+			const piCandidate = home ? path.join(home, '.pi', 'agent', 'bin', 'pi') : '';
+			if (piCandidate && fs.existsSync(piCandidate)) {
+				return { command: piCandidate, prefixArgs: [] };
 			}
 		}
 
