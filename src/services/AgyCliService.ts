@@ -503,7 +503,10 @@ export class AgyCliService {
 			for (const line of configMatch[1].split(/\r?\n/)) {
 				const id = line.match(/-\s*"([^"]+)"/)?.[1]?.trim();
 				if (id && !models.some(m => m.id === id)) {
-					models.push({ id, label: id, efforts: [] });
+					const label = id.toLowerCase() === 'auto'
+						? 'Copilot Fusion (Auto - Recommended)'
+						: `${id} (Paid plan)`;
+					models.push({ id, label, efforts: [] });
 				}
 			}
 		}
@@ -516,9 +519,12 @@ export class AgyCliService {
 				for (const item of items) {
 					const cleaned = item.replace(/['"]/g, '').trim();
 					if (cleaned && !models.some(m => m.id === cleaned)) {
+						const label = cleaned.toLowerCase() === 'auto'
+							? 'Copilot Fusion (Auto - Recommended)'
+							: `${cleaned} (Paid plan)`;
 						models.push({
 							id: cleaned,
-							label: cleaned,
+							label,
 							efforts: []
 						});
 					}

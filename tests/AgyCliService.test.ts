@@ -245,6 +245,8 @@ Configuration Settings:
 `;
 		const parsed = parserService.parseCopilotModels(configText);
 		assert.deepEqual(parsed.map((m: any) => m.id), ['auto', 'claude-sonnet-4.6', 'gpt-5.4-mini', 'gemini-3.5-flash']);
+		assert.equal(parsed[0].label, 'Copilot Fusion (Auto - Recommended)');
+		assert.equal(parsed[1].label, 'claude-sonnet-4.6 (Paid plan)');
 	});
 
 	test('parseCopilotModels handles Windows CRLF line endings in `copilot help config` output', () => {
