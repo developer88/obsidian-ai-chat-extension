@@ -5,6 +5,7 @@ import {
 	AiProviderId,
 	ModelDefinition,
 	DEFAULT_PROVIDER_CONFIGS,
+	COPILOT_DEFAULT_MODELS,
 	cloneProviderConfig,
 	cloneDefaultProviderConfigs
 } from './types';
@@ -261,6 +262,23 @@ export default class AntigravityPlugin extends Plugin {
 				if (!this.settings.providers[provKey]) {
 					this.settings.providers[provKey] = cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS[provKey]);
 				}
+			}
+		}
+
+		// Ensure copilot provider has 'auto' available and valid selectedModel
+		if (this.settings.providers.copilot) {
+			const copilotConfig = this.settings.providers.copilot;
+			if (!copilotConfig.cachedModels || copilotConfig.cachedModels.length === 0) {
+				copilotConfig.cachedModels = [...COPILOT_DEFAULT_MODELS];
+			} else if (!copilotConfig.cachedModels.some(m => m.id === 'auto')) {
+				copilotConfig.cachedModels.unshift({
+					id: 'auto',
+					label: 'Auto (Recommended)',
+					efforts: []
+				});
+			}
+			if (!copilotConfig.selectedModel || !copilotConfig.cachedModels.some(m => m.id === copilotConfig.selectedModel)) {
+				copilotConfig.selectedModel = 'auto';
 			}
 		}
 		if (rawData?.cliCommand && this.settings.providers.antigravity) {

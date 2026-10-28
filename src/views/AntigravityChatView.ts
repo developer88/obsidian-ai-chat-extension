@@ -731,7 +731,8 @@ export class AntigravityChatView extends ItemView {
 				this.isStreaming = false;
 				assistantMsg.isStreaming = false;
 				assistantMsg.role = 'error';
-				assistantMsg.content = `⚠️ **Error**: ${errorMsg}`;
+				const cleanError = errorMsg.replace(/^Error:\s*/i, '');
+				assistantMsg.content = `⚠️ **Error**: ${cleanError}`;
 				this.updateAssistantMessageContent(assistantMsgEl, assistantMsg.content, true);
 				this.setSendButtonState(false);
 				this.scrollToBottom();

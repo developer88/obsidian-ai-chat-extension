@@ -5,7 +5,8 @@ import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
 	ANTIGRAVITY_MODELS,
-	PI_DEFAULT_MODELS
+	PI_DEFAULT_MODELS,
+	COPILOT_DEFAULT_MODELS
 } from '../src/types';
 
 function createMockService(initialSettings: Partial<AiChatPluginSettings> = {}) {
@@ -205,19 +206,20 @@ claude-sonnet-4-6         Claude Sonnet 4.6
 		assert.deepEqual(flashCrlf.efforts, ['Low', 'Medium', 'High']);
 	});
 
-	test('parseCopilotModels extracts choices from help text', () => {
+	test('parseCopilotModels extracts choices from help text and prepends auto', () => {
 		const helpText = `
 Options:
   --model <model>  Model to use (choices: "claude-sonnet-4.5", "gpt-4o", "o1-mini")
 `;
 		const parsed = parserService.parseCopilotModels(helpText);
-		assert.equal(parsed.length, 3);
-		assert.equal(parsed[0].id, 'claude-sonnet-4.5');
-		assert.equal(parsed[1].id, 'gpt-4o');
-		assert.equal(parsed[2].id, 'o1-mini');
+		assert.equal(parsed.length, 4);
+		assert.equal(parsed[0].id, 'auto');
+		assert.equal(parsed[1].id, 'claude-sonnet-4.5');
+		assert.equal(parsed[2].id, 'gpt-4o');
+		assert.equal(parsed[3].id, 'o1-mini');
 	});
 
-	test('parseCopilotModels extracts models from `copilot help config` output', () => {
+	test('parseCopilotModels extracts models from `copilot help config` output and prepends auto', () => {
 		const configText = `
 Configuration Settings:
 
@@ -232,13 +234,13 @@ Configuration Settings:
     - Can also be set with --context flag (overrides persisted setting)
 `;
 		const parsed = parserService.parseCopilotModels(configText);
-		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-sonnet-4.6', 'gpt-5.4-mini', 'gemini-3.5-flash']);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['auto', 'claude-sonnet-4.6', 'gpt-5.4-mini', 'gemini-3.5-flash']);
 	});
 
 	test('parseCopilotModels handles Windows CRLF line endings in `copilot help config` output', () => {
 		const crlfConfigText = "Configuration Settings:\r\n\r\n  `model`: AI model to use for Copilot CLI;\r\n    - \"claude-sonnet-4.6\"\r\n    - \"gpt-5.4-mini\"\r\n\r\n  `contextTier`: context tier\r\n";
 		const parsed = parserService.parseCopilotModels(crlfConfigText);
-		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-sonnet-4.6', 'gpt-5.4-mini']);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['auto', 'claude-sonnet-4.6', 'gpt-5.4-mini']);
 	});
 
 	test('parseCopilotModels deduplicates repeated model IDs in config output', () => {
@@ -249,7 +251,7 @@ Configuration Settings:
     - "gpt-5.4-mini"
 `;
 		const parsed = parserService.parseCopilotModels(duplicateText);
-		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-sonnet-4.6', 'gpt-5.4-mini']);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['auto', 'claude-sonnet-4.6', 'gpt-5.4-mini']);
 	});
 
 	test('parseCopilotModels extracts models from legacy `allowed values` help text', () => {
@@ -258,12 +260,12 @@ Options:
   --model <model>  Model to use (allowed values: 'claude-3.5-sonnet', 'gpt-4o')
 `;
 		const parsed = parserService.parseCopilotModels(allowedText);
-		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-3.5-sonnet', 'gpt-4o']);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['auto', 'claude-3.5-sonnet', 'gpt-4o']);
 	});
 
-	test('parseCopilotModels returns empty array when no models match', () => {
-		assert.deepEqual(parserService.parseCopilotModels(''), []);
-		assert.deepEqual(parserService.parseCopilotModels('Usage: copilot <command> [flags]'), []);
+	test('parseCopilotModels falls back to COPILOT_DEFAULT_MODELS when no models match in CLI output', () => {
+		assert.deepEqual(parserService.parseCopilotModels(''), COPILOT_DEFAULT_MODELS);
+		assert.deepEqual(parserService.parseCopilotModels('Usage: copilot <command> [flags]'), COPILOT_DEFAULT_MODELS);
 	});
 
 	test('getModelDiscoveryArgs returns appropriate CLI arguments per provider', () => {

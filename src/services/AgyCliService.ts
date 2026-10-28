@@ -9,6 +9,7 @@ import {
 	ProviderConfig,
 	ANTIGRAVITY_MODELS,
 	PI_DEFAULT_MODELS,
+	COPILOT_DEFAULT_MODELS,
 	DEFAULT_PROVIDER_CONFIGS,
 	PROVIDER_METADATA
 } from '../types';
@@ -326,9 +327,15 @@ export class AgyCliService {
 			};
 		}
 		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
+		const defaultModelsForProvider = targetProvider === 'antigravity'
+			? ANTIGRAVITY_MODELS
+			: (targetProvider === 'pi'
+				? PI_DEFAULT_MODELS
+				: (targetProvider === 'copilot' ? COPILOT_DEFAULT_MODELS : []));
+
 		const fallbackModels = config.cachedModels && config.cachedModels.length > 0
 			? config.cachedModels
-			: (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : []));
+			: defaultModelsForProvider;
 
 		const queryArgs = this.getModelDiscoveryArgs(targetProvider);
 
@@ -430,36 +437,50 @@ export class AgyCliService {
 	private parseCopilotModels(rawOutput: string): ModelDefinition[] {
 		const models: ModelDefinition[] = [];
 
-		// `copilot help config` lists models as `- "id"` bullets under the `model` setting
+		// 1. `copilot help config` lists models as `- "id"` bullets under the `model` setting
 		const configMatch = rawOutput.match(/^\s*`model`:[^\n]*(?:\n(?![ \t]*-|[ \t]*`)[^\n]*)*\n((?:[ \t]*-[ \t]*"[^"\n]+"[ \t]*\r?\n?)+)/m);
 		if (configMatch && configMatch[1]) {
-			for (const line of configMatch[1].split('\n')) {
+			for (const line of configMatch[1].split(/\r?\n/)) {
 				const id = line.match(/-\s*"([^"]+)"/)?.[1]?.trim();
 				if (id && !models.some(m => m.id === id)) {
 					models.push({ id, label: id, efforts: [] });
 				}
 			}
-			if (models.length > 0) {
-				return models;
-			}
 		}
 
-		// Legacy `copilot --help` format: --model <model> ... (choices: ...)
-		const modelMatch = rawOutput.match(/--model\s+<model>[\s\S]*?\((?:choices|allowed values):\s*([^)]+)\)/i);
-		if (modelMatch && modelMatch[1]) {
-			const items = modelMatch[1].split(/,\s*/);
-			for (const item of items) {
-				const cleaned = item.replace(/['"]/g, '').trim();
-				if (cleaned) {
-					models.push({
-						id: cleaned,
-						label: cleaned,
-						efforts: []
-					});
+		// 2. Legacy `copilot --help` format: --model <model> ... (choices: ...) or (allowed values: ...)
+		if (models.length === 0) {
+			const modelMatch = rawOutput.match(/--model\s+<model>[\s\S]*?\((?:choices|allowed values):\s*([^)]+)\)/i);
+			if (modelMatch && modelMatch[1]) {
+				const items = modelMatch[1].split(/,\s*/);
+				for (const item of items) {
+					const cleaned = item.replace(/['"]/g, '').trim();
+					if (cleaned && !models.some(m => m.id === cleaned)) {
+						models.push({
+							id: cleaned,
+							label: cleaned,
+							efforts: []
+						});
+					}
 				}
 			}
 		}
-		return models;
+
+		if (models.length > 0) {
+			// Always ensure 'auto' is included and placed at the top for Copilot
+			if (!models.some(m => m.id === 'auto')) {
+				models.unshift({
+					id: 'auto',
+					label: 'Auto (Recommended)',
+					efforts: []
+				});
+			}
+			return models;
+		}
+
+		// If CLI output has no enumerated model choices (e.g. Copilot CLI 1.0.105+),
+		// return the standard default catalog with Auto
+		return [...COPILOT_DEFAULT_MODELS];
 	}
 
 	private parseAntigravityModels(rawOutput: string): ModelDefinition[] {
@@ -581,8 +602,10 @@ export class AgyCliService {
 				args.push('--allow-all-tools'); // Allow tools non-interactively
 				args.push('--output-format', 'text');
 
-				if (config.selectedModel) {
+				if (config.selectedModel && config.selectedModel !== 'auto') {
 					args.push('--model', config.selectedModel);
+				} else {
+					args.push('--model', 'auto');
 				}
 
 				// Resume session if exists
@@ -700,6 +723,23 @@ export class AgyCliService {
 					if (!finalError) {
 						finalError = `Process exited with code ${code}`;
 					}
+
+					// Automatic fallback for Copilot if a specific model flag is not available in user's plan
+					if (
+						providerId === 'copilot' &&
+						config.selectedModel &&
+						config.selectedModel !== 'auto' &&
+						(finalError.includes('from --model flag is not available') || fullResponse.includes('from --model flag is not available'))
+					) {
+						const unavailableModel = config.selectedModel;
+						console.warn(`[Sidecar AI] Model "${unavailableModel}" is not available in Copilot plan. Retrying with Auto.`);
+						config.selectedModel = 'auto';
+						void this.saveSettings(this.getSettings());
+						callbacks.onToken?.(`*(Model "${unavailableModel}" is not available in your Copilot plan. Automatically switched to Auto...)*\n\n`);
+						void this.sendPrompt(prompt, callbacks);
+						return;
+					}
+
 					callbacks.onError?.(finalError);
 				}
 			});

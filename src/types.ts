@@ -116,6 +116,39 @@ export const PI_DEFAULT_MODELS: ModelDefinition[] = [
 	}
 ];
 
+export const COPILOT_DEFAULT_MODELS: ModelDefinition[] = [
+	{
+		id: 'auto',
+		label: 'Auto (Recommended)',
+		efforts: []
+	},
+	{
+		id: 'claude-3.5-sonnet',
+		label: 'Claude 3.5 Sonnet',
+		efforts: []
+	},
+	{
+		id: 'claude-3.7-sonnet',
+		label: 'Claude 3.7 Sonnet',
+		efforts: []
+	},
+	{
+		id: 'gpt-4o',
+		label: 'GPT-4o',
+		efforts: []
+	},
+	{
+		id: 'o1-mini',
+		label: 'o1-mini',
+		efforts: []
+	},
+	{
+		id: 'o3-mini',
+		label: 'o3-mini',
+		efforts: []
+	}
+];
+
 export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd: string }> = {
 	antigravity: {
 		name: 'Google Antigravity',
@@ -184,9 +217,9 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 		cliCommand: 'copilot',
 		useWsl: false,
 		extraCliFlags: '',
-		selectedModel: '',
+		selectedModel: 'auto',
 		modelEfforts: {},
-		cachedModels: [],
+		cachedModels: COPILOT_DEFAULT_MODELS,
 		defaultMode: '',
 		conversationId: null
 	},

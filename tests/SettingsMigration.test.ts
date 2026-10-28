@@ -5,6 +5,7 @@ import {
 	DEFAULT_PROVIDER_CONFIGS,
 	ANTIGRAVITY_MODELS,
 	PI_DEFAULT_MODELS,
+	COPILOT_DEFAULT_MODELS,
 	AiChatPluginSettings,
 	ProviderConfig,
 	AiProviderId,
@@ -27,6 +28,22 @@ function migrateSettings(rawData: Record<string, unknown> | null): AiChatPluginS
 			if (!settings.providers[provKey]) {
 				settings.providers[provKey] = cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS[provKey]);
 			}
+		}
+	}
+
+	if (settings.providers.copilot) {
+		const copilotConfig = settings.providers.copilot;
+		if (!copilotConfig.cachedModels || copilotConfig.cachedModels.length === 0) {
+			copilotConfig.cachedModels = [...COPILOT_DEFAULT_MODELS];
+		} else if (!copilotConfig.cachedModels.some(m => m.id === 'auto')) {
+			copilotConfig.cachedModels.unshift({
+				id: 'auto',
+				label: 'Auto (Recommended)',
+				efforts: []
+			});
+		}
+		if (!copilotConfig.selectedModel || !copilotConfig.cachedModels.some(m => m.id === copilotConfig.selectedModel)) {
+			copilotConfig.selectedModel = 'auto';
 		}
 	}
 
@@ -132,5 +149,31 @@ describe('Settings & Migration', () => {
 		assert.ok(settings.providers.antigravity);
 		assert.ok(settings.providers.copilot);
 		assert.equal(settings.providers.antigravity.cliCommand, 'agy');
+	});
+
+	test('migrates Copilot provider to include auto and ensures valid selectedModel', () => {
+		const staleCopilotData = {
+			activeProvider: 'copilot' as AiProviderId,
+			providers: {
+				copilot: {
+					id: 'copilot' as AiProviderId,
+					name: 'GitHub Copilot',
+					cliCommand: 'copilot',
+					useWsl: false,
+					extraCliFlags: '',
+					selectedModel: '',
+					modelEfforts: {},
+					cachedModels: [
+						{ id: 'claude-sonnet-4.5', label: 'Claude Sonnet 4.5', efforts: [] }
+					],
+					defaultMode: '',
+					conversationId: null
+				}
+			}
+		};
+
+		const settings = migrateSettings(staleCopilotData);
+		assert.equal(settings.providers.copilot.cachedModels[0].id, 'auto');
+		assert.equal(settings.providers.copilot.selectedModel, 'auto');
 	});
 });
