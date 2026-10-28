@@ -437,8 +437,12 @@ export class AgyCliService {
 	private parseCopilotModels(rawOutput: string): ModelDefinition[] {
 		const models: ModelDefinition[] = [];
 
+		// If the output contains an 'Unavailable models' section (e.g. from copilot /model output),
+		// strip it out so unavailable plan models are never parsed as selectable choices!
+		const accessibleOutput = rawOutput.split(/unavailable\s+models/i)[0];
+
 		// 1. `copilot help config` lists models as `- "id"` bullets under the `model` setting
-		const configMatch = rawOutput.match(/^\s*`model`:[^\n]*(?:\n(?![ \t]*-|[ \t]*`)[^\n]*)*\n((?:[ \t]*-[ \t]*"[^"\n]+"[ \t]*\r?\n?)+)/m);
+		const configMatch = accessibleOutput.match(/^\s*`model`:[^\n]*(?:\n(?![ \t]*-|[ \t]*`)[^\n]*)*\n((?:[ \t]*-[ \t]*"[^"\n]+"[ \t]*\r?\n?)+)/m);
 		if (configMatch && configMatch[1]) {
 			for (const line of configMatch[1].split(/\r?\n/)) {
 				const id = line.match(/-\s*"([^"]+)"/)?.[1]?.trim();
@@ -450,7 +454,7 @@ export class AgyCliService {
 
 		// 2. Legacy `copilot --help` format: --model <model> ... (choices: ...) or (allowed values: ...)
 		if (models.length === 0) {
-			const modelMatch = rawOutput.match(/--model\s+<model>[\s\S]*?\((?:choices|allowed values):\s*([^)]+)\)/i);
+			const modelMatch = accessibleOutput.match(/--model\s+<model>[\s\S]*?\((?:choices|allowed values):\s*([^)]+)\)/i);
 			if (modelMatch && modelMatch[1]) {
 				const items = modelMatch[1].split(/,\s*/);
 				for (const item of items) {
@@ -467,11 +471,11 @@ export class AgyCliService {
 		}
 
 		if (models.length > 0) {
-			// Always ensure 'auto' is included and placed at the top for Copilot
+			// Always ensure 'auto' (Copilot Fusion) is included and placed at the top for Copilot
 			if (!models.some(m => m.id === 'auto')) {
 				models.unshift({
 					id: 'auto',
-					label: 'Auto (Recommended)',
+					label: 'Copilot Fusion (Auto - Recommended)',
 					efforts: []
 				});
 			}
@@ -479,7 +483,7 @@ export class AgyCliService {
 		}
 
 		// If CLI output has no enumerated model choices (e.g. Copilot CLI 1.0.105+),
-		// return the standard default catalog with Auto
+		// return the standard default catalog with Copilot Fusion
 		return [...COPILOT_DEFAULT_MODELS];
 	}
 
@@ -732,10 +736,10 @@ export class AgyCliService {
 						(finalError.includes('from --model flag is not available') || fullResponse.includes('from --model flag is not available'))
 					) {
 						const unavailableModel = config.selectedModel;
-						console.warn(`[Sidecar AI] Model "${unavailableModel}" is not available in Copilot plan. Retrying with Auto.`);
+						console.warn(`[Sidecar AI] Model "${unavailableModel}" is not available in Copilot plan. Retrying with Copilot Fusion (Auto).`);
 						config.selectedModel = 'auto';
 						void this.saveSettings(this.getSettings());
-						callbacks.onToken?.(`*(Model "${unavailableModel}" is not available in your Copilot plan. Automatically switched to Auto...)*\n\n`);
+						callbacks.onToken?.(`*(Model "${unavailableModel}" is not available on your Copilot plan (Free tier only includes Copilot Fusion). Automatically switched to Copilot Fusion (Auto)...)*\n\n`);
 						void this.sendPrompt(prompt, callbacks);
 						return;
 					}

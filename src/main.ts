@@ -273,7 +273,7 @@ export default class AntigravityPlugin extends Plugin {
 			} else if (!copilotConfig.cachedModels.some(m => m.id === 'auto')) {
 				copilotConfig.cachedModels.unshift({
 					id: 'auto',
-					label: 'Auto (Recommended)',
+					label: 'Copilot Fusion (Auto - Recommended)',
 					efforts: []
 				});
 			}

@@ -119,32 +119,32 @@ export const PI_DEFAULT_MODELS: ModelDefinition[] = [
 export const COPILOT_DEFAULT_MODELS: ModelDefinition[] = [
 	{
 		id: 'auto',
-		label: 'Auto (Recommended)',
-		efforts: []
-	},
-	{
-		id: 'claude-3.5-sonnet',
-		label: 'Claude 3.5 Sonnet',
+		label: 'Copilot Fusion (Auto - Recommended)',
 		efforts: []
 	},
 	{
 		id: 'claude-3.7-sonnet',
-		label: 'Claude 3.7 Sonnet',
+		label: 'Claude 3.7 Sonnet (Paid plans)',
+		efforts: []
+	},
+	{
+		id: 'claude-3.5-sonnet',
+		label: 'Claude 3.5 Sonnet (Paid plans)',
 		efforts: []
 	},
 	{
 		id: 'gpt-4o',
-		label: 'GPT-4o',
-		efforts: []
-	},
-	{
-		id: 'o1-mini',
-		label: 'o1-mini',
+		label: 'GPT-4o (Paid plans)',
 		efforts: []
 	},
 	{
 		id: 'o3-mini',
-		label: 'o3-mini',
+		label: 'o3-mini (Paid plans)',
+		efforts: []
+	},
+	{
+		id: 'o1-mini',
+		label: 'o1-mini (Paid plans)',
 		efforts: []
 	}
 ];

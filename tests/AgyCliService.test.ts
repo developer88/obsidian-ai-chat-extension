@@ -266,6 +266,23 @@ Options:
 	test('parseCopilotModels falls back to COPILOT_DEFAULT_MODELS when no models match in CLI output', () => {
 		assert.deepEqual(parserService.parseCopilotModels(''), COPILOT_DEFAULT_MODELS);
 		assert.deepEqual(parserService.parseCopilotModels('Usage: copilot <command> [flags]'), COPILOT_DEFAULT_MODELS);
+		assert.equal(COPILOT_DEFAULT_MODELS[0].label, 'Copilot Fusion (Auto - Recommended)');
+	});
+
+	test('parseCopilotModels strips `Unavailable models` section and ignores unaccessible plan models', () => {
+		const screenWithUnavailable = `
+Configuration Settings:
+  \`model\`: AI model to use
+    - "gpt-4o"
+
+Unavailable models
+  - "claude-haiku-5.5"
+  - "kimi-k3"
+`;
+		const parsed = parserService.parseCopilotModels(screenWithUnavailable);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['auto', 'gpt-4o']);
+		assert.equal(parsed.some((m: any) => m.id === 'claude-haiku-5.5'), false);
+		assert.equal(parsed[0].label, 'Copilot Fusion (Auto - Recommended)');
 	});
 
 	test('getModelDiscoveryArgs returns appropriate CLI arguments per provider', () => {
