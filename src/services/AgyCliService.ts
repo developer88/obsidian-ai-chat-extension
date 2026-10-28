@@ -301,6 +301,19 @@ export class AgyCliService {
 		});
 	}
 
+	public getModelDiscoveryArgs(targetProvider: AiProviderId): string[] {
+		if (targetProvider === 'copilot') {
+			return ['help', 'config'];
+		}
+		if (targetProvider === 'pi') {
+			return ['--list-models'];
+		}
+		if (targetProvider === 'custom') {
+			return [];
+		}
+		return ['models'];
+	}
+
 	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDiscoveryResult> {
 		const settings = this.getSettings();
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
@@ -317,9 +330,7 @@ export class AgyCliService {
 			? config.cachedModels
 			: (targetProvider === 'antigravity' ? ANTIGRAVITY_MODELS : (targetProvider === 'pi' ? PI_DEFAULT_MODELS : []));
 
-		const queryArgs = targetProvider === 'copilot'
-			? ['help', 'config']
-			: [targetProvider === 'pi' ? '--list-models' : 'models'];
+		const queryArgs = this.getModelDiscoveryArgs(targetProvider);
 
 		const { command, prefixArgs } = this.resolveExecution(config, targetProvider);
 		const args = [...prefixArgs, ...queryArgs];

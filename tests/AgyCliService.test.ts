@@ -175,6 +175,44 @@ Configuration Settings:
 		const parsed = parserService.parseCopilotModels(configText);
 		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-sonnet-4.6', 'gpt-5.4-mini', 'gemini-3.5-flash']);
 	});
+
+	test('parseCopilotModels handles Windows CRLF line endings in `copilot help config` output', () => {
+		const crlfConfigText = "Configuration Settings:\r\n\r\n  `model`: AI model to use for Copilot CLI;\r\n    - \"claude-sonnet-4.6\"\r\n    - \"gpt-5.4-mini\"\r\n\r\n  `contextTier`: context tier\r\n";
+		const parsed = parserService.parseCopilotModels(crlfConfigText);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-sonnet-4.6', 'gpt-5.4-mini']);
+	});
+
+	test('parseCopilotModels deduplicates repeated model IDs in config output', () => {
+		const duplicateText = `
+  \`model\`: AI model to use
+    - "claude-sonnet-4.6"
+    - "claude-sonnet-4.6"
+    - "gpt-5.4-mini"
+`;
+		const parsed = parserService.parseCopilotModels(duplicateText);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-sonnet-4.6', 'gpt-5.4-mini']);
+	});
+
+	test('parseCopilotModels extracts models from legacy `allowed values` help text', () => {
+		const allowedText = `
+Options:
+  --model <model>  Model to use (allowed values: 'claude-3.5-sonnet', 'gpt-4o')
+`;
+		const parsed = parserService.parseCopilotModels(allowedText);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['claude-3.5-sonnet', 'gpt-4o']);
+	});
+
+	test('parseCopilotModels returns empty array when no models match', () => {
+		assert.deepEqual(parserService.parseCopilotModels(''), []);
+		assert.deepEqual(parserService.parseCopilotModels('Usage: copilot <command> [flags]'), []);
+	});
+
+	test('getModelDiscoveryArgs returns appropriate CLI arguments per provider', () => {
+		assert.deepEqual(parserService.getModelDiscoveryArgs('copilot'), ['help', 'config']);
+		assert.deepEqual(parserService.getModelDiscoveryArgs('pi'), ['--list-models']);
+		assert.deepEqual(parserService.getModelDiscoveryArgs('antigravity'), ['models']);
+		assert.deepEqual(parserService.getModelDiscoveryArgs('custom'), []);
+	});
 });
 
 describe('AgyCliService - Session & Provider State', () => {
