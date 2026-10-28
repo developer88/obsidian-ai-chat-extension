@@ -81,6 +81,33 @@ describe('AgyCliService - Path & Command Sanitization', () => {
 			assert.ok(env.PATH?.includes('/opt/homebrew/bin'));
 		}
 	});
+
+	test('getSpawnEnvironment prepends standard and Homebrew paths on macOS and Linux', () => {
+		const originalPlatform = process.platform;
+		const originalPath = process.env.PATH;
+		try {
+			Object.defineProperty(process, 'platform', { value: 'darwin' });
+			process.env.PATH = '/custom/bin:/usr/bin';
+			const darwinEnv = AgyCliService.getSpawnEnvironment();
+			assert.equal(darwinEnv.PAGER, 'cat');
+			assert.equal(darwinEnv.CI, '1');
+			assert.ok(darwinEnv.PATH?.includes('/opt/homebrew/bin'));
+			assert.ok(darwinEnv.PATH?.includes('/usr/local/bin'));
+			assert.ok(darwinEnv.PATH?.includes('/custom/bin'));
+			const darwinSegments = darwinEnv.PATH?.split(':') || [];
+			assert.equal(darwinSegments.filter(s => s === '/usr/bin').length, 1);
+
+			Object.defineProperty(process, 'platform', { value: 'linux' });
+			process.env.PATH = '/home/user/bin:/usr/bin';
+			const linuxEnv = AgyCliService.getSpawnEnvironment();
+			assert.ok(linuxEnv.PATH?.includes('/usr/bin'));
+			assert.ok(linuxEnv.PATH?.includes('/usr/local/bin'));
+			assert.ok(linuxEnv.PATH?.includes('/home/user/bin'));
+		} finally {
+			Object.defineProperty(process, 'platform', { value: originalPlatform });
+			process.env.PATH = originalPath;
+		}
+	});
 });
 
 describe('AgyCliService - Model Parsing', () => {
@@ -123,6 +150,24 @@ anthropic        claude-3-5-haiku       200k      8192      yes
 		assert.deepEqual(headersOnly, PI_DEFAULT_MODELS);
 	});
 
+	test('parsePiModels handles both Unix LF and Windows CRLF line endings', () => {
+		const tableLf = "Provider         Model                  Context   Max Out   Thinking\ngithub-copilot   claude-sonnet-4.5      200k      8192      yes\nanthropic        claude-3-5-haiku       200k      8192      no\n";
+		const parsedLf = parserService.parsePiModels(tableLf);
+		assert.equal(parsedLf.length, 2);
+		assert.equal(parsedLf[0].id, 'github-copilot/claude-sonnet-4.5');
+		assert.deepEqual(parsedLf[0].efforts, ['Off', 'Low', 'Medium', 'High']);
+		assert.equal(parsedLf[1].id, 'anthropic/claude-3-5-haiku');
+		assert.deepEqual(parsedLf[1].efforts, []);
+
+		const tableCrlf = "Provider         Model                  Context   Max Out   Thinking\r\ngithub-copilot   claude-sonnet-4.5      200k      8192      yes\r\nanthropic        claude-3-5-haiku       200k      8192      no\r\n";
+		const parsedCrlf = parserService.parsePiModels(tableCrlf);
+		assert.equal(parsedCrlf.length, 2);
+		assert.equal(parsedCrlf[0].id, 'github-copilot/claude-sonnet-4.5');
+		assert.deepEqual(parsedCrlf[0].efforts, ['Off', 'Low', 'Medium', 'High']);
+		assert.equal(parsedCrlf[1].id, 'anthropic/claude-3-5-haiku');
+		assert.deepEqual(parsedCrlf[1].efforts, []);
+	});
+
 	test('parseAntigravityModels groups effort levels into effortModelMap', () => {
 		const agyList = `
 gemini-3.8-flash-low      Gemini 3.8 Flash (Low)
@@ -144,6 +189,20 @@ claude-sonnet-4-6         Claude Sonnet 4.6
 		const sonnet = parsed.find((m: any) => m.id === 'claude-sonnet-4-6');
 		assert.ok(sonnet);
 		assert.deepEqual(sonnet.efforts, []);
+	});
+
+	test('parseAntigravityModels handles both Unix LF and Windows CRLF line endings', () => {
+		const agyTableLf = "Available Models:\n  gemini-2.5-pro\n  gemini-2.5-flash-low\n  gemini-2.5-flash-medium\n  gemini-2.5-flash-high\n";
+		const parsedLf = parserService.parseAntigravityModels(agyTableLf);
+		const flashLf = parsedLf.find((m: any) => m.id === 'gemini-2.5-flash');
+		assert.ok(flashLf);
+		assert.deepEqual(flashLf.efforts, ['Low', 'Medium', 'High']);
+
+		const agyTableCrlf = "Available Models:\r\n  gemini-2.5-pro\r\n  gemini-2.5-flash-low\r\n  gemini-2.5-flash-medium\r\n  gemini-2.5-flash-high\r\n";
+		const parsedCrlf = parserService.parseAntigravityModels(agyTableCrlf);
+		const flashCrlf = parsedCrlf.find((m: any) => m.id === 'gemini-2.5-flash');
+		assert.ok(flashCrlf);
+		assert.deepEqual(flashCrlf.efforts, ['Low', 'Medium', 'High']);
 	});
 
 	test('parseCopilotModels extracts choices from help text', () => {
@@ -284,6 +343,45 @@ describe('AgyCliService - resolveExecution', () => {
 			const customResolved = resolverService.resolveExecution(customConfig, 'custom');
 			assert.equal(customResolved.command, 'cmd.exe');
 			assert.deepEqual(customResolved.prefixArgs, ['/c', 'super-ai']);
+		} finally {
+			Object.defineProperty(process, 'platform', { value: originalPlatform });
+		}
+	});
+
+	test('resolves command for Unix/Linux/macOS standard executables without cmd.exe or .exe', () => {
+		const originalPlatform = process.platform;
+		try {
+			Object.defineProperty(process, 'platform', { value: 'linux' });
+
+			// Pi on Linux/macOS runs 'pi' directly (no cmd.exe wrapper)
+			const piConfig = { ...DEFAULT_SETTINGS.providers.pi, cliCommand: 'pi', useWsl: false };
+			const piResolved = resolverService.resolveExecution(piConfig, 'pi');
+			assert.equal(piResolved.command, 'pi');
+			assert.deepEqual(piResolved.prefixArgs, []);
+
+			// Antigravity on Linux/macOS runs 'agy' directly (no .exe extension)
+			const agyConfig = { ...DEFAULT_SETTINGS.providers.antigravity, cliCommand: 'agy', useWsl: false };
+			const agyResolved = resolverService.resolveExecution(agyConfig, 'antigravity');
+			assert.equal(agyResolved.command, 'agy');
+			assert.deepEqual(agyResolved.prefixArgs, []);
+
+			// Copilot on Linux/macOS runs 'copilot' directly
+			const copilotConfig = { ...DEFAULT_SETTINGS.providers.copilot, cliCommand: 'copilot', useWsl: false };
+			const copilotResolved = resolverService.resolveExecution(copilotConfig, 'copilot');
+			assert.equal(copilotResolved.command, 'copilot');
+			assert.deepEqual(copilotResolved.prefixArgs, []);
+
+			// Custom CLI runs binary directly without cmd.exe
+			const customConfig = { ...DEFAULT_SETTINGS.providers.custom, cliCommand: 'super-ai', useWsl: false };
+			const customResolved = resolverService.resolveExecution(customConfig, 'custom');
+			assert.equal(customResolved.command, 'super-ai');
+			assert.deepEqual(customResolved.prefixArgs, []);
+
+			// Absolute Unix paths (e.g. /usr/local/bin or /opt/homebrew/bin)
+			const homebrewConfig = { ...DEFAULT_SETTINGS.providers.antigravity, cliCommand: '/opt/homebrew/bin/agy', useWsl: false };
+			const homebrewResolved = resolverService.resolveExecution(homebrewConfig, 'antigravity');
+			assert.equal(homebrewResolved.command, '/opt/homebrew/bin/agy');
+			assert.deepEqual(homebrewResolved.prefixArgs, []);
 		} finally {
 			Object.defineProperty(process, 'platform', { value: originalPlatform });
 		}

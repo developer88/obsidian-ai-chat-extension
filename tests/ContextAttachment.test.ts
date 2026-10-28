@@ -73,6 +73,24 @@ describe('Context Attachment - formatPromptWithHistory formatting', () => {
 		const occurrences = (formatted.match(/Here is the context: "\/vault\/docs\/context\.md":/g) || []).length;
 		assert.equal(occurrences, 1);
 	});
+
+	test('formats Windows-style backslash paths in history context without escaping errors', () => {
+		const history: HistoryTurn[] = [
+			{
+				role: 'user',
+				content: 'Review the architecture',
+				attachedContextPath: 'C:\\Users\\test\\vault\\docs\\architecture.md',
+				attachedContextScope: 'file'
+			},
+			{
+				role: 'assistant',
+				content: 'Architecture reviewed.'
+			}
+		];
+
+		const formatted = formatPromptWithHistory('Any questions?', history);
+		assert.ok(formatted.includes('Here is the context: "C:\\Users\\test\\vault\\docs\\architecture.md":\n\nReview the architecture'));
+	});
 });
 
 describe('Context Attachment - Multi-Turn Session Deduplication Simulation', () => {

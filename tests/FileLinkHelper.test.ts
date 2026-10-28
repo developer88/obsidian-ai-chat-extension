@@ -142,6 +142,73 @@ describe('FileLinkHelper - parseFileUrl on Unix/Linux/macOS', () => {
 		assert.equal(parsed.filePath, '/Users/andrey/Documents/Notes.md');
 		assert.equal(parsed.isRelative, false);
 	});
+
+	test('parses Unix file URLs with line ranges and line numbers', () => {
+		const parsedRange = parseFileUrl('file:///home/andrey/projects/src/main.ts#L42-L55', { isWindows: false });
+		assert.ok(parsedRange);
+		assert.equal(parsedRange.filePath, '/home/andrey/projects/src/main.ts');
+		assert.equal(parsedRange.line, 42);
+		assert.equal(parsedRange.endLine, 55);
+
+		const parsedNumeric = parseFileUrl('file:///home/andrey/projects/src/main.ts#100-120', { isWindows: false });
+		assert.ok(parsedNumeric);
+		assert.equal(parsedNumeric.line, 100);
+		assert.equal(parsedNumeric.endLine, 120);
+
+		const parsedParam = parseFileUrl('file:///home/andrey/projects/src/main.ts#line=25', { isWindows: false });
+		assert.ok(parsedParam);
+		assert.equal(parsedParam.line, 25);
+	});
+
+	test('decodes URL components and spaces on Unix paths', () => {
+		const parsed = parseFileUrl('file:///home/andrey/My%20Folder/Notes%20%26%20Ideas/Note%201.md', { isWindows: false });
+		assert.ok(parsed);
+		assert.equal(parsed.filePath, '/home/andrey/My Folder/Notes & Ideas/Note 1.md');
+		assert.equal(parsed.isRelative, false);
+	});
+
+	test('parses localhost Unix file URLs', () => {
+		const parsed = parseFileUrl('file://localhost/home/andrey/project/main.py', { isWindows: false });
+		assert.ok(parsed);
+		assert.equal(parsed.filePath, '/home/andrey/project/main.py');
+		assert.equal(parsed.isRelative, false);
+	});
+
+	test('handles angle-bracketed Unix file URLs', () => {
+		const parsed = parseFileUrl('<file:///home/andrey/code/app.ts>', { isWindows: false });
+		assert.ok(parsed);
+		assert.equal(parsed.filePath, '/home/andrey/code/app.ts');
+	});
+
+	test('preserves Unix heading and block fragments', () => {
+		const parsedHeading = parseFileUrl('file:///home/andrey/Vault/Note.md#Section%20One', { isWindows: false });
+		assert.ok(parsedHeading);
+		assert.equal(parsedHeading.filePath, '/home/andrey/Vault/Note.md');
+		assert.equal(parsedHeading.fragment, 'Section%20One');
+		assert.equal(parsedHeading.line, undefined);
+
+		const parsedBlock = parseFileUrl('file:///home/andrey/Vault/Note.md#^block-id', { isWindows: false });
+		assert.ok(parsedBlock);
+		assert.equal(parsedBlock.filePath, '/home/andrey/Vault/Note.md');
+		assert.equal(parsedBlock.fragment, '^block-id');
+	});
+
+	test('recognizes relative Unix paths', () => {
+		const parsedRel1 = parseFileUrl('file://./src/index.ts', { isWindows: false });
+		assert.ok(parsedRel1);
+		assert.equal(parsedRel1.isRelative, true);
+
+		const parsedRel2 = parseFileUrl('file://src/index.ts', { isWindows: false });
+		assert.ok(parsedRel2);
+		assert.equal(parsedRel2.isRelative, true);
+	});
+
+	test('preserves native /mnt/ paths when isWindows is false', () => {
+		const parsed = parseFileUrl('file:///mnt/storage/shared/data.csv', { isWindows: false });
+		assert.ok(parsed);
+		assert.equal(parsed.filePath, '/mnt/storage/shared/data.csv');
+		assert.equal(parsed.isRelative, false);
+	});
 });
 
 describe('FileLinkHelper - linkifyFileUrls', () => {
@@ -225,5 +292,91 @@ describe('FileLinkHelper - resolveFileInVault', () => {
 		assert.ok(parsed);
 		const file = resolveFileInVault(mockApp, parsed);
 		assert.equal(file, null);
+	});
+
+	test('resolves file when absolute path is inside Unix vault basePath', () => {
+		const { resolveFileInVault } = require('../src/utils/FileLinkHelper');
+		const originalPlatform = process.platform;
+		try {
+			Object.defineProperty(process, 'platform', { value: 'linux' });
+			const mockUnixApp = {
+				vault: {
+					adapter: {
+						getBasePath: () => '/home/andrey/Vault'
+					},
+					getAbstractFileByPath: (p: string) => {
+						const normalized = p.replace(/\\/g, '/');
+						return mockVaultFiles[normalized] || null;
+					}
+				},
+				metadataCache: {
+					getFirstLinkpathDest: (cleanRel: string) => mockVaultFiles[cleanRel] || null
+				}
+			} as any;
+
+			const parsed = parseFileUrl('file:///home/andrey/Vault/Daily/2026-10-15.md#L10', { isWindows: false });
+			assert.ok(parsed);
+			const file = resolveFileInVault(mockUnixApp, parsed);
+			assert.ok(file);
+			assert.equal(file.path, 'Daily/2026-10-15.md');
+		} finally {
+			Object.defineProperty(process, 'platform', { value: originalPlatform });
+		}
+	});
+
+	test('respects case-sensitivity on Unix vault basePath', () => {
+		const { resolveFileInVault } = require('../src/utils/FileLinkHelper');
+		const originalPlatform = process.platform;
+		try {
+			Object.defineProperty(process, 'platform', { value: 'linux' });
+			const mockUnixApp = {
+				vault: {
+					adapter: {
+						getBasePath: () => '/home/andrey/Vault'
+					},
+					getAbstractFileByPath: (p: string) => {
+						const normalized = p.replace(/\\/g, '/');
+						return mockVaultFiles[normalized] || null;
+					}
+				},
+				metadataCache: {
+					getFirstLinkpathDest: (cleanRel: string) => mockVaultFiles[cleanRel] || null
+				}
+			} as any;
+
+			// Lowercase 'vault' should not match uppercase 'Vault' on Unix
+			const parsed = parseFileUrl('file:///home/andrey/vault/Daily/2026-10-15.md#L10', { isWindows: false });
+			assert.ok(parsed);
+			const file = resolveFileInVault(mockUnixApp, parsed);
+			assert.equal(file, null);
+		} finally {
+			Object.defineProperty(process, 'platform', { value: originalPlatform });
+		}
+	});
+
+	test('returns null when path is outside Unix vault', () => {
+		const { resolveFileInVault } = require('../src/utils/FileLinkHelper');
+		const originalPlatform = process.platform;
+		try {
+			Object.defineProperty(process, 'platform', { value: 'linux' });
+			const mockUnixApp = {
+				vault: {
+					adapter: {
+						getBasePath: () => '/home/andrey/Vault'
+					},
+					getAbstractFileByPath: () => null
+				},
+				metadataCache: {
+					getFirstLinkpathDest: () => null
+				}
+			} as any;
+
+			const parsed = parseFileUrl('file:///etc/hosts', { isWindows: false });
+			assert.ok(parsed);
+			const file = resolveFileInVault(mockUnixApp, parsed);
+			assert.equal(file, null);
+		} finally {
+			Object.defineProperty(process, 'platform', { value: originalPlatform });
+		}
 	});
 });
