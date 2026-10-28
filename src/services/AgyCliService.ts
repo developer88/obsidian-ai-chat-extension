@@ -30,6 +30,10 @@ export interface HistoryFormatOptions {
 	maxHistoryChars?: number;
 }
 
+export interface SendPromptOptions {
+	attachedFiles?: string[];
+}
+
 export function formatPromptWithHistory(
 	currentPrompt: string,
 	history: HistoryTurn[],
@@ -631,25 +635,44 @@ export class AgyCliService {
 		return models.length > 0 ? models : PI_DEFAULT_MODELS;
 	}
 
-	public async sendPrompt(
+	public buildPromptArgs(
+		providerId: AiProviderId,
+		config: ProviderConfig,
 		prompt: string,
-		callbacks: CliStreamCallbacks
-	): Promise<void> {
-		this.abort();
-
-		const settings = this.getSettings();
-		const providerId = settings.activeProvider || 'antigravity';
-		const config = this.getActiveProviderConfig();
-		const vaultPath = this.getVaultBasePath();
+		options?: SendPromptOptions
+	): string[] {
 		const args: string[] = [];
-
-		const { command, prefixArgs } = this.resolveExecution(config, providerId, vaultPath);
-		args.push(...prefixArgs);
 
 		if (providerId === 'custom') {
 			args.push(...AgyCliService.buildCustomCliArgs(config.promptTemplate, prompt));
+		} else if (providerId === 'pi') {
+			// Pi Coding Agent uses -p (print/non-interactive mode) and reads the prompt from stdin.
+			// Passing prompt via stdin avoids Windows cmd.exe argument newline truncation and the 8191-char limit.
+			args.push('-p');
+
+			if (config.selectedModel) {
+				args.push('--model', config.selectedModel);
+			}
+
+			const selectedEffort = (config.modelEfforts?.[config.selectedModel] || 'high').toLowerCase();
+			if (selectedEffort && selectedEffort !== 'off') {
+				args.push('--thinking', selectedEffort);
+			} else if (selectedEffort === 'off') {
+				args.push('--thinking', 'off');
+			}
+
+			if (config.conversationId) {
+				args.push('--session', config.conversationId);
+			}
+
+			// If files are attached, pass them as @file arguments so models (even small local LLMs) read the note content
+			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			if (validFiles.length > 0) {
+				const formattedFiles = validFiles.map(f => `@${config.useWsl ? this.toWslPath(f) : f}`);
+				args.push('--', ...formattedFiles);
+			}
 		} else {
-			// Standard providers use -p
+			// Standard providers (Copilot, Antigravity) use -p <prompt>
 			args.push('-p', prompt);
 
 			if (providerId === 'copilot') {
@@ -667,22 +690,6 @@ export class AgyCliService {
 				// Resume session if exists
 				if (config.conversationId) {
 					args.push(`--resume=${config.conversationId}`);
-				}
-			} else if (providerId === 'pi') {
-				// Pi Coding Agent flags
-				if (config.selectedModel) {
-					args.push('--model', config.selectedModel);
-				}
-
-				const selectedEffort = (config.modelEfforts?.[config.selectedModel] || 'high').toLowerCase();
-				if (selectedEffort && selectedEffort !== 'off') {
-					args.push('--thinking', selectedEffort);
-				} else if (selectedEffort === 'off') {
-					args.push('--thinking', 'off');
-				}
-
-				if (config.conversationId) {
-					args.push('--session', config.conversationId);
 				}
 			} else {
 				// Antigravity CLI flags
@@ -720,6 +727,26 @@ export class AgyCliService {
 			args.push(...extra);
 		}
 
+		return args;
+	}
+
+	public async sendPrompt(
+		prompt: string,
+		callbacks: CliStreamCallbacks,
+		options?: SendPromptOptions
+	): Promise<void> {
+		this.abort();
+
+		const settings = this.getSettings();
+		const providerId = settings.activeProvider || 'antigravity';
+		const config = this.getActiveProviderConfig();
+		const vaultPath = this.getVaultBasePath();
+		const args: string[] = [];
+
+		const { command, prefixArgs } = this.resolveExecution(config, providerId, vaultPath);
+		args.push(...prefixArgs);
+		args.push(...this.buildPromptArgs(providerId, config, prompt, options));
+
 		let fullResponse = '';
 		let errorOutput = '';
 
@@ -732,8 +759,15 @@ export class AgyCliService {
 			});
 
 			this.activeProcess = child;
-			// Close stdin immediately to prevent CLI tools like pi from waiting for piped input
-			child.stdin?.end();
+			if (child.stdin) {
+				child.stdin.on('error', () => {});
+				if (providerId === 'pi') {
+					child.stdin.write(prompt, 'utf8');
+					child.stdin.end();
+				} else {
+					child.stdin.end();
+				}
+			}
 
 			child.stdout?.on('data', (data: Buffer) => {
 				const chunk = data.toString();
@@ -792,7 +826,7 @@ export class AgyCliService {
 						config.selectedModel = 'auto';
 						void this.saveSettings(this.getSettings());
 						callbacks.onToken?.(`*(Model "${unavailableModel}" is not available on your Copilot plan (Free tier only includes Copilot Fusion). Automatically switched to Copilot Fusion (Auto)...)*\n\n`);
-						void this.sendPrompt(prompt, callbacks);
+						void this.sendPrompt(prompt, callbacks, options);
 						return;
 					}
 

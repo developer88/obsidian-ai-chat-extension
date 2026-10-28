@@ -704,6 +704,17 @@ export class AntigravityChatView extends ItemView {
 		this.isStreaming = true;
 		this.setSendButtonState(true);
 
+		const attachedFiles: string[] = [];
+		if (this.includeActiveNote && this.currentActiveContext?.fullPath) {
+			attachedFiles.push(this.currentActiveContext.fullPath);
+		}
+		if (settings.enableContextAttachment && this.includeContext) {
+			const contextTarget = this.resolveContextTarget();
+			if (contextTarget?.fullPath && contextTarget.scope === 'file' && !attachedFiles.includes(contextTarget.fullPath)) {
+				attachedFiles.push(contextTarget.fullPath);
+			}
+		}
+
 		let accumulatedResponse = '';
 
 		await this.cliService.sendPrompt(fullPromptForCli, {
@@ -737,7 +748,7 @@ export class AntigravityChatView extends ItemView {
 				this.setSendButtonState(false);
 				this.scrollToBottom();
 			}
-		});
+		}, { attachedFiles });
 	}
 
 	private setSendButtonState(streaming: boolean): void {

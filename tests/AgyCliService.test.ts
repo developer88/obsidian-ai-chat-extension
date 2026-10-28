@@ -1,5 +1,6 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
+import * as path from 'path';
 import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../src/services/AgyCliService';
 import {
 	AiChatPluginSettings,
@@ -548,4 +549,70 @@ describe('formatPromptWithHistory - Multi-Turn Conversation Context', () => {
 		assert.ok(result.includes('Turn 2'));
 	});
 });
+
+describe('AgyCliService - buildPromptArgs', () => {
+	const { service } = createMockService();
+
+	test('pi passes -p without prompt string and appends model and thinking flags', () => {
+		const piConfig = {
+			...DEFAULT_SETTINGS.providers.pi,
+			selectedModel: 'ollama/qwen2.5-coder:1.5b',
+			modelEfforts: { 'ollama/qwen2.5-coder:1.5b': 'high' }
+		};
+		const args = service.buildPromptArgs('pi', piConfig, 'Hello Pi');
+		assert.equal(args[0], '-p');
+		// Prompt must NOT be an argument on the command line for Pi (it is passed over stdin)
+		assert.ok(!args.includes('Hello Pi'));
+		assert.ok(args.includes('--model'));
+		assert.ok(args.includes('ollama/qwen2.5-coder:1.5b'));
+		assert.ok(args.includes('--thinking'));
+		assert.ok(args.includes('high'));
+	});
+
+	test('pi appends @file arguments when attachedFiles exist on disk', () => {
+		const piConfig = {
+			...DEFAULT_SETTINGS.providers.pi,
+			selectedModel: 'ollama/qwen2.5-coder:1.5b'
+		};
+		// package.json exists in repo root
+		const pkgPath = path.resolve('package.json');
+		const args = service.buildPromptArgs('pi', piConfig, 'Summarize note', {
+			attachedFiles: [pkgPath, '/nonexistent/file.md']
+		});
+		assert.equal(args[0], '-p');
+		assert.ok(!args.includes('Summarize note'));
+		assert.ok(args.includes('--'));
+		assert.ok(args.includes(`@${pkgPath}`));
+		assert.ok(!args.includes('@/nonexistent/file.md'));
+	});
+
+	test('copilot passes -p with prompt string, -s, --allow-all-tools, and --output-format text', () => {
+		const copilotConfig = {
+			...DEFAULT_SETTINGS.providers.copilot,
+			selectedModel: 'auto'
+		};
+		const args = service.buildPromptArgs('copilot', copilotConfig, 'Summarize this');
+		assert.equal(args[0], '-p');
+		assert.equal(args[1], 'Summarize this');
+		assert.ok(args.includes('-s'));
+		assert.ok(args.includes('--allow-all-tools'));
+		assert.ok(args.includes('--output-format'));
+		assert.ok(args.includes('--model'));
+		assert.ok(args.includes('auto'));
+	});
+
+	test('antigravity passes -p with prompt string, --output-format text, and --dangerously-skip-permissions', () => {
+		const agyConfig = {
+			...DEFAULT_SETTINGS.providers.antigravity,
+			selectedModel: 'gemini-3.8-flash'
+		};
+		const args = service.buildPromptArgs('antigravity', agyConfig, 'Summarize this');
+		assert.equal(args[0], '-p');
+		assert.equal(args[1], 'Summarize this');
+		assert.ok(args.includes('--output-format'));
+		assert.ok(args.includes('--dangerously-skip-permissions'));
+		assert.ok(args.includes('--model'));
+	});
+});
+
 
