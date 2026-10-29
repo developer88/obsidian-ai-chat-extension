@@ -5,6 +5,14 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.1] - 2026-10-29
+
+### Security & Dependencies
+- **Resolved Transitive Dependency Vulnerabilities**:
+  - Pinned `moment` to `^2.31.0` via npm `overrides` to resolve Dependabot advisory GHSA-4p3w-j4w9-5jqw (path traversal vulnerability in `moment.locale()`).
+  - Updated `fast-uri` to remediate GHSA-hrr3-gc8f-f4qj and related URI normalization advisories.
+  - Reduced audit vulnerabilities to 0.
+
 ## [3.11.0] - 2026-10-29
 
 ### Added
