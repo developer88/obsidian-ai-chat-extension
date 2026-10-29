@@ -5,6 +5,22 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] - 2026-10-29
+
+### Added
+- **Pi Coding Agent Standalone & Universal Support**:
+  - Full cross-platform support for standalone Pi installations (`~/.pi/agent/bin/pi` on Linux/macOS, `%USERPROFILE%\.pi\agent\bin\pi.cmd` on Windows) without requiring global npm.
+  - Automatic `PATH` injection for GUI Electron launch environments on macOS/Linux (`/opt/homebrew/bin`, `~/.local/bin`, `~/.cargo/bin`) and Windows (`AppData`, `WinGet`, etc.).
+  - Stdin streaming for prompts in print mode (`-p`), completely eliminating Windows `cmd.exe` newline truncation and the 8,191-character command line limit.
+  - Native note context attachment via Pi's `@file` argument syntax (`-- @<path>`), enabling reliable summarization and analysis even on lightweight local models (e.g. Ollama `qwen2.5-coder:1.5b`).
+- **GitHub Copilot CLI Dynamic Model Discovery & Recovery**:
+  - Model catalog discovery via modern `copilot help config`, replacing legacy help syntax.
+  - Added **Copilot Fusion (`auto`)** as the default recommended model accessible to all plan tiers.
+  - Explicit `(Paid plan)` labeling for non-auto models in the model selector modal.
+  - Automatic fallback recovery: automatically recovers when an unavailable paid model is requested on a Free tier plan by switching to Copilot Fusion without failing the prompt.
+- **Cross-Platform Test Suite**:
+  - Added comprehensive test coverage across Windows, macOS, and Linux for command resolution, argument construction, WSL path conversions, and model parsing (84 tests passing).
+
 ## [3.10.1] - 2026-10-21
 
 ### Security & Compliance
