@@ -229,9 +229,9 @@ export class AgyCliService {
 		if (process.platform === 'darwin' || process.platform === 'linux') {
 			const home = process.env.HOME || '';
 			const extraPaths = [
-				home ? path.join(home, '.pi', 'agent', 'bin') : '',
-				home ? path.join(home, '.local', 'bin') : '',
-				home ? path.join(home, '.cargo', 'bin') : '',
+				home ? path.posix.join(home, '.pi', 'agent', 'bin') : '',
+				home ? path.posix.join(home, '.local', 'bin') : '',
+				home ? path.posix.join(home, '.cargo', 'bin') : '',
 				'/opt/homebrew/bin',
 				'/opt/homebrew/sbin',
 				'/usr/local/bin',
@@ -257,14 +257,14 @@ export class AgyCliService {
 			const appData = process.env.APPDATA || '';
 
 			const winExtraPaths = [
-				userProfile ? path.join(userProfile, '.pi', 'agent', 'bin') : '',
-				localAppData ? path.join(localAppData, 'agy', 'bin') : '',
-				localAppData ? path.join(localAppData, 'Programs', 'Antigravity', 'bin') : '',
-				localAppData ? path.join(localAppData, 'Programs', 'Antigravity IDE', 'bin') : '',
-				localAppData ? path.join(localAppData, 'Programs', 'experienced-llms', 'bin') : '',
-				localAppData ? path.join(localAppData, 'Microsoft', 'WinGet', 'Links') : '',
-				userProfile ? path.join(userProfile, '.cargo', 'bin') : '',
-				appData ? path.join(appData, 'npm') : ''
+				userProfile ? path.win32.join(userProfile, '.pi', 'agent', 'bin') : '',
+				localAppData ? path.win32.join(localAppData, 'agy', 'bin') : '',
+				localAppData ? path.win32.join(localAppData, 'Programs', 'Antigravity', 'bin') : '',
+				localAppData ? path.win32.join(localAppData, 'Programs', 'Antigravity IDE', 'bin') : '',
+				localAppData ? path.win32.join(localAppData, 'Programs', 'experienced-llms', 'bin') : '',
+				localAppData ? path.win32.join(localAppData, 'Microsoft', 'WinGet', 'Links') : '',
+				userProfile ? path.win32.join(userProfile, '.cargo', 'bin') : '',
+				appData ? path.win32.join(appData, 'npm') : ''
 			].filter(Boolean);
 
 			const currentPath = env.PATH || env.Path || '';
@@ -301,7 +301,7 @@ export class AgyCliService {
 			// Pi Agent standalone updater installs into ~/.pi/agent/bin/pi.cmd instead of global npm
 			if (targetProvider === 'pi' && (rawCmd.toLowerCase() === 'pi' || rawCmd.toLowerCase() === 'pi.cmd')) {
 				const userProfile = process.env.USERPROFILE || '';
-				const piCmdCandidate = userProfile ? path.join(userProfile, '.pi', 'agent', 'bin', 'pi.cmd') : '';
+				const piCmdCandidate = userProfile ? path.win32.join(userProfile, '.pi', 'agent', 'bin', 'pi.cmd') : '';
 				if (piCmdCandidate && fs.existsSync(piCmdCandidate)) {
 					resolvedCmd = piCmdCandidate;
 				}
@@ -325,7 +325,7 @@ export class AgyCliService {
 		// On Unix/Linux/macOS, check if Pi standalone binary exists in ~/.pi/agent/bin/pi
 		if (targetProvider === 'pi' && rawCmd === 'pi') {
 			const home = process.env.HOME || '';
-			const piCandidate = home ? path.join(home, '.pi', 'agent', 'bin', 'pi') : '';
+			const piCandidate = home ? path.posix.join(home, '.pi', 'agent', 'bin', 'pi') : '';
 			if (piCandidate && fs.existsSync(piCandidate)) {
 				return { command: piCandidate, prefixArgs: [] };
 			}
