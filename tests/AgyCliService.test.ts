@@ -643,22 +643,29 @@ describe('AgyCliService - buildPromptArgs', () => {
 		assert.ok(args.includes('--model'));
 	});
 
-	test('claude passes -p with prompt string, --output-format text, and --dangerously-skip-permissions', () => {
+	test('claude passes -p, --output-format text, --dangerously-skip-permissions, and effort', () => {
 		const claudeConfig = {
 			...DEFAULT_SETTINGS.providers.claude,
 			selectedModel: 'claude-3-7-sonnet',
+			modelEfforts: { 'claude-3-7-sonnet': 'High' },
 			conversationId: 'session-xyz-123'
 		};
-		const args = service.buildPromptArgs('claude', claudeConfig, 'Explain quantum computing');
+		const pkgPath = path.resolve('package.json');
+		const args = service.buildPromptArgs('claude', claudeConfig, 'Explain quantum computing', {
+			attachedFiles: [pkgPath]
+		});
 		assert.equal(args[0], '-p');
-		assert.equal(args[1], 'Explain quantum computing');
 		assert.ok(args.includes('--output-format'));
 		assert.ok(args.includes('text'));
 		assert.ok(args.includes('--dangerously-skip-permissions'));
 		assert.ok(args.includes('--model'));
 		assert.ok(args.includes('claude-3-7-sonnet'));
+		assert.ok(args.includes('--effort'));
+		assert.ok(args.includes('high'));
 		assert.ok(args.includes('--resume'));
 		assert.ok(args.includes('session-xyz-123'));
+		assert.ok(args.includes('--add-dir'));
+		assert.ok(args.includes(path.dirname(pkgPath)));
 	});
 
 	test('codex passes exec, --skip-git-repo-check, --json, model reasoning effort, and stdin -', () => {

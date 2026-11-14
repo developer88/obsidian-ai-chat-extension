@@ -313,11 +313,14 @@ export class AgyCliService {
 				}
 			}
 
-			// Claude CLI native install into ~/.local/bin/claude.exe
-			if (targetProvider === 'claude' && (rawCmd.toLowerCase() === 'claude' || rawCmd.toLowerCase() === 'claude.exe')) {
-				const claudeCandidate = userProfile ? path.win32.join(userProfile, '.local', 'bin', 'claude.exe') : '';
-				if (claudeCandidate && fs.existsSync(claudeCandidate)) {
-					resolvedCmd = claudeCandidate;
+			// Claude CLI native install into ~/.local/bin/claude.exe or npm %APPDATA%\npm\claude.cmd
+			if (targetProvider === 'claude' && (rawCmd.toLowerCase() === 'claude' || rawCmd.toLowerCase() === 'claude.exe' || rawCmd.toLowerCase() === 'claude.cmd')) {
+				const claudeNativeCandidate = userProfile ? path.win32.join(userProfile, '.local', 'bin', 'claude.exe') : '';
+				const claudeNpmCandidate = appData ? path.win32.join(appData, 'npm', 'claude.cmd') : '';
+				if (claudeNativeCandidate && fs.existsSync(claudeNativeCandidate)) {
+					resolvedCmd = claudeNativeCandidate;
+				} else if (claudeNpmCandidate && fs.existsSync(claudeNpmCandidate)) {
+					resolvedCmd = claudeNpmCandidate;
 				}
 			}
 
@@ -780,7 +783,7 @@ export class AgyCliService {
 				args.push('--', ...formattedFiles);
 			}
 		} else if (providerId === 'claude') {
-			args.push('-p', prompt);
+			args.push('-p');
 			args.push('--output-format', 'text');
 			args.push('--dangerously-skip-permissions');
 
@@ -788,14 +791,27 @@ export class AgyCliService {
 				args.push('--model', config.selectedModel);
 			}
 
+			const selectedEffort = config.modelEfforts?.[config.selectedModel];
+			if (selectedEffort) {
+				args.push('--effort', selectedEffort.toLowerCase());
+			}
+
 			if (config.conversationId) {
 				args.push('--resume', config.conversationId);
 			}
 
 			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			const addedDirs = new Set<string>();
 			for (const f of validFiles) {
-				const dir = path.dirname(f);
-				args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
+				try {
+					const dir = fs.statSync(f).isDirectory() ? f : path.dirname(f);
+					if (!addedDirs.has(dir)) {
+						addedDirs.add(dir);
+						args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
+					}
+				} catch {
+					// ignore filesystem errors
+				}
 			}
 		} else if (providerId === 'codex') {
 			if (config.conversationId) {
@@ -923,7 +939,7 @@ export class AgyCliService {
 			this.activeProcess = child;
 			if (child.stdin) {
 				child.stdin.on('error', () => {});
-				if (providerId === 'pi' || providerId === 'codex') {
+				if (providerId === 'pi' || providerId === 'codex' || providerId === 'claude') {
 					child.stdin.write(prompt, 'utf8');
 					child.stdin.end();
 				} else {

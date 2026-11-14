@@ -367,12 +367,38 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 				attachedFiles: [pkgPath]
 			});
 			assert.equal(args[0], '-p');
-			assert.equal(args[1], 'Refactor module');
 			assert.ok(args.includes('--output-format'));
 			assert.ok(args.includes('text'));
 			assert.ok(args.includes('--dangerously-skip-permissions'));
 			assert.ok(args.includes('--add-dir'));
 			assert.ok(args.includes(path.dirname(pkgPath)));
+		});
+
+		test('E2E: claude pipes prompt via stdin to avoid newline truncation and startup delay', async () => {
+			let currentProc: MockProcess | null = null;
+			let stdinWritten = '';
+			let stdinEnded = false;
+
+			const mockSpawner = (() => {
+				currentProc = createMockProcess();
+				currentProc.stdin = {
+					write: (chunk: string) => { stdinWritten += chunk; return true; },
+					end: () => { stdinEnded = true; },
+					on: () => {}
+				} as any;
+				return currentProc as any;
+			}) as any;
+
+			const { service } = createService({ activeProvider: 'claude' }, mockSpawner);
+			const prompt = 'Line 1\n\nLine 2';
+			const sendPromise = service.sendPrompt(prompt, { onComplete: () => {} });
+
+			assert.equal(stdinWritten, prompt);
+			assert.equal(stdinEnded, true);
+
+			currentProc!.stdout.emit('data', Buffer.from('Done'));
+			currentProc!.emit('close', 0, null);
+			await sendPromise;
 		});
 
 		test('E2E: stream handles JSON session_id payload and text response', async () => {
