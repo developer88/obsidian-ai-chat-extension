@@ -1,4 +1,4 @@
-export type AiProviderId = 'antigravity' | 'copilot' | 'pi' | 'custom';
+export type AiProviderId = 'antigravity' | 'copilot' | 'pi' | 'claude' | 'codex' | 'custom';
 
 export interface ModelDefinition {
 	id: string;
@@ -149,6 +149,80 @@ export const COPILOT_DEFAULT_MODELS: ModelDefinition[] = [
 	}
 ];
 
+export const CLAUDE_DEFAULT_MODELS: ModelDefinition[] = [
+	{
+		id: 'claude-3-7-sonnet',
+		label: 'Claude 3.7 Sonnet (Recommended)',
+		efforts: []
+	},
+	{
+		id: 'claude-3-5-sonnet',
+		label: 'Claude 3.5 Sonnet',
+		efforts: []
+	},
+	{
+		id: 'claude-3-5-haiku',
+		label: 'Claude 3.5 Haiku',
+		efforts: []
+	},
+	{
+		id: 'claude-3-opus',
+		label: 'Claude 3 Opus',
+		efforts: []
+	},
+	{
+		id: 'sonnet',
+		label: 'Sonnet (Latest Alias)',
+		efforts: []
+	},
+	{
+		id: 'haiku',
+		label: 'Haiku (Latest Alias)',
+		efforts: []
+	},
+	{
+		id: 'opus',
+		label: 'Opus (Latest Alias)',
+		efforts: []
+	}
+];
+
+export const CODEX_DEFAULT_MODELS: ModelDefinition[] = [
+	{
+		id: 'gpt-6-luna',
+		label: 'GPT-6 Luna (Recommended)',
+		efforts: ['Low', 'Medium', 'High'],
+		defaultEffort: 'Low'
+	},
+	{
+		id: 'o3',
+		label: 'OpenAI o3',
+		efforts: ['Low', 'Medium', 'High'],
+		defaultEffort: 'Medium'
+	},
+	{
+		id: 'o3-mini',
+		label: 'OpenAI o3-mini',
+		efforts: ['Low', 'Medium', 'High'],
+		defaultEffort: 'Low'
+	},
+	{
+		id: 'o1',
+		label: 'OpenAI o1',
+		efforts: []
+	},
+	{
+		id: 'gpt-4o',
+		label: 'GPT-4o',
+		efforts: []
+	},
+	{
+		id: 'gpt-4o-mini',
+		label: 'GPT-4o mini',
+		efforts: []
+	}
+];
+
 export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd: string }> = {
 	antigravity: {
 		name: 'Google Antigravity',
@@ -161,6 +235,14 @@ export const PROVIDER_METADATA: Record<AiProviderId, { name: string; defaultCmd:
 	pi: {
 		name: 'Pi Coding Agent',
 		defaultCmd: 'pi'
+	},
+	claude: {
+		name: 'Claude Code',
+		defaultCmd: 'claude'
+	},
+	codex: {
+		name: 'OpenAI Codex',
+		defaultCmd: 'codex'
 	},
 	custom: {
 		name: 'Custom CLI',
@@ -237,6 +319,34 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 		defaultMode: '',
 		conversationId: null
 	},
+	claude: {
+		id: 'claude',
+		name: 'Claude Code',
+		cliCommand: 'claude',
+		useWsl: false,
+		extraCliFlags: '',
+		selectedModel: 'claude-3-7-sonnet',
+		modelEfforts: {},
+		cachedModels: CLAUDE_DEFAULT_MODELS,
+		defaultMode: '',
+		conversationId: null
+	},
+	codex: {
+		id: 'codex',
+		name: 'OpenAI Codex',
+		cliCommand: 'codex',
+		useWsl: false,
+		extraCliFlags: '',
+		selectedModel: 'gpt-6-luna',
+		modelEfforts: {
+			'gpt-6-luna': 'Low',
+			'o3': 'Medium',
+			'o3-mini': 'Low'
+		},
+		cachedModels: CODEX_DEFAULT_MODELS,
+		defaultMode: '',
+		conversationId: null
+	},
 	custom: {
 		id: 'custom',
 		name: 'Custom CLI',
@@ -279,6 +389,8 @@ export function cloneDefaultProviderConfigs(): Record<AiProviderId, ProviderConf
 		antigravity: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.antigravity),
 		copilot: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.copilot),
 		pi: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.pi),
+		claude: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.claude),
+		codex: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.codex),
 		custom: cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS.custom)
 	};
 }

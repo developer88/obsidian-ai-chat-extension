@@ -12,6 +12,8 @@ import {
 	ANTIGRAVITY_MODELS,
 	PI_DEFAULT_MODELS,
 	COPILOT_DEFAULT_MODELS,
+	CLAUDE_DEFAULT_MODELS,
+	CODEX_DEFAULT_MODELS,
 	DEFAULT_PROVIDER_CONFIGS,
 	PROVIDER_METADATA
 } from '../types';
@@ -258,6 +260,7 @@ export class AgyCliService {
 
 			const winExtraPaths = [
 				userProfile ? path.win32.join(userProfile, '.pi', 'agent', 'bin') : '',
+				userProfile ? path.win32.join(userProfile, '.local', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'agy', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'Programs', 'Antigravity', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'Programs', 'Antigravity IDE', 'bin') : '',
@@ -298,19 +301,39 @@ export class AgyCliService {
 
 		if (process.platform === 'win32') {
 			let resolvedCmd = rawCmd;
+			const userProfile = process.env.USERPROFILE || '';
+			const appData = process.env.APPDATA || '';
+
 			// Pi Agent standalone updater installs into ~/.pi/agent/bin/pi.cmd instead of global npm
 			if (targetProvider === 'pi' && (rawCmd.toLowerCase() === 'pi' || rawCmd.toLowerCase() === 'pi.cmd')) {
-				const userProfile = process.env.USERPROFILE || '';
 				const piCmdCandidate = userProfile ? path.win32.join(userProfile, '.pi', 'agent', 'bin', 'pi.cmd') : '';
 				if (piCmdCandidate && fs.existsSync(piCmdCandidate)) {
 					resolvedCmd = piCmdCandidate;
 				}
 			}
 
+			// Claude CLI native install into ~/.local/bin/claude.exe
+			if (targetProvider === 'claude' && (rawCmd.toLowerCase() === 'claude' || rawCmd.toLowerCase() === 'claude.exe')) {
+				const claudeCandidate = userProfile ? path.win32.join(userProfile, '.local', 'bin', 'claude.exe') : '';
+				if (claudeCandidate && fs.existsSync(claudeCandidate)) {
+					resolvedCmd = claudeCandidate;
+				}
+			}
+
+			// Codex CLI npm global install into %APPDATA%\npm\codex.cmd
+			if (targetProvider === 'codex' && (rawCmd.toLowerCase() === 'codex' || rawCmd.toLowerCase() === 'codex.cmd')) {
+				const codexCandidate = appData ? path.win32.join(appData, 'npm', 'codex.cmd') : '';
+				if (codexCandidate && fs.existsSync(codexCandidate)) {
+					resolvedCmd = codexCandidate;
+				}
+			}
+
 			if (
 				targetProvider === 'pi' ||
+				targetProvider === 'codex' ||
 				targetProvider === 'custom' ||
 				rawCmd.toLowerCase() === 'pi' ||
+				rawCmd.toLowerCase() === 'codex' ||
 				resolvedCmd.toLowerCase().endsWith('.cmd') ||
 				resolvedCmd.toLowerCase().endsWith('.bat')
 			) {
@@ -322,12 +345,18 @@ export class AgyCliService {
 			return { command: resolvedCmd, prefixArgs: [] };
 		}
 
-		// On Unix/Linux/macOS, check if Pi standalone binary exists in ~/.pi/agent/bin/pi
+		// On Unix/Linux/macOS, check standalone binary paths
+		const home = process.env.HOME || '';
 		if (targetProvider === 'pi' && rawCmd === 'pi') {
-			const home = process.env.HOME || '';
 			const piCandidate = home ? path.posix.join(home, '.pi', 'agent', 'bin', 'pi') : '';
 			if (piCandidate && fs.existsSync(piCandidate)) {
 				return { command: piCandidate, prefixArgs: [] };
+			}
+		}
+		if (targetProvider === 'claude' && rawCmd === 'claude') {
+			const claudeCandidate = home ? path.posix.join(home, '.local', 'bin', 'claude') : '';
+			if (claudeCandidate && fs.existsSync(claudeCandidate)) {
+				return { command: claudeCandidate, prefixArgs: [] };
 			}
 		}
 
@@ -365,7 +394,7 @@ export class AgyCliService {
 		if (targetProvider === 'pi') {
 			return ['--list-models'];
 		}
-		if (targetProvider === 'custom') {
+		if (targetProvider === 'claude' || targetProvider === 'codex' || targetProvider === 'custom') {
 			return [];
 		}
 		return ['models'];
@@ -379,6 +408,46 @@ export class AgyCliService {
 			return {
 				success: true,
 				models: [],
+				isFallback: false
+			};
+		}
+		if (targetProvider === 'claude') {
+			return {
+				success: true,
+				models: CLAUDE_DEFAULT_MODELS,
+				isFallback: false
+			};
+		}
+		if (targetProvider === 'codex') {
+			const models = [...CODEX_DEFAULT_MODELS];
+			try {
+				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const configPath = home ? path.join(home, '.codex', 'config.toml') : '';
+				if (configPath && fs.existsSync(configPath)) {
+					const content = fs.readFileSync(configPath, 'utf8');
+					const modelMatch = content.match(/^\s*model\s*=\s*"([^"]+)"/m);
+					if (modelMatch && modelMatch[1]) {
+						const configuredModel = modelMatch[1].trim();
+						const existingIdx = models.findIndex(m => m.id === configuredModel);
+						if (existingIdx > 0) {
+							const [found] = models.splice(existingIdx, 1);
+							models.unshift(found);
+						} else if (existingIdx === -1) {
+							models.unshift({
+								id: configuredModel,
+								label: `${configuredModel} (Configured)`,
+								efforts: ['Low', 'Medium', 'High'],
+								defaultEffort: 'Low'
+							});
+						}
+					}
+				}
+			} catch {
+				// Ignore config file reading error
+			}
+			return {
+				success: true,
+				models,
 				isFallback: false
 			};
 		}
@@ -677,6 +746,42 @@ export class AgyCliService {
 				const formattedFiles = validFiles.map(f => `@${config.useWsl ? this.toWslPath(f) : f}`);
 				args.push('--', ...formattedFiles);
 			}
+		} else if (providerId === 'claude') {
+			args.push('-p', prompt);
+			args.push('--output-format', 'text');
+			args.push('--dangerously-skip-permissions');
+
+			if (config.selectedModel) {
+				args.push('--model', config.selectedModel);
+			}
+
+			if (config.conversationId) {
+				args.push('--resume', config.conversationId);
+			}
+		} else if (providerId === 'codex') {
+			args.push('exec');
+			if (config.conversationId) {
+				args.push('resume', config.conversationId);
+			}
+			args.push('--skip-git-repo-check');
+			args.push('--color', 'never');
+			args.push('--json');
+
+			if (config.selectedModel) {
+				args.push('-m', config.selectedModel);
+			}
+
+			const selectedEffort = config.modelEfforts?.[config.selectedModel];
+			if (selectedEffort) {
+				args.push('-c', `model_reasoning_effort="${selectedEffort.toLowerCase()}"`);
+			}
+
+			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			for (const f of validFiles) {
+				args.push('--add-dir', config.useWsl ? this.toWslPath(f) : f);
+			}
+
+			args.push(prompt);
 		} else {
 			// Standard providers (Copilot, Antigravity) use -p <prompt>
 			args.push('-p', prompt);
@@ -755,6 +860,7 @@ export class AgyCliService {
 
 		let fullResponse = '';
 		let errorOutput = '';
+		let codexJsonBuffer = '';
 
 		try {
 			const child = spawn(command, args, {
@@ -777,16 +883,60 @@ export class AgyCliService {
 
 			child.stdout?.on('data', (data: Buffer) => {
 				const chunk = data.toString();
-				fullResponse += chunk;
 
-				const match = chunk.match(/conversation[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
-					chunk.match(/session[:\s]+([a-zA-Z0-9_-]{8,})/i);
-				if (match && match[1]) {
-					this.setConversationId(match[1]);
-					callbacks.onConversationId?.(match[1]);
+				if (providerId === 'codex') {
+					codexJsonBuffer += chunk;
+					const lines = codexJsonBuffer.split('\n');
+					codexJsonBuffer = lines.pop() || '';
+
+					for (const line of lines) {
+						const trimmed = line.trim();
+						if (!trimmed) continue;
+						if (trimmed.startsWith('{')) {
+							try {
+								const event = JSON.parse(trimmed) as {
+									type?: string;
+									thread_id?: string;
+									item?: { type?: string; text?: string };
+									delta?: { text?: string };
+								};
+								if (event.type === 'thread.started' && event.thread_id) {
+									this.setConversationId(event.thread_id);
+									callbacks.onConversationId?.(event.thread_id);
+								} else if (event.type === 'item.completed') {
+									if (event.item?.type === 'agent_message' && event.item?.text) {
+										fullResponse += event.item.text;
+										callbacks.onToken?.(event.item.text);
+									}
+								} else if (event.type === 'item.delta') {
+									const deltaText = event.delta?.text || event.item?.text || '';
+									if (deltaText) {
+										fullResponse += deltaText;
+										callbacks.onToken?.(deltaText);
+									}
+								}
+							} catch {
+								fullResponse += trimmed + '\n';
+								callbacks.onToken?.(trimmed + '\n');
+							}
+						} else {
+							fullResponse += trimmed + '\n';
+							callbacks.onToken?.(trimmed + '\n');
+						}
+					}
+				} else {
+					fullResponse += chunk;
+
+					const match = chunk.match(/conversation[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
+						chunk.match(/session[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
+						chunk.match(/resume[:\s]+([a-zA-Z0-9_-]{8,})/i);
+					if (match && match[1]) {
+						this.setConversationId(match[1]);
+						callbacks.onConversationId?.(match[1]);
+					}
+
+					callbacks.onToken?.(chunk);
 				}
-
-				callbacks.onToken?.(chunk);
 			});
 
 			child.stderr?.on('data', (data: Buffer) => {
@@ -803,6 +953,32 @@ export class AgyCliService {
 			child.on('close', (code: number | null, signal: string | null) => {
 				this.activeProcess = null;
 
+				if (providerId === 'codex' && codexJsonBuffer.trim()) {
+					const trimmed = codexJsonBuffer.trim();
+					if (trimmed.startsWith('{')) {
+						try {
+							const event = JSON.parse(trimmed) as {
+								type?: string;
+								thread_id?: string;
+								item?: { type?: string; text?: string };
+							};
+							if (event.type === 'thread.started' && event.thread_id) {
+								this.setConversationId(event.thread_id);
+								callbacks.onConversationId?.(event.thread_id);
+							} else if (event.item?.type === 'agent_message' && event.item?.text) {
+								fullResponse += event.item.text;
+								callbacks.onToken?.(event.item.text);
+							}
+						} catch {
+							fullResponse += trimmed;
+							callbacks.onToken?.(trimmed);
+						}
+					} else {
+						fullResponse += trimmed;
+						callbacks.onToken?.(trimmed);
+					}
+				}
+
 				if (signal === 'SIGINT' || signal === 'SIGTERM') {
 					callbacks.onComplete?.(fullResponse + '\n\n*(Generation stopped)*', this.getConversationId() || undefined);
 					return;
@@ -811,7 +987,9 @@ export class AgyCliService {
 				if (code === 0) {
 					callbacks.onComplete?.(fullResponse, this.getConversationId() || undefined);
 				} else {
-					let finalError = errorOutput.trim();
+					let finalError = errorOutput
+						.replace(/Reading additional input from stdin\.\.\./g, '')
+						.trim();
 					if (!finalError && fullResponse.trim()) {
 						callbacks.onComplete?.(fullResponse, this.getConversationId() || undefined);
 						return;

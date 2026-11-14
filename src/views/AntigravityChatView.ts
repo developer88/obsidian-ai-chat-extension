@@ -677,7 +677,7 @@ export class AntigravityChatView extends ItemView {
 		// Provider and model info for this response
 		const provId = settings.activeProvider || 'antigravity';
 		const provConfig = settings.providers?.[provId];
-		const provName = PROVIDER_METADATA[provId]?.name || (provId === 'copilot' ? 'GitHub Copilot' : (provId === 'pi' ? 'Pi Coding Agent' : (provId === 'custom' ? 'Custom CLI' : 'Google Antigravity')));
+		const provName = PROVIDER_METADATA[provId]?.name || (provId === 'copilot' ? 'GitHub Copilot' : (provId === 'pi' ? 'Pi Coding Agent' : (provId === 'claude' ? 'Claude Code' : (provId === 'codex' ? 'OpenAI Codex' : (provId === 'custom' ? 'Custom CLI' : 'Google Antigravity')))));
 
 		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';

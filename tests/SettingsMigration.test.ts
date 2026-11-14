@@ -86,11 +86,15 @@ describe('Settings & Migration', () => {
 		assert.ok(settings.providers.antigravity);
 		assert.ok(settings.providers.copilot);
 		assert.ok(settings.providers.pi);
+		assert.ok(settings.providers.claude);
+		assert.ok(settings.providers.codex);
 		assert.ok(settings.providers.custom);
 
 		assert.equal(settings.providers.antigravity.selectedModel, 'gemini-3.8-flash');
 		assert.equal(settings.providers.pi.selectedModel, 'github-copilot/claude-sonnet-4.5');
 		assert.equal(settings.providers.pi.modelEfforts['github-copilot/claude-sonnet-4.5'], 'High');
+		assert.equal(settings.providers.claude.selectedModel, 'claude-3-7-sonnet');
+		assert.equal(settings.providers.codex.selectedModel, 'gpt-6-luna');
 		assert.equal(settings.providers.custom.cliCommand, 'super-ai');
 		assert.equal(settings.providers.custom.promptTemplate, 'tell {prompt}');
 	});

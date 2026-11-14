@@ -99,7 +99,7 @@ export class ProcessExecutionNoticeModal extends Modal {
 		contentEl.createEl('h3', { text: 'Sidecar AI: Local CLI Execution' });
 
 		contentEl.createEl('p', {
-			text: 'Sidecar AI connects Obsidian directly to your locally installed AI CLI tools (Google Antigravity, GitHub Copilot, or Pi Coding Agent) via child_process.spawn without remote API keys.'
+			text: 'Sidecar AI connects Obsidian directly to your locally installed AI CLI tools (Google Antigravity, GitHub Copilot, Pi Coding Agent, Claude Code, or OpenAI Codex) via child_process.spawn without remote API keys.'
 		});
 
 		const list = contentEl.createEl('ul');

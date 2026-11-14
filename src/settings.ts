@@ -21,7 +21,13 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const defaultCmd = PROVIDER_METADATA[activeProvId]?.defaultCmd || 'agy';
 		const defaultExtraFlags = activeProvId === 'copilot'
 			? '--allow-all-tools'
-			: (activeProvId === 'pi' ? '--thinking high' : (activeProvId === 'custom' ? '' : '--dangerously-skip-permissions'));
+			: (activeProvId === 'pi'
+				? '--thinking high'
+				: (activeProvId === 'claude'
+					? '--dangerously-skip-permissions'
+					: (activeProvId === 'codex'
+						? '--dangerously-bypass-approvals-and-sandbox'
+						: (activeProvId === 'custom' ? '' : '--dangerously-skip-permissions'))));
 
 		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
@@ -144,6 +150,8 @@ export class AntigravitySettingTab extends PluginSettingTab {
 							dropdown.addOption('antigravity', 'Google Antigravity (agy)');
 							dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
 							dropdown.addOption('pi', 'Pi Coding Agent (pi)');
+							dropdown.addOption('claude', 'Claude Code (claude)');
+							dropdown.addOption('codex', 'OpenAI Codex (codex)');
 							dropdown.addOption('custom', 'Custom CLI (custom agent)');
 							dropdown.setValue(activeProvId);
 							dropdown.onChange((value: string) => {
@@ -333,10 +341,10 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					},
 					{
 						name: 'Local process execution permission',
-						desc: 'Acknowledge that Sidecar AI spawns local CLI processes (agy, copilot, pi) via child_process without API keys.',
+						desc: 'Acknowledge that Sidecar AI spawns local CLI processes (agy, copilot, pi, claude, codex) via child_process without API keys.',
 						render: (setting: Setting) => {
 							setting.setName('Local process execution permission')
-								.setDesc('Acknowledge that Sidecar AI spawns local CLI processes (agy, copilot, pi) via child_process without API keys.')
+								.setDesc('Acknowledge that Sidecar AI spawns local CLI processes (agy, copilot, pi, claude, codex) via child_process without API keys.')
 								.addToggle(toggle => toggle
 									.setValue(this.plugin.settings.hasAcceptedProcessExecutionDisclaimer ?? false)
 									.onChange((value) => {

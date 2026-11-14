@@ -301,6 +301,8 @@ Unavailable models
 		assert.deepEqual(parserService.getModelDiscoveryArgs('copilot'), ['help', 'config']);
 		assert.deepEqual(parserService.getModelDiscoveryArgs('pi'), ['--list-models']);
 		assert.deepEqual(parserService.getModelDiscoveryArgs('antigravity'), ['models']);
+		assert.deepEqual(parserService.getModelDiscoveryArgs('claude'), []);
+		assert.deepEqual(parserService.getModelDiscoveryArgs('codex'), []);
 		assert.deepEqual(parserService.getModelDiscoveryArgs('custom'), []);
 	});
 });
@@ -370,6 +372,19 @@ describe('AgyCliService - resolveExecution', () => {
 			assert.equal(agyResolved.command, 'agy.exe');
 			assert.deepEqual(agyResolved.prefixArgs, []);
 
+			// claude on win32 defaults to claude.exe (or ~/.local/bin/claude.exe if present)
+			const claudeConfig = { ...DEFAULT_SETTINGS.providers.claude, cliCommand: 'claude' };
+			const claudeResolved = resolverService.resolveExecution(claudeConfig, 'claude');
+			assert.ok(claudeResolved.command.endsWith('claude.exe'));
+			assert.deepEqual(claudeResolved.prefixArgs, []);
+
+			// codex on win32 runs via cmd.exe /c (npm batch wrapper)
+			const codexConfig = { ...DEFAULT_SETTINGS.providers.codex, cliCommand: 'codex' };
+			const codexResolved = resolverService.resolveExecution(codexConfig, 'codex');
+			assert.equal(codexResolved.command, 'cmd.exe');
+			assert.equal(codexResolved.prefixArgs[0], '/c');
+			assert.ok(codexResolved.prefixArgs[1].endsWith('codex') || codexResolved.prefixArgs[1].endsWith('codex.cmd'));
+
 			// custom agent (e.g. super-ai) on win32 defaults to cmd.exe /c super-ai
 			const customConfig = { ...DEFAULT_SETTINGS.providers.custom, cliCommand: 'super-ai' };
 			const customResolved = resolverService.resolveExecution(customConfig, 'custom');
@@ -404,6 +419,18 @@ describe('AgyCliService - resolveExecution', () => {
 			const copilotResolved = resolverService.resolveExecution(copilotConfig, 'copilot');
 			assert.equal(copilotResolved.command, 'copilot');
 			assert.deepEqual(copilotResolved.prefixArgs, []);
+
+			// Claude on Linux/macOS runs 'claude' directly
+			const claudeUnixConfig = { ...DEFAULT_SETTINGS.providers.claude, cliCommand: 'claude', useWsl: false };
+			const claudeUnixResolved = resolverService.resolveExecution(claudeUnixConfig, 'claude');
+			assert.equal(claudeUnixResolved.command, 'claude');
+			assert.deepEqual(claudeUnixResolved.prefixArgs, []);
+
+			// Codex on Linux/macOS runs 'codex' directly
+			const codexUnixConfig = { ...DEFAULT_SETTINGS.providers.codex, cliCommand: 'codex', useWsl: false };
+			const codexUnixResolved = resolverService.resolveExecution(codexUnixConfig, 'codex');
+			assert.equal(codexUnixResolved.command, 'codex');
+			assert.deepEqual(codexUnixResolved.prefixArgs, []);
 
 			// Custom CLI runs binary directly without cmd.exe
 			const customConfig = { ...DEFAULT_SETTINGS.providers.custom, cliCommand: 'super-ai', useWsl: false };
@@ -614,6 +641,51 @@ describe('AgyCliService - buildPromptArgs', () => {
 		assert.ok(args.includes('--output-format'));
 		assert.ok(args.includes('--dangerously-skip-permissions'));
 		assert.ok(args.includes('--model'));
+	});
+
+	test('claude passes -p with prompt string, --output-format text, and --dangerously-skip-permissions', () => {
+		const claudeConfig = {
+			...DEFAULT_SETTINGS.providers.claude,
+			selectedModel: 'claude-3-7-sonnet',
+			conversationId: 'session-xyz-123'
+		};
+		const args = service.buildPromptArgs('claude', claudeConfig, 'Explain quantum computing');
+		assert.equal(args[0], '-p');
+		assert.equal(args[1], 'Explain quantum computing');
+		assert.ok(args.includes('--output-format'));
+		assert.ok(args.includes('text'));
+		assert.ok(args.includes('--dangerously-skip-permissions'));
+		assert.ok(args.includes('--model'));
+		assert.ok(args.includes('claude-3-7-sonnet'));
+		assert.ok(args.includes('--resume'));
+		assert.ok(args.includes('session-xyz-123'));
+	});
+
+	test('codex passes exec, --skip-git-repo-check, --json, and model reasoning effort', () => {
+		const codexConfig = {
+			...DEFAULT_SETTINGS.providers.codex,
+			selectedModel: 'gpt-6-luna',
+			modelEfforts: { 'gpt-6-luna': 'Medium' },
+			conversationId: 'thread-456-789'
+		};
+		const pkgPath = path.resolve('package.json');
+		const args = service.buildPromptArgs('codex', codexConfig, 'Refactor code', {
+			attachedFiles: [pkgPath]
+		});
+		assert.equal(args[0], 'exec');
+		assert.equal(args[1], 'resume');
+		assert.equal(args[2], 'thread-456-789');
+		assert.ok(args.includes('--skip-git-repo-check'));
+		assert.ok(args.includes('--color'));
+		assert.ok(args.includes('never'));
+		assert.ok(args.includes('--json'));
+		assert.ok(args.includes('-m'));
+		assert.ok(args.includes('gpt-6-luna'));
+		assert.ok(args.includes('-c'));
+		assert.ok(args.includes('model_reasoning_effort="medium"'));
+		assert.ok(args.includes('--add-dir'));
+		assert.ok(args.includes(pkgPath));
+		assert.equal(args[args.length - 1], 'Refactor code');
 	});
 });
 
