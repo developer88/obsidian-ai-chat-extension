@@ -116,7 +116,8 @@ export class AgyCliService {
 	constructor(
 		private app: App,
 		private getSettings: () => AiChatPluginSettings,
-		private saveSettings: (settings: AiChatPluginSettings) => Promise<void>
+		private saveSettings: (settings: AiChatPluginSettings) => Promise<void>,
+		private spawner: typeof spawn = spawn
 	) {}
 
 	public getActiveProviderConfig(): ProviderConfig {
@@ -373,7 +374,7 @@ export class AgyCliService {
 			const args = [...prefixArgs, '--version'];
 
 			try {
-				const child = spawn(command, args, {
+				const child = this.spawner(command, args, {
 					env: AgyCliService.getSpawnEnvironment(),
 					shell: false,
 					timeout: 5000,
@@ -403,6 +404,7 @@ export class AgyCliService {
 	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDiscoveryResult> {
 		const settings = this.getSettings();
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
+		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 
 		if (targetProvider === 'custom') {
 			return {
@@ -415,7 +417,7 @@ export class AgyCliService {
 			let authError: string | undefined;
 			try {
 				const { command, prefixArgs } = this.resolveExecution(config, 'claude');
-				const authChild = spawn(command, [...prefixArgs, 'auth', 'status'], {
+				const authChild = this.spawner(command, [...prefixArgs, 'auth', 'status'], {
 					env: AgyCliService.getSpawnEnvironment(),
 					shell: false,
 					timeout: 5000,
@@ -483,7 +485,6 @@ export class AgyCliService {
 				isFallback: false
 			};
 		}
-		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 		const defaultModelsForProvider = targetProvider === 'antigravity'
 			? ANTIGRAVITY_MODELS
 			: (targetProvider === 'pi'
@@ -504,7 +505,7 @@ export class AgyCliService {
 			let stderrOutput = '';
 
 			try {
-				const child = spawn(command, args, {
+				const child = this.spawner(command, args, {
 					env: AgyCliService.getSpawnEnvironment(),
 					shell: false,
 					timeout: 10000,
@@ -901,7 +902,7 @@ export class AgyCliService {
 		let codexJsonBuffer = '';
 
 		try {
-			const child = spawn(command, args, {
+			const child = this.spawner(command, args, {
 				cwd: config.useWsl ? undefined : vaultPath,
 				env: AgyCliService.getSpawnEnvironment(),
 				shell: false,
