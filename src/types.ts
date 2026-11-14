@@ -151,13 +151,31 @@ export const COPILOT_DEFAULT_MODELS: ModelDefinition[] = [
 
 export const CLAUDE_DEFAULT_MODELS: ModelDefinition[] = [
 	{
+		id: 'default',
+		label: 'Default (Claude Code Recommended)',
+		efforts: ['Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'Medium'
+	},
+	{
+		id: 'sonnet',
+		label: 'Claude Sonnet (Latest)',
+		efforts: ['Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'Medium'
+	},
+	{
 		id: 'claude-3-7-sonnet',
-		label: 'Claude 3.7 Sonnet (Recommended)',
-		efforts: []
+		label: 'Claude 3.7 Sonnet',
+		efforts: ['Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'Medium'
 	},
 	{
 		id: 'claude-3-5-sonnet',
 		label: 'Claude 3.5 Sonnet',
+		efforts: []
+	},
+	{
+		id: 'haiku',
+		label: 'Claude Haiku (Fast)',
 		efforts: []
 	},
 	{
@@ -166,23 +184,14 @@ export const CLAUDE_DEFAULT_MODELS: ModelDefinition[] = [
 		efforts: []
 	},
 	{
+		id: 'opus',
+		label: 'Claude Opus (Deep)',
+		efforts: ['Low', 'Medium', 'High', 'Max'],
+		defaultEffort: 'Medium'
+	},
+	{
 		id: 'claude-3-opus',
 		label: 'Claude 3 Opus',
-		efforts: []
-	},
-	{
-		id: 'sonnet',
-		label: 'Sonnet (Latest Alias)',
-		efforts: []
-	},
-	{
-		id: 'haiku',
-		label: 'Haiku (Latest Alias)',
-		efforts: []
-	},
-	{
-		id: 'opus',
-		label: 'Opus (Latest Alias)',
 		efforts: []
 	}
 ];
@@ -325,8 +334,13 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 		cliCommand: 'claude',
 		useWsl: false,
 		extraCliFlags: '',
-		selectedModel: 'claude-3-7-sonnet',
-		modelEfforts: {},
+		selectedModel: 'default',
+		modelEfforts: {
+			'default': 'Medium',
+			'sonnet': 'Medium',
+			'claude-3-7-sonnet': 'Medium',
+			'opus': 'Medium'
+		},
 		cachedModels: CLAUDE_DEFAULT_MODELS,
 		defaultMode: '',
 		conversationId: null

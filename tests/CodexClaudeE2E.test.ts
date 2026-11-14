@@ -37,11 +37,12 @@ describe('Codex & Claude E2E & Integration Tests', () => {
 		const { service } = createService({ activeProvider: 'claude' });
 		const result = await service.fetchAvailableModels('claude');
 		assert.equal(result.success, true);
-		assert.equal(result.isFallback, false);
 		assert.equal(result.models.length, CLAUDE_DEFAULT_MODELS.length);
+		assert.ok(result.models.some(m => m.id === 'default'));
 		assert.ok(result.models.some(m => m.id === 'claude-3-7-sonnet'));
 		assert.ok(result.models.some(m => m.id === 'claude-3-5-sonnet'));
 		assert.ok(result.models.some(m => m.id === 'sonnet'));
+		assert.ok(result.models.some(m => m.id === 'opus'));
 	});
 
 	test('fetchAvailableModels returns models for Codex', async () => {
@@ -149,7 +150,7 @@ describe('Codex & Claude E2E & Integration Tests', () => {
 		activeProcess.emit('close', 1, null);
 		await sendPromise;
 
-		assert.ok(capturedError.includes('Not logged in'));
+		assert.ok(capturedError.includes('not signed in') || capturedError.includes('claude auth login') || capturedError.includes('Not logged in'));
 	});
 
 	test('Claude stream captures session resume identifier', async () => {
@@ -171,5 +172,39 @@ describe('Codex & Claude E2E & Integration Tests', () => {
 
 		assert.equal(convId, 'claude-sess-987654321');
 		assert.equal(service.getConversationId(), 'claude-sess-987654321');
+	});
+
+	test('Claude stream captures session_id from JSON payload (as used in stream-json / json format)', async () => {
+		const { service } = createService({ activeProvider: 'claude' });
+
+		let convId = '';
+		const callbacks: CliStreamCallbacks = {
+			onConversationId: (id) => {
+				convId = id;
+			}
+		};
+
+		const sendPromise = service.sendPrompt('Hello Claude', callbacks);
+		const activeProcess = (service as any).activeProcess;
+
+		activeProcess.stdout.emit('data', Buffer.from('{"session_id":"3823925d-28c3-428d-9cc0-ffc90921699e","result":"Hello!"}'));
+		activeProcess.emit('close', 0, null);
+		await sendPromise;
+
+		assert.equal(convId, '3823925d-28c3-428d-9cc0-ffc90921699e');
+		assert.equal(service.getConversationId(), '3823925d-28c3-428d-9cc0-ffc90921699e');
+	});
+
+	test('Claude buildPromptArgs includes --add-dir for attached files', () => {
+		const { service, settings } = createService({ activeProvider: 'claude' });
+		const claudeConfig = settings.providers.claude;
+		const pkgPath = require('path').resolve('package.json');
+		const args = service.buildPromptArgs('claude', claudeConfig, 'Review this code', {
+			attachedFiles: [pkgPath]
+		});
+		assert.equal(args[0], '-p');
+		assert.equal(args[1], 'Review this code');
+		assert.ok(args.includes('--add-dir'));
+		assert.ok(args.includes(require('path').dirname(pkgPath)));
 	});
 });

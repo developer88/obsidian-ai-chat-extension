@@ -412,10 +412,42 @@ export class AgyCliService {
 			};
 		}
 		if (targetProvider === 'claude') {
+			let authError: string | undefined;
+			try {
+				const { command, prefixArgs } = this.resolveExecution(config, 'claude');
+				const authChild = spawn(command, [...prefixArgs, 'auth', 'status'], {
+					env: AgyCliService.getSpawnEnvironment(),
+					shell: false,
+					timeout: 5000,
+					stdio: ['ignore', 'pipe', 'pipe']
+				});
+				let authStdout = '';
+				authChild.stdout?.on('data', (d: Buffer) => {
+					authStdout += d.toString();
+				});
+				await new Promise<void>((r) => {
+					authChild.on('close', () => r());
+					authChild.on('error', () => r());
+				});
+				if (authStdout.trim()) {
+					try {
+						const statusObj = JSON.parse(authStdout) as { loggedIn?: boolean; authMethod?: string };
+						if (statusObj.loggedIn === false) {
+							authError = 'Claude Code CLI is installed, but not signed in. Run "claude auth login" in your terminal to sign in.';
+						}
+					} catch {
+						// Ignore JSON parse errors
+					}
+				}
+			} catch {
+				// Ignore process spawn errors
+			}
+
 			return {
 				success: true,
 				models: CLAUDE_DEFAULT_MODELS,
-				isFallback: false
+				isFallback: !!authError,
+				error: authError
 			};
 		}
 		if (targetProvider === 'codex') {
@@ -758,6 +790,12 @@ export class AgyCliService {
 			if (config.conversationId) {
 				args.push('--resume', config.conversationId);
 			}
+
+			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			for (const f of validFiles) {
+				const dir = path.dirname(f);
+				args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
+			}
 		} else if (providerId === 'codex') {
 			args.push('exec');
 			if (config.conversationId) {
@@ -929,7 +967,8 @@ export class AgyCliService {
 
 					const match = chunk.match(/conversation[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
 						chunk.match(/session[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
-						chunk.match(/resume[:\s]+([a-zA-Z0-9_-]{8,})/i);
+						chunk.match(/resume[:\s]+([a-zA-Z0-9_-]{8,})/i) ||
+						chunk.match(/"session_id"\s*:\s*"([a-zA-Z0-9_-]+)"/i);
 					if (match && match[1]) {
 						this.setConversationId(match[1]);
 						callbacks.onConversationId?.(match[1]);
@@ -996,6 +1035,10 @@ export class AgyCliService {
 					}
 					if (!finalError) {
 						finalError = `Process exited with code ${code}`;
+					}
+
+					if (providerId === 'claude' && (finalError.includes('Not logged in') || fullResponse.includes('Not logged in'))) {
+						finalError = 'Claude Code CLI is not signed in. Run "claude auth login" in your terminal to authenticate.';
 					}
 
 					// Automatic fallback for Copilot if a specific model flag is not available in user's plan
