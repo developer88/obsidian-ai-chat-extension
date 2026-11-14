@@ -661,7 +661,7 @@ describe('AgyCliService - buildPromptArgs', () => {
 		assert.ok(args.includes('session-xyz-123'));
 	});
 
-	test('codex passes exec, --skip-git-repo-check, --json, and model reasoning effort', () => {
+	test('codex passes exec, --skip-git-repo-check, --json, model reasoning effort, and stdin -', () => {
 		const codexConfig = {
 			...DEFAULT_SETTINGS.providers.codex,
 			selectedModel: 'gpt-6-luna',
@@ -676,16 +676,28 @@ describe('AgyCliService - buildPromptArgs', () => {
 		assert.equal(args[1], 'resume');
 		assert.equal(args[2], 'thread-456-789');
 		assert.ok(args.includes('--skip-git-repo-check'));
-		assert.ok(args.includes('--color'));
-		assert.ok(args.includes('never'));
 		assert.ok(args.includes('--json'));
 		assert.ok(args.includes('-m'));
 		assert.ok(args.includes('gpt-6-luna'));
 		assert.ok(args.includes('-c'));
 		assert.ok(args.includes('model_reasoning_effort="medium"'));
-		assert.ok(args.includes('--add-dir'));
-		assert.ok(args.includes(pkgPath));
-		assert.equal(args[args.length - 1], 'Refactor code');
+		// resume does not include --color or --add-dir to prevent CLI syntax errors
+		assert.ok(!args.includes('--color'));
+		assert.ok(!args.includes('--add-dir'));
+		// Prompt is read from stdin via '-'
+		assert.equal(args[args.length - 1], '-');
+
+		// Fresh execution includes --color never and --add-dir
+		const freshConfig = { ...codexConfig, conversationId: undefined };
+		const freshArgs = service.buildPromptArgs('codex', freshConfig, 'Refactor code', {
+			attachedFiles: [pkgPath]
+		});
+		assert.equal(freshArgs[0], 'exec');
+		assert.ok(freshArgs.includes('--color'));
+		assert.ok(freshArgs.includes('never'));
+		assert.ok(freshArgs.includes('--add-dir'));
+		assert.ok(freshArgs.includes(path.dirname(pkgPath)));
+		assert.equal(freshArgs[freshArgs.length - 1], '-');
 	});
 });
 

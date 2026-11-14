@@ -439,7 +439,7 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 			assert.ok(result.models.some(m => m.id === 'o3-mini'));
 		});
 
-		test('E2E: buildPromptArgs formats exec, skip-git-repo-check, json, effort, and add-dir', () => {
+		test('E2E: buildPromptArgs formats exec, resume, skip-git-repo-check, json, effort, and stdin -', () => {
 			const { service, settings } = createService({ activeProvider: 'codex' });
 			const pkgPath = path.resolve('package.json');
 			const codexConfig = {
@@ -456,16 +456,25 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 			assert.equal(args[1], 'resume');
 			assert.equal(args[2], 'codex-th-123456');
 			assert.ok(args.includes('--skip-git-repo-check'));
-			assert.ok(args.includes('--color'));
-			assert.ok(args.includes('never'));
 			assert.ok(args.includes('--json'));
 			assert.ok(args.includes('-m'));
 			assert.ok(args.includes('gpt-6-luna'));
 			assert.ok(args.includes('-c'));
 			assert.ok(args.includes('model_reasoning_effort="high"'));
-			assert.ok(args.includes('--add-dir'));
-			assert.ok(args.includes(pkgPath));
-			assert.equal(args[args.length - 1], 'Analyze data');
+			assert.ok(!args.includes('--color'));
+			assert.ok(!args.includes('--add-dir'));
+			assert.equal(args[args.length - 1], '-');
+
+			// Fresh session includes --color never and --add-dir
+			const freshArgs = service.buildPromptArgs('codex', { ...codexConfig, conversationId: undefined }, 'Analyze data', {
+				attachedFiles: [pkgPath]
+			});
+			assert.equal(freshArgs[0], 'exec');
+			assert.ok(freshArgs.includes('--color'));
+			assert.ok(freshArgs.includes('never'));
+			assert.ok(freshArgs.includes('--add-dir'));
+			assert.ok(freshArgs.includes(path.dirname(pkgPath)));
+			assert.equal(freshArgs[freshArgs.length - 1], '-');
 		});
 
 		test('E2E: JSONL event stream parsing extracts thread_id and agent_message text cleanly', async () => {
@@ -503,6 +512,37 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 			assert.equal(service.getConversationId(), '01a1dc3a-7777-8888-9999');
 			assert.equal(capturedTokens, 'Here is the test result.');
 			assert.equal(finalResult, 'Here is the test result.');
+		});
+
+		test('E2E: codex pipes multiline prompt with context prefix into stdin', async () => {
+			let currentProc: MockProcess | null = null;
+			let stdinWritten = '';
+			let stdinEnded = false;
+
+			const mockSpawner = (() => {
+				currentProc = createMockProcess();
+				currentProc.stdin = {
+					write: (chunk: string) => { stdinWritten += chunk; return true; },
+					end: () => { stdinEnded = true; },
+					on: () => {}
+				} as any;
+				return currentProc as any;
+			}) as any;
+
+			const { service } = createService({ activeProvider: 'codex' }, mockSpawner);
+			const multilinePrompt = 'The context: "Family/Victoria/Gifts.md":\n\nPlease summarize this note cleanly with key bullet points.';
+
+			const sendPromise = service.sendPrompt(multilinePrompt, {
+				onComplete: () => {}
+			});
+
+			assert.equal(stdinWritten, multilinePrompt);
+			assert.equal(stdinEnded, true);
+
+			currentProc!.stdout.emit('data', Buffer.from('{"type":"thread.started","thread_id":"01a1dc66-test"}\n'));
+			currentProc!.stdout.emit('data', Buffer.from('{"type":"item.completed","item":{"type":"agent_message","text":"Summary done"}}\n'));
+			currentProc!.emit('close', 0, null);
+			await sendPromise;
 		});
 	});
 

@@ -798,12 +798,27 @@ export class AgyCliService {
 				args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
 			}
 		} else if (providerId === 'codex') {
-			args.push('exec');
 			if (config.conversationId) {
-				args.push('resume', config.conversationId);
+				args.push('exec', 'resume', config.conversationId);
+			} else {
+				args.push('exec');
+				args.push('--color', 'never');
+				const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+				const addedDirs = new Set<string>();
+				for (const f of validFiles) {
+					try {
+						const dir = fs.statSync(f).isDirectory() ? f : path.dirname(f);
+						if (!addedDirs.has(dir)) {
+							addedDirs.add(dir);
+							args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
+						}
+					} catch {
+						// ignore filesystem errors
+					}
+				}
 			}
+
 			args.push('--skip-git-repo-check');
-			args.push('--color', 'never');
 			args.push('--json');
 
 			if (config.selectedModel) {
@@ -815,12 +830,8 @@ export class AgyCliService {
 				args.push('-c', `model_reasoning_effort="${selectedEffort.toLowerCase()}"`);
 			}
 
-			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
-			for (const f of validFiles) {
-				args.push('--add-dir', config.useWsl ? this.toWslPath(f) : f);
-			}
-
-			args.push(prompt);
+			// Pass '-' so codex reads instructions from stdin, avoiding Windows cmd.exe newline command truncation
+			args.push('-');
 		} else {
 			// Standard providers (Copilot, Antigravity) use -p <prompt>
 			args.push('-p', prompt);
@@ -912,7 +923,7 @@ export class AgyCliService {
 			this.activeProcess = child;
 			if (child.stdin) {
 				child.stdin.on('error', () => {});
-				if (providerId === 'pi') {
+				if (providerId === 'pi' || providerId === 'codex') {
 					child.stdin.write(prompt, 'utf8');
 					child.stdin.end();
 				} else {
@@ -944,8 +955,10 @@ export class AgyCliService {
 									callbacks.onConversationId?.(event.thread_id);
 								} else if (event.type === 'item.completed') {
 									if (event.item?.type === 'agent_message' && event.item?.text) {
-										fullResponse += event.item.text;
-										callbacks.onToken?.(event.item.text);
+										const text = event.item.text;
+										const tokenChunk = fullResponse && !fullResponse.endsWith('\n\n') ? `\n\n${text}` : text;
+										fullResponse += tokenChunk;
+										callbacks.onToken?.(tokenChunk);
 									}
 								} else if (event.type === 'item.delta') {
 									const deltaText = event.delta?.text || event.item?.text || '';
@@ -1006,8 +1019,10 @@ export class AgyCliService {
 								this.setConversationId(event.thread_id);
 								callbacks.onConversationId?.(event.thread_id);
 							} else if (event.item?.type === 'agent_message' && event.item?.text) {
-								fullResponse += event.item.text;
-								callbacks.onToken?.(event.item.text);
+								const text = event.item.text;
+								const tokenChunk = fullResponse && !fullResponse.endsWith('\n\n') ? `\n\n${text}` : text;
+								fullResponse += tokenChunk;
+								callbacks.onToken?.(tokenChunk);
 							}
 						} catch {
 							fullResponse += trimmed;
