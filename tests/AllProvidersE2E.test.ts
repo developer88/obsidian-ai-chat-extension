@@ -649,4 +649,110 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 			}
 		});
 	});
+
+	// ==========================================
+	// 8. Authentication & Login Checks (All Providers)
+	// ==========================================
+	describe('Authentication & Login Checks (All Providers)', () => {
+		test('E2E: checkAuthStatus detects unauthenticated Claude with actionable guidance', async () => {
+			let currentProc: MockProcess | null = null;
+			const mockSpawner = (() => {
+				currentProc = createMockProcess();
+				return currentProc as any;
+			}) as any;
+
+			const { service } = createService({ activeProvider: 'claude' }, mockSpawner);
+			const authPromise = service.checkAuthStatus('claude');
+			assert.ok(currentProc);
+
+			currentProc!.stdout.emit('data', Buffer.from('{"loggedIn":false,"authMethod":"none"}'));
+			currentProc!.emit('close', 1, null);
+			const res = await authPromise;
+
+			assert.equal(res.loggedIn, false);
+			assert.ok(res.error?.includes('claude auth login'));
+		});
+
+		test('E2E: checkAuthStatus detects unauthenticated Codex with actionable guidance', async () => {
+			let currentProc: MockProcess | null = null;
+			const mockSpawner = (() => {
+				currentProc = createMockProcess();
+				return currentProc as any;
+			}) as any;
+
+			const { service } = createService({ activeProvider: 'codex' }, mockSpawner);
+			const authPromise = service.checkAuthStatus('codex');
+			assert.ok(currentProc);
+
+			currentProc!.stdout.emit('data', Buffer.from('Not logged in\n'));
+			currentProc!.emit('close', 1, null);
+			const res = await authPromise;
+
+			assert.equal(res.loggedIn, false);
+			assert.ok(res.error?.includes('codex login'));
+		});
+
+		test('E2E: sendPrompt surfaces actionable login guidance for Codex when unauthenticated', async () => {
+			let currentProc: MockProcess | null = null;
+			const mockSpawner = (() => {
+				currentProc = createMockProcess();
+				return currentProc as any;
+			}) as any;
+
+			const { service } = createService({ activeProvider: 'codex' }, mockSpawner);
+			let capturedError = '';
+			const sendPromise = service.sendPrompt('Analyze code', {
+				onError: (err) => { capturedError = err; }
+			});
+			assert.ok(currentProc);
+
+			currentProc!.stderr.emit('data', Buffer.from('Error: Not logged in. Please run `codex login`.\n'));
+			currentProc!.emit('close', 1, null);
+			await sendPromise;
+
+			assert.ok(capturedError.includes('codex login'));
+		});
+
+		test('E2E: sendPrompt surfaces actionable login guidance for Copilot when unauthenticated', async () => {
+			let currentProc: MockProcess | null = null;
+			const mockSpawner = (() => {
+				currentProc = createMockProcess();
+				return currentProc as any;
+			}) as any;
+
+			const { service } = createService({ activeProvider: 'copilot' }, mockSpawner);
+			let capturedError = '';
+			const sendPromise = service.sendPrompt('Summarize note', {
+				onError: (err) => { capturedError = err; }
+			});
+			assert.ok(currentProc);
+
+			currentProc!.stderr.emit('data', Buffer.from('Not authenticated. Run `copilot login` to authenticate.\n'));
+			currentProc!.emit('close', 1, null);
+			await sendPromise;
+
+			assert.ok(capturedError.includes('copilot login'));
+		});
+
+		test('E2E: sendPrompt surfaces actionable login guidance for Antigravity when unauthenticated', async () => {
+			let currentProc: MockProcess | null = null;
+			const mockSpawner = (() => {
+				currentProc = createMockProcess();
+				return currentProc as any;
+			}) as any;
+
+			const { service } = createService({ activeProvider: 'antigravity' }, mockSpawner);
+			let capturedError = '';
+			const sendPromise = service.sendPrompt('Explain code', {
+				onError: (err) => { capturedError = err; }
+			});
+			assert.ok(currentProc);
+
+			currentProc!.stderr.emit('data', Buffer.from('Error: 401 Unauthorized. Please sign in.\n'));
+			currentProc!.emit('close', 1, null);
+			await sendPromise;
+
+			assert.ok(capturedError.includes('agy') && capturedError.includes('authenticate'));
+		});
+	});
 });

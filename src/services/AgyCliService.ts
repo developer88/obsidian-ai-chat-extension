@@ -404,20 +404,16 @@ export class AgyCliService {
 		return ['models'];
 	}
 
-	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDiscoveryResult> {
+	public async checkAuthStatus(providerId?: AiProviderId): Promise<{ loggedIn: boolean; error?: string }> {
 		const settings = this.getSettings();
 		const targetProvider = providerId || settings.activeProvider || 'antigravity';
 		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
 
 		if (targetProvider === 'custom') {
-			return {
-				success: true,
-				models: [],
-				isFallback: false
-			};
+			return { loggedIn: true };
 		}
+
 		if (targetProvider === 'claude') {
-			let authError: string | undefined;
 			try {
 				const { command, prefixArgs } = this.resolveExecution(config, 'claude');
 				const authChild = this.spawner(command, [...prefixArgs, 'auth', 'status'], {
@@ -438,21 +434,175 @@ export class AgyCliService {
 					try {
 						const statusObj = JSON.parse(authStdout) as { loggedIn?: boolean; authMethod?: string };
 						if (statusObj.loggedIn === false) {
-							authError = 'Claude Code CLI is installed, but not signed in. Run "claude auth login" in your terminal to sign in.';
+							return {
+								loggedIn: false,
+								error: 'Claude Code CLI is installed, but not signed in. Run "claude auth login" in your terminal to sign in.'
+							};
 						}
 					} catch {
-						// Ignore JSON parse errors
+						// Ignore JSON parse error
 					}
 				}
+				return { loggedIn: true };
 			} catch {
-				// Ignore process spawn errors
+				return { loggedIn: true };
 			}
+		}
 
+		if (targetProvider === 'codex') {
+			try {
+				const { command, prefixArgs } = this.resolveExecution(config, 'codex');
+				const authChild = this.spawner(command, [...prefixArgs, 'login', 'status'], {
+					env: AgyCliService.getSpawnEnvironment(),
+					shell: false,
+					timeout: 5000,
+					stdio: ['ignore', 'pipe', 'pipe']
+				});
+				let authOut = '';
+				authChild.stdout?.on('data', (d: Buffer) => { authOut += d.toString(); });
+				authChild.stderr?.on('data', (d: Buffer) => { authOut += d.toString(); });
+				const exitCode = await new Promise<number | null>((r) => {
+					authChild.on('close', (code) => r(code));
+					authChild.on('error', () => r(null));
+				});
+				const lower = authOut.toLowerCase();
+				if (
+					(exitCode !== null && exitCode !== 0) ||
+					lower.includes('not logged in') ||
+					lower.includes('logged out') ||
+					lower.includes('not authenticated')
+				) {
+					return {
+						loggedIn: false,
+						error: 'OpenAI Codex CLI is installed, but not signed in. Run "codex login" in your terminal to sign in.'
+					};
+				}
+				return { loggedIn: true };
+			} catch {
+				return { loggedIn: true };
+			}
+		}
+
+		if (targetProvider === 'copilot') {
+			try {
+				const env = AgyCliService.getSpawnEnvironment();
+				if (env.COPILOT_GITHUB_TOKEN || env.GH_TOKEN || env.GITHUB_TOKEN) {
+					return { loggedIn: true };
+				}
+
+				let ghAuthFailed = false;
+				try {
+					const ghCmd = process.platform === 'win32' ? 'gh.exe' : 'gh';
+					const ghChild = this.spawner(ghCmd, ['auth', 'status'], {
+						env,
+						shell: false,
+						timeout: 5000,
+						stdio: ['ignore', 'pipe', 'pipe']
+					});
+					let ghOut = '';
+					ghChild.stdout?.on('data', (d: Buffer) => { ghOut += d.toString(); });
+					ghChild.stderr?.on('data', (d: Buffer) => { ghOut += d.toString(); });
+					const ghCode = await new Promise<number | null>((r) => {
+						ghChild.on('close', (code) => r(code));
+						ghChild.on('error', () => r(null));
+					});
+					if (ghCode === 0 && (ghOut.toLowerCase().includes('logged in') || ghOut.toLowerCase().includes('active account: true'))) {
+						return { loggedIn: true };
+					}
+					if (ghCode !== null && ghCode !== 0 && ghOut.toLowerCase().includes('not logged in')) {
+						ghAuthFailed = true;
+					}
+				} catch {
+					// gh binary not present, proceed
+				}
+
+				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const copilotDir = home ? path.join(home, '.copilot') : '';
+				const hasCopilotConfig = copilotDir && fs.existsSync(copilotDir) && (
+					fs.existsSync(path.join(copilotDir, 'config.json')) ||
+					fs.existsSync(path.join(copilotDir, 'session-store.db')) ||
+					fs.existsSync(path.join(copilotDir, 'settings.json'))
+				);
+
+				if (!hasCopilotConfig && ghAuthFailed) {
+					return {
+						loggedIn: false,
+						error: 'GitHub Copilot CLI is installed, but not signed in. Run "copilot login" in your terminal to authenticate.'
+					};
+				}
+
+				return { loggedIn: true };
+			} catch {
+				return { loggedIn: true };
+			}
+		}
+
+		if (targetProvider === 'antigravity') {
+			try {
+				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const oauthPath = home ? path.join(home, '.gemini', 'oauth_creds.json') : '';
+				const googleAccountsPath = home ? path.join(home, '.gemini', 'google_accounts.json') : '';
+				const hasCredsFile = (oauthPath && fs.existsSync(oauthPath)) || (googleAccountsPath && fs.existsSync(googleAccountsPath));
+
+				if (hasCredsFile) {
+					return { loggedIn: true };
+				}
+
+				const { command, prefixArgs } = this.resolveExecution(config, 'antigravity');
+				const child = this.spawner(command, [...prefixArgs, 'models'], {
+					env: AgyCliService.getSpawnEnvironment(),
+					shell: false,
+					timeout: 7000,
+					stdio: ['ignore', 'pipe', 'pipe']
+				});
+				let out = '';
+				child.stdout?.on('data', (d: Buffer) => { out += d.toString(); });
+				child.stderr?.on('data', (d: Buffer) => { out += d.toString(); });
+				const exitCode = await new Promise<number | null>((r) => {
+					child.on('close', (code) => r(code));
+					child.on('error', () => r(null));
+				});
+				const lower = out.toLowerCase();
+				if (
+					(exitCode !== null && exitCode !== 0) ||
+					lower.includes('not authenticated') ||
+					lower.includes('401') ||
+					lower.includes('please sign in') ||
+					lower.includes('authentication failed')
+				) {
+					return {
+						loggedIn: false,
+						error: 'Google Antigravity CLI is installed, but not signed in. Run "agy" in your terminal to authenticate.'
+					};
+				}
+				return { loggedIn: true };
+			} catch {
+				return { loggedIn: true };
+			}
+		}
+
+		return { loggedIn: true };
+	}
+
+	public async fetchAvailableModels(providerId?: AiProviderId): Promise<ModelDiscoveryResult> {
+		const settings = this.getSettings();
+		const targetProvider = providerId || settings.activeProvider || 'antigravity';
+		const config = (settings.providers && settings.providers[targetProvider]) || DEFAULT_PROVIDER_CONFIGS[targetProvider];
+
+		if (targetProvider === 'custom') {
+			return {
+				success: true,
+				models: [],
+				isFallback: false
+			};
+		}
+		if (targetProvider === 'claude') {
+			const auth = await this.checkAuthStatus('claude');
 			return {
 				success: true,
 				models: CLAUDE_DEFAULT_MODELS,
-				isFallback: !!authError,
-				error: authError
+				isFallback: !auth.loggedIn,
+				error: auth.error
 			};
 		}
 		if (targetProvider === 'codex') {
@@ -482,10 +632,12 @@ export class AgyCliService {
 			} catch {
 				// Ignore config file reading error
 			}
+			const auth = await this.checkAuthStatus('codex');
 			return {
 				success: true,
 				models,
-				isFallback: false
+				isFallback: !auth.loggedIn,
+				error: auth.error
 			};
 		}
 		const defaultModelsForProvider = targetProvider === 'antigravity'
@@ -1069,8 +1221,36 @@ export class AgyCliService {
 						finalError = `Process exited with code ${code}`;
 					}
 
-					if (providerId === 'claude' && (finalError.includes('Not logged in') || fullResponse.includes('Not logged in'))) {
+					const errorCheck = (finalError + ' ' + fullResponse).toLowerCase();
+					if (providerId === 'claude' && errorCheck.includes('not logged in')) {
 						finalError = 'Claude Code CLI is not signed in. Run "claude auth login" in your terminal to authenticate.';
+					} else if (
+						providerId === 'codex' &&
+						(errorCheck.includes('not logged in') ||
+						 errorCheck.includes('not authenticated') ||
+						 errorCheck.includes('logged out') ||
+						 errorCheck.includes('login required') ||
+						 (errorCheck.includes('unauthorized') && !errorCheck.includes('allow-all')))
+					) {
+						finalError = 'OpenAI Codex CLI is not signed in. Run "codex login" in your terminal to sign in.';
+					} else if (
+						providerId === 'copilot' &&
+						(errorCheck.includes('not authenticated') ||
+						 errorCheck.includes('not logged in') ||
+						 errorCheck.includes('authentication failed') ||
+						 errorCheck.includes('oauth token required') ||
+						 errorCheck.includes('unauthorized'))
+					) {
+						finalError = 'GitHub Copilot CLI is not signed in. Run "copilot login" in your terminal to authenticate.';
+					} else if (
+						providerId === 'antigravity' &&
+						(errorCheck.includes('not authenticated') ||
+						 errorCheck.includes('please sign in') ||
+						 errorCheck.includes('authentication failed') ||
+						 errorCheck.includes('oauth_creds') ||
+						 errorCheck.includes('401 unauthorized'))
+					) {
+						finalError = 'Google Antigravity CLI is not signed in. Run "agy" in your terminal to authenticate.';
 					}
 
 					// Automatic fallback for Copilot if a specific model flag is not available in user's plan
