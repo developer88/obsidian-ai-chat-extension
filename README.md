@@ -94,7 +94,6 @@ When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/m
 | **Context path** | *(empty)* | Vault path to the context file or folder. Defaults to active note or folder if blank. |
 | **Auto-scroll chat** | `true` | Automatically scrolls the chat container as responses stream in. |
 | **Show status bar item** | `true` | Shows the active provider and model status bar widget. |
-| **Reset conversation memory** | — | Clears saved session ID and starts fresh on the next prompt. |
 
 ---
 

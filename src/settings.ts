@@ -354,24 +354,6 @@ export class AntigravitySettingTab extends PluginSettingTab {
 										})();
 									}));
 						}
-					},
-					{
-						name: 'Reset conversation memory',
-						desc: `Clear session history for ${provName} and start fresh on the next prompt.`,
-						render: (setting: Setting) => {
-							setting.setName('Reset conversation memory')
-								.setDesc(`Clear session history for ${provName} and start fresh on the next prompt.`)
-								.addButton(button => button
-									.setButtonText('Reset active session')
-									.setDestructive()
-									.onClick(() => {
-										this.plugin.cliService.resetSession();
-										button.setButtonText('Session reset!');
-										window.setTimeout(() => {
-											button.setButtonText('Reset active session');
-										}, 2000);
-									}));
-						}
 					}
 				]
 			});
