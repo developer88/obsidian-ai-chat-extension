@@ -1,226 +1,213 @@
-import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem, SettingGroupItem, Platform } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem, SettingGroupItem, Platform, setIcon } from 'obsidian';
 import type AntigravityPlugin from './main';
 import {
 	AiProviderId,
 	PROVIDER_METADATA
 } from './types';
-import { ModelSuggestModal } from './modals/ModelSuggestModal';
+
+const PROVIDER_IDS: AiProviderId[] = ['antigravity', 'copilot', 'pi', 'claude', 'codex'];
 
 export class AntigravitySettingTab extends PluginSettingTab {
 	plugin: AntigravityPlugin;
+	private openCards = new Set<AiProviderId>();
+	private refreshDebounceTimers = new Map<AiProviderId, ReturnType<typeof setTimeout>>();
 
 	constructor(app: App, plugin: AntigravityPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	override getSettingDefinitions(): SettingDefinitionItem[] {
-		const activeProvId = this.plugin.settings.activeProvider || 'antigravity';
-		const provConfig = this.plugin.settings.providers?.[activeProvId];
-		const provName = PROVIDER_METADATA[activeProvId]?.name || activeProvId;
-		const defaultCmd = PROVIDER_METADATA[activeProvId]?.defaultCmd || 'agy';
-		const defaultExtraFlags = activeProvId === 'copilot'
-			? '--allow-all-tools'
-			: (activeProvId === 'pi'
-				? '--thinking high'
-				: (activeProvId === 'claude'
-					? '--dangerously-skip-permissions'
-					: (activeProvId === 'codex'
-						? '--dangerously-bypass-approvals-and-sandbox'
-						: (activeProvId === 'custom' ? '' : '--dangerously-skip-permissions'))));
-
-		const models = provConfig?.cachedModels || [];
-		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
-		const currentModelObj = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
-		const currentModelLabel = currentModelObj ? currentModelObj.label : (currentModelId || 'No model loaded');
-
-		let currentEffortStr = '';
-		if (currentModelObj && currentModelObj.efforts && currentModelObj.efforts.length > 1) {
-			const effort = provConfig?.modelEfforts?.[currentModelObj.id] || currentModelObj.defaultEffort || 'Medium';
-			currentEffortStr = ` (${effort} effort)`;
+	private triggerDebouncedRefresh(provId: AiProviderId): void {
+		const existing = this.refreshDebounceTimers.get(provId);
+		if (existing) {
+			window.clearTimeout(existing);
 		}
+		this.refreshDebounceTimers.set(provId, window.setTimeout(() => {
+			void this.plugin.cliService.refreshAllActiveProviders(provId);
+		}, 600));
+	}
 
-		const cliConfigItems = [
-			{
-				name: 'CLI command or path',
-				desc: `The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`,
+	override getSettingDefinitions(): SettingDefinitionItem[] {
+		const isWindows = (typeof Platform !== 'undefined' && Boolean(Platform?.isWin)) || (typeof process !== 'undefined' && process.platform === 'win32');
+
+		const providerItems: SettingGroupItem[] = PROVIDER_IDS.map((provId) => {
+			const provMeta = PROVIDER_METADATA[provId];
+			const provName = provMeta?.name || provId;
+			const defaultCmd = provMeta?.defaultCmd || provId;
+			const defaultExtraFlags = provId === 'copilot'
+				? '--allow-all-tools'
+				: (provId === 'pi'
+					? '--thinking high'
+					: (provId === 'claude'
+						? '--dangerously-skip-permissions'
+						: (provId === 'codex'
+							? '--dangerously-bypass-approvals-and-sandbox'
+							: '--dangerously-skip-permissions')));
+
+			return {
+				name: provName,
+				desc: `Configure ${provName} CLI path, flags, and model discovery.`,
 				render: (setting: Setting) => {
-					setting.setName('CLI command or path')
+					setting.settingEl.empty();
+					setting.settingEl.addClass('agy-provider-setting-container');
+
+					if (!this.plugin.settings.providers) {
+						return;
+					}
+					const provConfig = this.plugin.settings.providers[provId];
+					if (!provConfig) {
+						return;
+					}
+
+					const isEnabled = Boolean(provConfig.enabled);
+					const modelsCount = provConfig.cachedModels?.length ?? 0;
+
+					const detailsEl = setting.settingEl.createEl('details', { cls: 'agy-provider-card' });
+					if (this.openCards.has(provId)) {
+						detailsEl.open = true;
+					}
+
+					detailsEl.addEventListener('toggle', () => {
+						if (detailsEl.open) {
+							this.openCards.add(provId);
+						} else {
+							this.openCards.delete(provId);
+						}
+					});
+
+					const summaryEl = detailsEl.createEl('summary', { cls: 'agy-provider-summary' });
+
+					const leftEl = summaryEl.createDiv({ cls: 'agy-provider-summary-left' });
+					const chevronEl = leftEl.createSpan({ cls: 'agy-provider-chevron' });
+					setIcon(chevronEl, 'chevron-right');
+
+					leftEl.createSpan({ cls: 'agy-provider-summary-title', text: provName });
+					const modelCountEl = leftEl.createSpan({
+						cls: 'agy-provider-summary-meta',
+						text: `(${modelsCount} model${modelsCount === 1 ? '' : 's'})`
+					});
+
+					const rightEl = summaryEl.createDiv({ cls: 'agy-provider-summary-right' });
+					const badgeEl = rightEl.createSpan({
+						cls: `agy-provider-badge ${isEnabled ? 'is-enabled' : 'is-disabled'}`,
+						text: isEnabled ? 'Enabled' : 'Disabled'
+					});
+
+					const bodyEl = detailsEl.createDiv({ cls: 'agy-provider-card-body' });
+
+					// 1. Enable provider toggle
+					new Setting(bodyEl)
+						.setName('Enable provider')
+						.setDesc(`Activate ${provName} for chat sessions and model selection.`)
+						.addToggle(toggle => toggle
+							.setValue(isEnabled)
+							.onChange((val) => {
+								void (async () => {
+									provConfig.enabled = val;
+									badgeEl.setText(val ? 'Enabled' : 'Disabled');
+									badgeEl.className = `agy-provider-badge ${val ? 'is-enabled' : 'is-disabled'}`;
+
+									if (val && !this.plugin.settings.providers[this.plugin.settings.activeProvider]?.enabled) {
+										this.plugin.settings.activeProvider = provId;
+									}
+
+									await this.plugin.saveSettings();
+									void this.plugin.cliService.refreshAllActiveProviders(provId);
+								})();
+							}));
+
+					// 2. CLI command or path
+					new Setting(bodyEl)
+						.setName('CLI command or path')
 						.setDesc(`The command or full path to the executable for ${provName} (e.g. "${defaultCmd}").`)
 						.addText(text => text
 							.setPlaceholder(defaultCmd)
-							.setValue(provConfig?.cliCommand || defaultCmd)
+							.setValue(provConfig.cliCommand || defaultCmd)
 							.onChange((value) => {
 								void (async () => {
-									if (provConfig) {
-										const trimmed = value.trim();
-										if (/[;&|`$<>]/.test(trimmed)) {
-											new Notice('Shell metacharacters (;, &, |, `, $, <, >) are not permitted for security.');
-											provConfig.cliCommand = defaultCmd;
-											text.setValue(defaultCmd);
-										} else {
-											provConfig.cliCommand = trimmed || defaultCmd;
-										}
-										await this.plugin.saveSettings();
+									const trimmed = value.trim();
+									if (/[;&|`$<>]/.test(trimmed)) {
+										new Notice('Shell metacharacters (;, &, |, `, $, <, >) are not permitted for security.');
+										provConfig.cliCommand = defaultCmd;
+										text.setValue(defaultCmd);
+									} else {
+										provConfig.cliCommand = trimmed || defaultCmd;
 									}
+									await this.plugin.saveSettings();
+									this.triggerDebouncedRefresh(provId);
 								})();
 							}));
-				}
-			}
-		];
 
-		if (activeProvId === 'custom') {
-			cliConfigItems.push({
-				name: 'Command arguments format',
-				desc: 'Arguments template passed to the CLI. Use "{prompt}" as placeholder (e.g. "tell {prompt}").',
-				render: (setting: Setting) => {
-					setting.setName('Command arguments format')
-						.setDesc('Arguments template passed to the CLI. Use "{prompt}" as placeholder (e.g. "tell {prompt}").')
-						.addText(text => text
-							.setPlaceholder('tell {prompt}')
-							.setValue(provConfig?.promptTemplate || 'tell {prompt}')
-							.onChange((value) => {
-								void (async () => {
-									if (provConfig) {
-										provConfig.promptTemplate = value.trim() || 'tell {prompt}';
-										await this.plugin.saveSettings();
-									}
-								})();
-							}));
-				}
-			});
-		}
-
-		const isWindows = (typeof Platform !== 'undefined' && Boolean(Platform?.isWin)) || (typeof process !== 'undefined' && process.platform === 'win32');
-
-		if (isWindows) {
-			cliConfigItems.push({
-				name: 'Run in WSL',
-				desc: `Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`,
-				render: (setting: Setting) => {
-					setting.setName('Run in WSL')
-						.setDesc(`Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
-						.addToggle(toggle => toggle
-							.setValue(provConfig?.useWsl || false)
-							.onChange((value) => {
-								void (async () => {
-									if (provConfig) {
+					// 3. Run in WSL (Windows only)
+					if (isWindows) {
+						new Setting(bodyEl)
+							.setName('Run in WSL')
+							.setDesc(`Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`)
+							.addToggle(toggle => toggle
+								.setValue(provConfig.useWsl || false)
+								.onChange((value) => {
+									void (async () => {
 										provConfig.useWsl = value;
 										await this.plugin.saveSettings();
-									}
-								})();
-							}));
-				}
-			});
-		}
-
-		cliConfigItems.push({
-			name: 'Extra CLI flags',
-			desc: `Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`,
-			render: (setting: Setting) => {
-				setting.setName('Extra CLI flags')
-					.setDesc(`Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`)
-					.addText(text => text
-						.setPlaceholder(defaultExtraFlags)
-						.setValue(provConfig?.extraCliFlags || '')
-						.onChange((value) => {
-							void (async () => {
-								if (provConfig) {
-									provConfig.extraCliFlags = value.trim();
-									await this.plugin.saveSettings();
-								}
-							})();
-						}));
-			}
-		});
-
-		const providerAndCliItems: SettingGroupItem[] = [
-			{
-				name: 'Active AI provider',
-				desc: 'Select which AI CLI provider powers your chat sessions.',
-				render: (setting: Setting) => {
-					setting.setName('Active AI provider')
-						.setDesc('Select which AI CLI provider powers your chat sessions.')
-						.addDropdown(dropdown => {
-							dropdown.selectEl.addClass('agy-provider-dropdown');
-							dropdown.selectEl.setCssStyles({
-								height: 'auto',
-								minHeight: '32px',
-								lineHeight: '1.4',
-								paddingTop: '4px',
-								paddingBottom: '5px'
-							});
-							dropdown.addOption('antigravity', 'Google Antigravity (agy)');
-							dropdown.addOption('copilot', 'GitHub Copilot (copilot)');
-							dropdown.addOption('pi', 'Pi Coding Agent (pi)');
-							dropdown.addOption('claude', 'Claude Code (claude)');
-							dropdown.addOption('codex', 'OpenAI Codex (codex)');
-							dropdown.setValue(activeProvId);
-							dropdown.onChange((value: string) => {
-								void (async () => {
-									this.plugin.settings.activeProvider = value as AiProviderId;
-									await this.plugin.saveSettings();
-									this.update();
-								})();
-							});
-						});
-				}
-			}
-		];
-
-		if (activeProvId !== 'custom') {
-			providerAndCliItems.push({
-				name: 'Active model and reasoning effort',
-				desc: `Currently: ${currentModelLabel}${currentEffortStr}`,
-				render: (setting: Setting) => {
-					setting.setName('Active model and reasoning effort')
-						.setDesc(`Currently: ${currentModelLabel}${currentEffortStr}`);
-
-					if (models.length > 0) {
-						setting.addButton(button => button
-							.setButtonText('Select model and effort...')
-							.setCta()
-							.onClick(() => {
-								new ModelSuggestModal(this.app, this.plugin).open();
-							}));
+										void this.plugin.cliService.refreshAllActiveProviders(provId);
+									})();
+								}));
 					}
 
-					setting.addButton(button => button
-						.setButtonText('Retrieve from CLI')
-						.setTooltip('Query CLI dynamically for available models')
-						.onClick(() => {
-							void (async () => {
-								button.setButtonText('Querying...');
-								button.setDisabled(true);
-								try {
-									const res = await this.plugin.cliService.fetchAvailableModels();
-									if (res.success) {
-										new Notice(`Loaded ${res.models.length} models for ${provName}.`);
-									} else {
-										const detail = res.error ? `: ${res.error}` : '';
-										new Notice(`Could not retrieve models for ${provName}${detail}`);
-									}
-								} catch (err: unknown) {
-									const msg = err instanceof Error ? err.message : String(err);
-									new Notice(`Error retrieving models for ${provName}: ${msg}`);
-								} finally {
-									button.setButtonText('Retrieve from CLI');
-									button.setDisabled(false);
-									this.update();
-								}
-							})();
-						}));
-				}
-			});
-		}
+					// 4. Extra CLI flags
+					new Setting(bodyEl)
+						.setName('Extra CLI flags')
+						.setDesc(`Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`)
+						.addText(text => text
+							.setPlaceholder(defaultExtraFlags)
+							.setValue(provConfig.extraCliFlags || '')
+							.onChange((value) => {
+								void (async () => {
+									provConfig.extraCliFlags = value.trim();
+									await this.plugin.saveSettings();
+									this.triggerDebouncedRefresh(provId);
+								})();
+							}));
 
-		providerAndCliItems.push(...cliConfigItems);
+					// 5. Model discovery & manual retrieve button
+					new Setting(bodyEl)
+						.setName('Discovered models')
+						.setDesc(modelsCount > 0 ? `${modelsCount} models discovered and cached.` : 'No models cached yet.')
+						.addButton(button => button
+							.setButtonText('Retrieve from CLI')
+							.setTooltip(`Query ${provName} CLI dynamically for available models`)
+							.onClick(() => {
+								void (async () => {
+									button.setButtonText('Querying...');
+									button.setDisabled(true);
+									try {
+										const res = await this.plugin.cliService.fetchAvailableModels(provId);
+										if (res.success) {
+											new Notice(`Loaded ${res.models.length} models for ${provName}.`);
+											modelCountEl.setText(`(${res.models.length} model${res.models.length === 1 ? '' : 's'})`);
+										} else {
+											const detail = res.error ? `: ${res.error}` : '';
+											new Notice(`Could not retrieve models for ${provName}${detail}`);
+										}
+									} catch (err: unknown) {
+										const msg = err instanceof Error ? err.message : String(err);
+										new Notice(`Error retrieving models for ${provName}: ${msg}`);
+									} finally {
+										button.setButtonText('Retrieve from CLI');
+										button.setDisabled(false);
+										this.update();
+									}
+								})();
+							}));
+				}
+			};
+		});
 
 		const definitions: SettingDefinitionItem[] = [
 			{
 				type: 'group',
-				heading: 'AI provider and CLI configuration',
-				items: providerAndCliItems
+				heading: 'AI providers',
+				items: providerItems
 			},
 			{
 				type: 'group',
@@ -348,4 +335,3 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		return definitions;
 	}
 }
-

@@ -130,7 +130,8 @@ export class AgyCliService {
 		private app: App,
 		private getSettings: () => AiChatPluginSettings,
 		private saveSettings: (settings: AiChatPluginSettings) => Promise<void>,
-		private spawner: typeof spawn = spawn
+		private spawner: typeof spawn = spawn,
+		private onNotice?: (message: string) => void
 	) {}
 
 	public getActiveProviderConfig(): ProviderConfig {
@@ -615,6 +616,11 @@ export class AgyCliService {
 		}
 		if (targetProvider === 'claude') {
 			const auth = await this.checkAuthStatus('claude');
+			if (settings.providers?.[targetProvider]) {
+				settings.providers[targetProvider].cachedModels = CLAUDE_DEFAULT_MODELS;
+				settings.providers[targetProvider].lastRetrieved = Date.now();
+				await this.saveSettings(settings);
+			}
 			return {
 				success: true,
 				models: CLAUDE_DEFAULT_MODELS,
@@ -699,6 +705,11 @@ export class AgyCliService {
 				// Ignore config file reading error
 			}
 			const auth = await this.checkAuthStatus('codex');
+			if (settings.providers?.[targetProvider]) {
+				settings.providers[targetProvider].cachedModels = models;
+				settings.providers[targetProvider].lastRetrieved = Date.now();
+				await this.saveSettings(settings);
+			}
 			return {
 				success: true,
 				models,
@@ -767,6 +778,7 @@ export class AgyCliService {
 								if (settings.providers && settings.providers[targetProvider]) {
 									const targetConf = settings.providers[targetProvider];
 									targetConf.cachedModels = parsed;
+									targetConf.lastRetrieved = Date.now();
 
 									// Validate selectedModel against newly discovered models
 									const modelExists = targetConf.selectedModel && parsed.some(m => m.id === targetConf.selectedModel);
@@ -791,6 +803,11 @@ export class AgyCliService {
 							}
 						}
 
+						if (settings.providers && settings.providers[targetProvider]) {
+							settings.providers[targetProvider].lastRetrieved = Date.now();
+							await this.saveSettings(settings);
+						}
+
 						const errDetail = stderrOutput.trim() || `CLI exited with code ${code}`;
 						console.warn(`[Sidecar AI] Model discovery non-zero or empty for ${targetProvider}: ${errDetail}`);
 						resolve({
@@ -811,6 +828,70 @@ export class AgyCliService {
 				});
 			}
 		});
+	}
+
+	/**
+	 * Checks whether the model discovery cache for a given provider is older than ttlMs (defaults to 5 minutes).
+	 */
+	public isCacheExpired(providerId: AiProviderId, ttlMs = 5 * 60 * 1000): boolean {
+		const settings = this.getSettings();
+		const conf = settings.providers?.[providerId];
+		if (!conf || !conf.lastRetrieved) {
+			return true;
+		}
+		return (Date.now() - conf.lastRetrieved) > ttlMs;
+	}
+
+	/**
+	 * Checks whether any activated provider has an expired cache (> 5 minutes).
+	 */
+	public areAnyActiveCachesExpired(ttlMs = 5 * 60 * 1000): boolean {
+		const settings = this.getSettings();
+		const providerIds: AiProviderId[] = ['antigravity', 'copilot', 'pi', 'claude', 'codex'];
+		return providerIds.some(id => {
+			const conf = settings.providers?.[id];
+			if (!conf?.enabled) return false;
+			return this.isCacheExpired(id, ttlMs);
+		});
+	}
+
+	/**
+	 * Discovers models across all enabled providers in parallel.
+	 * If currentlyEditedProviderId is supplied and fails, feedback is delivered via Notice.
+	 * Errors from other background providers remain silent to avoid spamming the user.
+	 */
+	public async refreshAllActiveProviders(currentlyEditedProviderId?: AiProviderId): Promise<Record<AiProviderId, ModelDiscoveryResult>> {
+		const settings = this.getSettings();
+		const results: Partial<Record<AiProviderId, ModelDiscoveryResult>> = {};
+		const providerIds: AiProviderId[] = ['antigravity', 'copilot', 'pi', 'claude', 'codex'];
+
+		// Identify all activated providers (plus currently edited provider if supplied)
+		const targets = providerIds.filter(id => {
+			if (id === currentlyEditedProviderId) return true;
+			const conf = settings.providers?.[id];
+			return Boolean(conf?.enabled);
+		});
+
+		await Promise.allSettled(targets.map(async (id) => {
+			try {
+				const res = await this.fetchAvailableModels(id);
+				results[id] = res;
+				if (!res.success && id === currentlyEditedProviderId) {
+					const provName = PROVIDER_METADATA[id]?.name || id;
+					const detail = res.error ? `: ${res.error}` : '';
+					this.onNotice?.(`Could not retrieve models for ${provName}${detail}`);
+				}
+			} catch (err: unknown) {
+				const msg = err instanceof Error ? err.message : String(err);
+				results[id] = { success: false, models: [], isFallback: true, error: msg };
+				if (id === currentlyEditedProviderId) {
+					const provName = PROVIDER_METADATA[id]?.name || id;
+					this.onNotice?.(`Error retrieving models for ${provName}: ${msg}`);
+				}
+			}
+		}));
+
+		return results as Record<AiProviderId, ModelDiscoveryResult>;
 	}
 
 	private parseCopilotModels(rawOutput: string): ModelDefinition[] {

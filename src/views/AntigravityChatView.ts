@@ -169,7 +169,26 @@ export class AntigravityChatView extends ItemView {
 		setIcon(chevronSpan, 'chevron-down');
 
 		this.modelTriggerBtn.addEventListener('click', () => {
-			this.openModelSelector();
+			void (async () => {
+				const anyActive = Object.values(this.getSettings().providers || {}).some(p => p.enabled);
+				if (!anyActive) {
+					this.openSettingsTab();
+					return;
+				}
+
+				if (this.cliService.areAnyActiveCachesExpired(5 * 60 * 1000)) {
+					this.modelTriggerBtn.addClass('is-loading');
+					this.refreshModelsBtn.addClass('is-spinning');
+					try {
+						await this.cliService.refreshAllActiveProviders();
+					} finally {
+						this.modelTriggerBtn.removeClass('is-loading');
+						this.refreshModelsBtn.removeClass('is-spinning');
+						this.updateModelSelectionFromSettings();
+					}
+				}
+				this.openModelSelector();
+			})();
 		});
 
 		// Refresh models button
@@ -214,6 +233,15 @@ export class AntigravityChatView extends ItemView {
 			this.refreshModelsBtn.setCssStyles({ display: '' });
 		}
 
+		const anyEnabled = Object.values(settings.providers || {}).some(p => p.enabled);
+		if (!anyEnabled) {
+			if (this.modelTriggerLabel) {
+				this.modelTriggerLabel.setText('No provider enabled (click to configure)');
+			}
+			return;
+		}
+
+		const provName = PROVIDER_METADATA[provId]?.name || provId;
 		const models = provConfig?.cachedModels || [];
 		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
@@ -226,24 +254,18 @@ export class AntigravityChatView extends ItemView {
 		}
 
 		if (this.modelTriggerLabel) {
-			this.modelTriggerLabel.setText(`${label}${effortStr}`);
+			this.modelTriggerLabel.setText(`${provName} - ${label}${effortStr}`);
 		}
 	}
 
 	private async refreshAvailableModels(showNotice = true): Promise<void> {
 		this.refreshModelsBtn.addClass('is-spinning');
+		this.modelTriggerBtn.addClass('is-loading');
 		try {
-			const res = await this.cliService.fetchAvailableModels();
-			if (res.success) {
-				this.updateModelSelectionFromSettings();
-				if (showNotice) {
-					new Notice(`Loaded ${res.models.length} models.`);
-				}
-			} else {
-				if (showNotice) {
-					const detail = res.error ? `: ${res.error}` : '';
-					new Notice(`Could not refresh models${detail}`);
-				}
+			await this.cliService.refreshAllActiveProviders(this.getSettings().activeProvider);
+			this.updateModelSelectionFromSettings();
+			if (showNotice) {
+				new Notice('Refreshed models for active providers.');
 			}
 		} catch (err: unknown) {
 			if (showNotice) {
@@ -252,6 +274,7 @@ export class AntigravityChatView extends ItemView {
 			}
 		} finally {
 			this.refreshModelsBtn.removeClass('is-spinning');
+			this.modelTriggerBtn.removeClass('is-loading');
 		}
 	}
 

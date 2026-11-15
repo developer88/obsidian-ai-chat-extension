@@ -18,6 +18,8 @@ function createMockService(initialSettings: Partial<AiChatPluginSettings> = {}) 
 			antigravity: { ...DEFAULT_SETTINGS.providers.antigravity },
 			copilot: { ...DEFAULT_SETTINGS.providers.copilot },
 			pi: { ...DEFAULT_SETTINGS.providers.pi },
+			claude: { ...DEFAULT_SETTINGS.providers.claude },
+			codex: { ...DEFAULT_SETTINGS.providers.codex },
 			custom: { ...DEFAULT_SETTINGS.providers.custom },
 			...(initialSettings.providers || {})
 		}
@@ -695,5 +697,72 @@ describe('AgyCliService - buildPromptArgs', () => {
 		assert.equal(args[args.length - 1], '-');
 	});
 });
+
+describe('AgyCliService - Multi-Provider Model Cache & Parallel Refresh', () => {
+	test('isCacheExpired returns true when lastRetrieved is undefined or expired', () => {
+		const { service, currentSettings } = createMockService();
+		assert.ok(currentSettings.providers.antigravity);
+
+		// Undefined lastRetrieved
+		currentSettings.providers.antigravity.lastRetrieved = undefined;
+		assert.equal(service.isCacheExpired('antigravity', 300000), true);
+
+		// Expired: 10 minutes ago
+		currentSettings.providers.antigravity.lastRetrieved = Date.now() - 600000;
+		assert.equal(service.isCacheExpired('antigravity', 300000), true);
+
+		// Fresh: 1 minute ago
+		currentSettings.providers.antigravity.lastRetrieved = Date.now() - 60000;
+		assert.equal(service.isCacheExpired('antigravity', 300000), false);
+	});
+
+	test('areAnyActiveCachesExpired only evaluates enabled providers', () => {
+		const { service, currentSettings } = createMockService();
+		const now = Date.now();
+
+		// Set all providers disabled first
+		for (const key of Object.keys(currentSettings.providers)) {
+			currentSettings.providers[key as any].enabled = false;
+			currentSettings.providers[key as any].lastRetrieved = undefined; // expired
+		}
+
+		// When none enabled, returns false
+		assert.equal(service.areAnyActiveCachesExpired(300000), false);
+
+		// Enable copilot with fresh cache
+		currentSettings.providers.copilot.enabled = true;
+		currentSettings.providers.copilot.lastRetrieved = now - 10000;
+		assert.equal(service.areAnyActiveCachesExpired(300000), false);
+
+		// Enable antigravity with expired cache
+		currentSettings.providers.antigravity.enabled = true;
+		currentSettings.providers.antigravity.lastRetrieved = now - 400000;
+		assert.equal(service.areAnyActiveCachesExpired(300000), true);
+
+		// Mark antigravity fresh
+		currentSettings.providers.antigravity.lastRetrieved = now - 5000;
+		assert.equal(service.areAnyActiveCachesExpired(300000), false);
+	});
+
+	test('refreshAllActiveProviders targets all enabled providers and currentlyEditedProviderId', async () => {
+		const { service, currentSettings } = createMockService();
+
+		// Enable claude (claude static fallback returns immediately without CLI)
+		currentSettings.providers.claude.enabled = true;
+		currentSettings.providers.antigravity.enabled = false;
+		currentSettings.providers.copilot.enabled = false;
+		currentSettings.providers.pi.enabled = false;
+		currentSettings.providers.codex.enabled = false;
+
+		const results = await service.refreshAllActiveProviders('antigravity');
+
+		// Both claude (enabled) and antigravity (currentlyEdited) should be in results
+		assert.ok(results.claude);
+		assert.ok(results.antigravity);
+		assert.equal(results.claude.success, true);
+		assert.ok(results.claude.models.length > 0);
+	});
+});
+
 
 

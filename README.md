@@ -84,20 +84,35 @@ When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/m
 
 ## ⚙️ Settings Overview
 
+Sidecar AI supports simultaneous configuration of all AI CLI providers via collapsible cards. Configure each provider once, enable the ones you use, and seamlessly switch between them directly from the chat header or command palette.
+
+### AI Providers (Collapsible Cards)
+
+Each provider card (`Google Antigravity`, `GitHub Copilot`, `Pi Coding Agent`, `Claude Code`, `OpenAI Codex`) is collapsed by default and contains:
+
+| Provider Setting | Default | Description |
+| :--- | :--- | :--- |
+| **Enable provider** | `false` *(off by default)* | Activate this provider for chat sessions and model selection. |
+| **CLI command or path** | `agy` / `copilot` / `pi` / `claude` / `codex` | Executable command name or absolute path for the CLI. |
+| **Run in WSL** | `false` | *(Windows only)* Enable if the CLI is installed inside Ubuntu/WSL. |
+| **Extra CLI flags** | *(empty / recommended defaults)* | Custom arguments passed on each invocation (e.g. `--thinking high`, `--allow-all-tools`, `--dangerously-skip-permissions`). |
+| **Discovered models** | *(Dynamic)* | View discovered models and click **Retrieve from CLI** to query the CLI on demand. |
+
+> **Smart Model Discovery Cache & Auto-Refresh**:
+> - Modifying any provider setting automatically re-queries models across all enabled providers in the background with targeted error notifications for the edited provider.
+> - Model lists are cached for **5 minutes**. Clicking the model selector in the chat view or opening the fuzzy switcher refreshes active providers automatically if the cache is older than 5 minutes (displaying a smooth loading spinner).
+
+### Vault Integration & Display
+
 | Setting | Default | Description |
 | :--- | :--- | :--- |
-| **Active AI provider** | `Google Antigravity` | Choose between `Google Antigravity`, `GitHub Copilot`, `Pi Coding Agent`, `Claude Code`, `OpenAI Codex`, and `Custom CLI`. |
-| **Active model and reasoning effort** | *(Dynamic)* | View current model and effort, search available models, or query the CLI dynamically (hidden for Custom CLI). |
-| **CLI command or path** | `agy` / `copilot` / `pi` / `claude` / `codex` / `super-ai` | Executable command name or absolute path for the selected provider. |
-| **Command arguments format** | `tell {prompt}` | *(Custom CLI only)* Template for passing the prompt. Use `{prompt}` as the placeholder. |
-| **Run in WSL** | `false` | *(Windows only)* Enable if the provider CLI is installed inside Ubuntu/WSL. |
-| **Extra CLI flags** | *(empty)* | Custom arguments passed on each invocation (e.g. `--thinking high`, `--allow-all-tools`). |
 | **Auto-attach active note** | `true` | Automatically includes the active note file reference and selection in prompts. |
 | **Enable context link attachment** | `false` | Enable attaching an additional context file or folder reference when sending prompts. |
 | **Attach context by default** | `true` | Automatically include the context reference when starting a new chat session. |
 | **Context scope** | `Single file` | Choose whether to attach a single file or a whole folder. |
 | **Context path** | *(empty)* | Vault path to the context file or folder. Defaults to active note or folder if blank. |
 | **Auto-scroll chat** | `true` | Automatically scrolls the chat container as responses stream in. |
+| **Local process execution permission** | `false` | Acknowledge that Sidecar AI spawns local CLI processes without API keys. |
 
 ---
 
@@ -125,11 +140,13 @@ Sidecar AI is designed with a privacy-first, zero-telemetry architecture complyi
 
 ## ⌨️ Command Palette Shortcuts
 
-| Command | Action |
-| :--- | :--- |
-| `Sidecar AI: Open chat sidebar` | Opens or reveals the Sidecar AI sidebar view. |
-| `Sidecar AI: Switch model & effort` | Opens the fuzzy search modal to switch models and effort. |
-| `Sidecar AI: Restart session (new chat)` | Resets the conversation context and starts fresh. |
+You can assign custom hotkeys to these commands in **Obsidian Settings → Hotkeys**:
+
+| Command | Suggested Hotkey | Action |
+| :--- | :--- | :--- |
+| `Sidecar AI: Open chat sidebar` | `Ctrl+Alt+A` / `Cmd+Opt+A` | Opens or reveals the Sidecar AI sidebar view. |
+| `Sidecar AI: Switch model & effort` | `Ctrl+Alt+M` / `Cmd+Opt+M` | Opens the fuzzy search modal to switch provider, model, and reasoning effort across all activated providers. |
+| `Sidecar AI: Restart session (new chat)` | `Ctrl+Alt+N` / `Cmd+Opt+N` | Resets the conversation context and starts fresh. |
 
 ---
 

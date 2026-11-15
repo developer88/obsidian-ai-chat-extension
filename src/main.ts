@@ -7,7 +7,8 @@ import {
 	DEFAULT_PROVIDER_CONFIGS,
 	COPILOT_DEFAULT_MODELS,
 	cloneProviderConfig,
-	cloneDefaultProviderConfigs
+	cloneDefaultProviderConfigs,
+	PROVIDER_METADATA
 } from './types';
 import { AgyCliService } from './services/AgyCliService';
 import { AntigravityChatView, ANTIGRAVITY_CHAT_VIEW_TYPE } from './views/AntigravityChatView';
@@ -27,6 +28,10 @@ export default class AntigravityPlugin extends Plugin {
 			async (updated) => {
 				this.settings = updated;
 				await this.saveData(this.settings);
+			},
+			undefined,
+			(msg: string) => {
+				new Notice(msg);
 			}
 		);
 
@@ -77,10 +82,13 @@ export default class AntigravityPlugin extends Plugin {
 		this.addCommand({
 			id: 'switch-antigravity-model',
 			name: 'Switch model & effort',
-			callback: () => {
-				if (this.settings.activeProvider === 'custom') {
-					new Notice('Custom CLI provider does not use model selection.');
-					return;
+			callback: async () => {
+				if (this.cliService.areAnyActiveCachesExpired(5 * 60 * 1000)) {
+					try {
+						await this.cliService.refreshAllActiveProviders();
+					} catch {
+						// ignore
+					}
 				}
 				new ModelSuggestModal(this.app, this).open();
 			},
@@ -105,17 +113,17 @@ export default class AntigravityPlugin extends Plugin {
 		this.addSettingTab(new AntigravitySettingTab(this.app, this));
 	}
 
-	public async switchModelForActiveProvider(modelId: string, effort?: string): Promise<void> {
-		const provId = this.settings.activeProvider || 'antigravity';
+	public async switchProviderAndModel(providerId: AiProviderId, modelId: string, effort?: string): Promise<void> {
+		this.settings.activeProvider = providerId;
 
 		if (!this.settings.providers) {
 			this.settings.providers = cloneDefaultProviderConfigs();
 		}
-		if (!this.settings.providers[provId]) {
-			this.settings.providers[provId] = cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS[provId]);
+		if (!this.settings.providers[providerId]) {
+			this.settings.providers[providerId] = cloneProviderConfig(DEFAULT_PROVIDER_CONFIGS[providerId]);
 		}
 
-		const provConfig = this.settings.providers[provId];
+		const provConfig = this.settings.providers[providerId];
 		provConfig.selectedModel = modelId;
 
 		if (effort) {
@@ -135,12 +143,18 @@ export default class AntigravityPlugin extends Plugin {
 			}
 		});
 
+		const provName = PROVIDER_METADATA[providerId]?.name || providerId;
 		const models = provConfig.cachedModels || [];
 		const modelDef = models.find(m => m.id === modelId);
 		const label = modelDef ? modelDef.label : modelId;
 		const effortStr = effort ? ` (${effort})` : '';
 
-		new Notice(`Model: ${label}${effortStr}`);
+		new Notice(`${provName}: ${label}${effortStr}`);
+	}
+
+	public async switchModelForActiveProvider(modelId: string, effort?: string): Promise<void> {
+		const provId = this.settings.activeProvider || 'antigravity';
+		await this.switchProviderAndModel(provId, modelId, effort);
 	}
 
 	async activateView(): Promise<void> {
@@ -237,6 +251,15 @@ export default class AntigravityPlugin extends Plugin {
 		}
 		if (rawData?.conversationId && this.settings.providers.antigravity) {
 			this.settings.providers.antigravity.conversationId = rawData.conversationId;
+		}
+
+		// Ensure at least one provider is enabled for existing/migrated users
+		const anyEnabled = Object.values(this.settings.providers || {}).some(p => p.enabled);
+		if (!anyEnabled) {
+			const activeId = this.settings.activeProvider || 'antigravity';
+			if (this.settings.providers[activeId]) {
+				this.settings.providers[activeId].enabled = true;
+			}
 		}
 	}
 

@@ -23,39 +23,54 @@ export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 	getItems(): ModelChoiceItem[] {
 		const settings = this.plugin.settings;
 		const activeProvId = settings.activeProvider || 'antigravity';
-		const provConfig = settings.providers?.[activeProvId];
-		const provName = PROVIDER_METADATA[activeProvId]?.name || activeProvId;
+		const activeProvConfig = settings.providers?.[activeProvId];
+		const currentActiveModelId = activeProvConfig?.selectedModel || '';
 		const items: ModelChoiceItem[] = [];
 
-		const models = provConfig?.cachedModels || [];
-		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
+		const providerIds: AiProviderId[] = ['antigravity', 'copilot', 'pi', 'claude', 'codex'];
 
-		for (const model of models) {
-			if (model.efforts && model.efforts.length > 1) {
-				const currentEffort = provConfig?.modelEfforts?.[model.id] || model.defaultEffort || 'Medium';
-				for (const effort of model.efforts) {
-					const isThisActive = (model.id === currentModelId && effort.toLowerCase() === currentEffort.toLowerCase());
+		for (const provId of providerIds) {
+			const provConfig = settings.providers?.[provId];
+			if (!provConfig || !provConfig.enabled) {
+				continue;
+			}
+
+			const provName = PROVIDER_METADATA[provId]?.name || provId;
+			const models = provConfig.cachedModels || [];
+
+			for (const model of models) {
+				if (model.efforts && model.efforts.length > 1) {
+					const currentEffort = provConfig.modelEfforts?.[model.id] || model.defaultEffort || 'Medium';
+					for (const effort of model.efforts) {
+						const isThisActive = (provId === activeProvId && model.id === currentActiveModelId && effort.toLowerCase() === currentEffort.toLowerCase());
+						items.push({
+							providerId: provId,
+							providerName: provName,
+							modelId: model.id,
+							modelLabel: model.label,
+							effort: effort,
+							isActive: isThisActive
+						});
+					}
+				} else {
+					const singleEffort = model.efforts && model.efforts.length === 1 ? model.efforts[0] : undefined;
+					const isThisActive = (provId === activeProvId && model.id === currentActiveModelId);
 					items.push({
-						providerId: activeProvId,
+						providerId: provId,
 						providerName: provName,
 						modelId: model.id,
 						modelLabel: model.label,
-						effort: effort,
+						effort: singleEffort,
 						isActive: isThisActive
 					});
 				}
-			} else {
-				const singleEffort = model.efforts && model.efforts.length === 1 ? model.efforts[0] : undefined;
-				const isThisActive = (model.id === currentModelId);
-				items.push({
-					providerId: activeProvId,
-					providerName: provName,
-					modelId: model.id,
-					modelLabel: model.label,
-					effort: singleEffort,
-					isActive: isThisActive
-				});
 			}
+		}
+
+		if (items.length === 0) {
+			this.setPlaceholder('No providers enabled. Enable at least one provider in settings.');
+		} else {
+			this.setPlaceholder('Search provider - model and reasoning effort...');
 		}
 
 		return items;
@@ -63,7 +78,7 @@ export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 
 	getItemText(item: ModelChoiceItem): string {
 		const effortPart = item.effort ? ` (${item.effort} effort)` : '';
-		return `${item.modelLabel}${effortPart}`;
+		return `${item.providerName} - ${item.modelLabel}${effortPart}`;
 	}
 
 	renderSuggestion(match: FuzzyMatch<ModelChoiceItem>, el: HTMLElement): void {
@@ -82,7 +97,7 @@ export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 	}
 
 	onChooseItem(item: ModelChoiceItem): void {
-		void this.plugin.switchModelForActiveProvider(item.modelId, item.effort);
+		void this.plugin.switchProviderAndModel(item.providerId, item.modelId, item.effort);
 	}
 }
 

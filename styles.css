@@ -149,6 +149,16 @@
 	background-color: var(--background-modifier-hover);
 }
 
+.agy-model-trigger-btn.is-loading {
+	opacity: 0.75;
+	cursor: wait;
+	pointer-events: none;
+}
+
+.agy-model-trigger-btn.is-loading .agy-model-trigger-icon svg {
+	animation: agy-spin 0.8s linear infinite;
+}
+
 .agy-model-trigger-icon {
 	display: inline-flex;
 	align-items: center;
@@ -899,4 +909,114 @@
 	padding-right: 28px;
 	box-sizing: border-box;
 	vertical-align: middle;
+}
+
+/* AI Provider Collapsible Cards in Settings */
+.agy-provider-setting-container {
+	border-top: none !important;
+	padding-top: 0 !important;
+	padding-bottom: 0 !important;
+}
+
+.agy-provider-card {
+	border: 1px solid var(--divider-color);
+	border-radius: var(--radius-m);
+	margin-bottom: var(--size-4-3);
+	background-color: var(--background-secondary);
+	overflow: hidden;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.agy-provider-card[open] {
+	border-color: var(--interactive-accent);
+}
+
+.agy-provider-summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--size-4-3) var(--size-4-4);
+	cursor: pointer;
+	font-weight: var(--font-medium);
+	font-size: var(--font-ui-medium);
+	user-select: none;
+	list-style: none;
+}
+
+.agy-provider-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agy-provider-summary:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.agy-provider-summary-left {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.agy-provider-chevron {
+	display: inline-flex;
+	align-items: center;
+	transition: transform 0.2s ease;
+	color: var(--text-muted);
+}
+
+.agy-provider-card[open] .agy-provider-chevron {
+	transform: rotate(90deg);
+}
+
+.agy-provider-summary-title {
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+.agy-provider-summary-meta {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+	margin-left: var(--size-4-2);
+}
+
+.agy-provider-summary-right {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.agy-provider-badge {
+	font-size: var(--font-ui-smaller, 11px);
+	font-weight: var(--font-medium, 500);
+	padding: 2px 8px;
+	border-radius: var(--radius-pill, 12px);
+	line-height: 1.2;
+}
+
+.agy-provider-badge.is-enabled {
+	background-color: rgba(46, 160, 67, 0.15);
+	color: var(--text-success, #2ea043);
+	border: 1px solid rgba(46, 160, 67, 0.3);
+}
+
+.agy-provider-badge.is-disabled {
+	background-color: var(--background-modifier-form-field);
+	color: var(--text-muted);
+	border: 1px solid var(--divider-color);
+}
+
+.agy-provider-card-body {
+	padding: var(--size-4-2) var(--size-4-4) var(--size-4-4);
+	border-top: 1px solid var(--divider-color);
+	background-color: var(--background-primary);
+}
+
+.agy-provider-card-body .setting-item {
+	padding: var(--size-4-3) 0;
+	border-top: 1px solid var(--divider-color);
+}
+
+.agy-provider-card-body .setting-item:first-child {
+	border-top: none;
+	padding-top: var(--size-4-2);
 }

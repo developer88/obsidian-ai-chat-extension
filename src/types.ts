@@ -18,12 +18,14 @@ export interface ModelDiscoveryResult {
 export interface ProviderConfig {
 	id: AiProviderId;
 	name: string;
+	enabled: boolean;
 	cliCommand: string;
 	useWsl: boolean;
 	extraCliFlags: string;
 	selectedModel: string;
 	modelEfforts: Record<string, string>;
 	cachedModels: ModelDefinition[];
+	lastRetrieved?: number;
 	defaultMode: string;
 	conversationId: string | null;
 	promptTemplate?: string;
@@ -266,6 +268,7 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 	antigravity: {
 		id: 'antigravity',
 		name: 'Google Antigravity',
+		enabled: true,
 		cliCommand: 'agy',
 		useWsl: false,
 		extraCliFlags: '',
@@ -284,6 +287,7 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 	copilot: {
 		id: 'copilot',
 		name: 'GitHub Copilot',
+		enabled: false,
 		cliCommand: 'copilot',
 		useWsl: false,
 		extraCliFlags: '',
@@ -296,6 +300,7 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 	pi: {
 		id: 'pi',
 		name: 'Pi Coding Agent',
+		enabled: false,
 		cliCommand: 'pi',
 		useWsl: false,
 		extraCliFlags: '',
@@ -310,6 +315,7 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 	claude: {
 		id: 'claude',
 		name: 'Claude Code',
+		enabled: false,
 		cliCommand: 'claude',
 		useWsl: false,
 		extraCliFlags: '',
@@ -327,6 +333,7 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 	codex: {
 		id: 'codex',
 		name: 'OpenAI Codex',
+		enabled: false,
 		cliCommand: 'codex',
 		useWsl: false,
 		extraCliFlags: '',
@@ -343,6 +350,7 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<AiProviderId, ProviderConfig> = {
 	custom: {
 		id: 'custom',
 		name: 'Custom CLI',
+		enabled: false,
 		cliCommand: 'super-ai',
 		useWsl: false,
 		extraCliFlags: '',
@@ -359,6 +367,7 @@ export function cloneProviderConfig(config: ProviderConfig): ProviderConfig {
 	return {
 		id: config.id,
 		name: config.name,
+		enabled: config.enabled ?? false,
 		cliCommand: config.cliCommand,
 		useWsl: config.useWsl,
 		extraCliFlags: config.extraCliFlags,
@@ -371,6 +380,7 @@ export function cloneProviderConfig(config: ProviderConfig): ProviderConfig {
 			defaultEffort: m.defaultEffort,
 			effortModelMap: m.effortModelMap ? { ...m.effortModelMap } : undefined
 		})),
+		lastRetrieved: config.lastRetrieved,
 		defaultMode: config.defaultMode,
 		conversationId: config.conversationId,
 		promptTemplate: config.promptTemplate
