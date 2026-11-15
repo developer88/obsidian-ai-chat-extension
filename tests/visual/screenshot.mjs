@@ -188,140 +188,152 @@ async function runScreenshotTests() {
 		const root = document.getElementById('root');
 		root.innerHTML = `
 			<div class="test-container wide" style="padding: 24px;">
-				<h2 style="margin-top: 0; font-size: 18px; border-bottom: 1px solid var(--divider-color); padding-bottom: 8px;">AI providers</h2>
+				<h2 style="margin-top: 0; font-size: 18px; padding-bottom: 8px;">AI providers</h2>
 				<p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">Configure multiple AI CLI providers simultaneously. Enable the providers you use and switch between them dynamically.</p>
 
-				<!-- Card 1: Google Antigravity (Expanded) -->
-				<details class="agy-provider-card" open>
-					<summary class="agy-provider-summary">
-						<div class="agy-provider-summary-left">
-							<span class="agy-provider-chevron">
-								<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-							</span>
-							<span class="agy-provider-summary-title">Google Antigravity</span>
-							<span class="agy-provider-summary-meta">(5 models)</span>
-						</div>
-						<div class="agy-provider-summary-right">
-							<span class="agy-provider-badge is-enabled">Enabled</span>
-						</div>
-					</summary>
-					<div class="agy-provider-card-body">
-						<!-- Toggle: Enable provider -->
-						<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
-							<div class="setting-item-info">
-								<div class="setting-item-name" style="font-weight: 500;">Enable provider</div>
-								<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">Activate Google Antigravity for chat sessions and model selection.</div>
+				<div class="setting-group-items" style="border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden; background: var(--background-secondary);">
+					<!-- Card 1: Google Antigravity (Expanded) -->
+					<div class="setting-item agy-provider-setting-container">
+						<details class="agy-provider-card" open>
+							<summary class="agy-provider-summary">
+								<div class="agy-provider-summary-left">
+									<span class="agy-provider-chevron">
+										<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+									</span>
+									<span class="agy-provider-summary-title">Google Antigravity</span>
+								</div>
+								<div class="agy-provider-summary-right">
+									<span class="agy-provider-summary-meta">8 models</span>
+									<span class="agy-provider-badge is-enabled">Enabled</span>
+								</div>
+							</summary>
+							<div class="agy-provider-card-body">
+								<!-- Toggle: Enable provider -->
+								<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+									<div class="setting-item-info">
+										<div class="setting-item-name" style="font-weight: 500;">Enable provider</div>
+										<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">Activate Google Antigravity for chat sessions and model selection.</div>
+									</div>
+									<div class="setting-item-control">
+										<input type="checkbox" checked style="accent-color: var(--interactive-accent); transform: scale(1.2);">
+									</div>
+								</div>
+								<!-- Text: CLI command -->
+								<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
+									<div class="setting-item-info">
+										<div class="setting-item-name" style="font-weight: 500;">CLI command or path</div>
+										<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">The command or full path to the executable (e.g. "agy").</div>
+									</div>
+									<div class="setting-item-control">
+										<input type="text" value="agy" style="background: var(--background-modifier-form-field); border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; color: var(--text-normal); width: 140px;">
+									</div>
+								</div>
+								<!-- Toggle: Run in WSL -->
+								<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
+									<div class="setting-item-info">
+										<div class="setting-item-name" style="font-weight: 500;">Run in WSL</div>
+										<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">Execute Google Antigravity via Windows Subsystem for Linux (e.g. "wsl agy").</div>
+									</div>
+									<div class="setting-item-control">
+										<input type="checkbox" style="accent-color: var(--interactive-accent); transform: scale(1.2);">
+									</div>
+								</div>
+								<!-- Text: Extra CLI flags -->
+								<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
+									<div class="setting-item-info">
+										<div class="setting-item-name" style="font-weight: 500;">Extra CLI flags</div>
+										<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">Additional flags passed to Google Antigravity on each invocation.</div>
+									</div>
+									<div class="setting-item-control">
+										<input type="text" placeholder="--dangerously-skip-permissions" style="background: var(--background-modifier-form-field); border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; color: var(--text-normal); width: 140px;">
+									</div>
+								</div>
+								<!-- Button: Discovered models -->
+								<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
+									<div class="setting-item-info">
+										<div class="setting-item-name" style="font-weight: 500;">Discovered models</div>
+										<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">8 models discovered and cached.</div>
+									</div>
+									<div class="setting-item-control">
+										<button style="background: var(--interactive-accent); color: var(--text-on-accent); border: none; border-radius: 4px; padding: 6px 12px; font-weight: 500; cursor: pointer;">Retrieve from CLI</button>
+									</div>
+								</div>
 							</div>
-							<div class="setting-item-control">
-								<input type="checkbox" checked style="accent-color: var(--interactive-accent); transform: scale(1.2);">
-							</div>
-						</div>
-						<!-- Text: CLI command -->
-						<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
-							<div class="setting-item-info">
-								<div class="setting-item-name" style="font-weight: 500;">CLI command or path</div>
-								<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">The command or full path to the executable (e.g. "agy").</div>
-							</div>
-							<div class="setting-item-control">
-								<input type="text" value="agy" style="background: var(--background-modifier-form-field); border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; color: var(--text-normal); width: 140px;">
-							</div>
-						</div>
-						<!-- Toggle: Run in WSL -->
-						<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
-							<div class="setting-item-info">
-								<div class="setting-item-name" style="font-weight: 500;">Run in WSL</div>
-								<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">Execute Google Antigravity via Windows Subsystem for Linux (e.g. "wsl agy").</div>
-							</div>
-							<div class="setting-item-control">
-								<input type="checkbox" style="accent-color: var(--interactive-accent); transform: scale(1.2);">
-							</div>
-						</div>
-						<!-- Text: Extra CLI flags -->
-						<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
-							<div class="setting-item-info">
-								<div class="setting-item-name" style="font-weight: 500;">Extra CLI flags</div>
-								<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">Additional flags passed to Google Antigravity on each invocation.</div>
-							</div>
-							<div class="setting-item-control">
-								<input type="text" placeholder="--dangerously-skip-permissions" style="background: var(--background-modifier-form-field); border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; color: var(--text-normal); width: 140px;">
-							</div>
-						</div>
-						<!-- Button: Discovered models -->
-						<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--divider-color);">
-							<div class="setting-item-info">
-								<div class="setting-item-name" style="font-weight: 500;">Discovered models</div>
-								<div class="setting-item-description" style="color: var(--text-muted); font-size: 11.5px;">5 models discovered and cached.</div>
-							</div>
-							<div class="setting-item-control">
-								<button style="background: var(--interactive-accent); color: var(--text-on-accent); border: none; border-radius: 4px; padding: 6px 12px; font-weight: 500; cursor: pointer;">Retrieve from CLI</button>
-							</div>
-						</div>
+						</details>
 					</div>
-				</details>
 
-				<!-- Card 2: GitHub Copilot (Collapsed) -->
-				<details class="agy-provider-card">
-					<summary class="agy-provider-summary">
-						<div class="agy-provider-summary-left">
-							<span class="agy-provider-chevron">
-								<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-							</span>
-							<span class="agy-provider-summary-title">GitHub Copilot</span>
-							<span class="agy-provider-summary-meta">(4 models)</span>
-						</div>
-						<div class="agy-provider-summary-right">
-							<span class="agy-provider-badge is-enabled">Enabled</span>
-						</div>
-					</summary>
-				</details>
+					<!-- Card 2: GitHub Copilot (Collapsed) -->
+					<div class="setting-item agy-provider-setting-container">
+						<details class="agy-provider-card">
+							<summary class="agy-provider-summary">
+								<div class="agy-provider-summary-left">
+									<span class="agy-provider-chevron">
+										<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+									</span>
+									<span class="agy-provider-summary-title">GitHub Copilot</span>
+								</div>
+								<div class="agy-provider-summary-right">
+									<span class="agy-provider-summary-meta">32 models</span>
+									<span class="agy-provider-badge is-enabled">Enabled</span>
+								</div>
+							</summary>
+						</details>
+					</div>
 
-				<!-- Card 3: Pi Coding Agent (Collapsed) -->
-				<details class="agy-provider-card">
-					<summary class="agy-provider-summary">
-						<div class="agy-provider-summary-left">
-							<span class="agy-provider-chevron">
-								<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-							</span>
-							<span class="agy-provider-summary-title">Pi Coding Agent</span>
-							<span class="agy-provider-summary-meta">(0 models)</span>
-						</div>
-						<div class="agy-provider-summary-right">
-							<span class="agy-provider-badge is-disabled">Disabled</span>
-						</div>
-					</summary>
-				</details>
+					<!-- Card 3: Pi Coding Agent (Collapsed) -->
+					<div class="setting-item agy-provider-setting-container">
+						<details class="agy-provider-card">
+							<summary class="agy-provider-summary">
+								<div class="agy-provider-summary-left">
+									<span class="agy-provider-chevron">
+										<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+									</span>
+									<span class="agy-provider-summary-title">Pi Coding Agent</span>
+								</div>
+								<div class="agy-provider-summary-right">
+									<span class="agy-provider-summary-meta">28 models</span>
+									<span class="agy-provider-badge is-disabled">Disabled</span>
+								</div>
+							</summary>
+						</details>
+					</div>
 
-				<!-- Card 4: Claude Code (Collapsed) -->
-				<details class="agy-provider-card">
-					<summary class="agy-provider-summary">
-						<div class="agy-provider-summary-left">
-							<span class="agy-provider-chevron">
-								<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-							</span>
-							<span class="agy-provider-summary-title">Claude Code</span>
-							<span class="agy-provider-summary-meta">(0 models)</span>
-						</div>
-						<div class="agy-provider-summary-right">
-							<span class="agy-provider-badge is-disabled">Disabled</span>
-						</div>
-					</summary>
-				</details>
+					<!-- Card 4: Claude Code (Collapsed) -->
+					<div class="setting-item agy-provider-setting-container">
+						<details class="agy-provider-card">
+							<summary class="agy-provider-summary">
+								<div class="agy-provider-summary-left">
+									<span class="agy-provider-chevron">
+										<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+									</span>
+									<span class="agy-provider-summary-title">Claude Code</span>
+								</div>
+								<div class="agy-provider-summary-right">
+									<span class="agy-provider-summary-meta">8 models</span>
+									<span class="agy-provider-badge is-disabled">Disabled</span>
+								</div>
+							</summary>
+						</details>
+					</div>
 
-				<!-- Card 5: OpenAI Codex (Collapsed) -->
-				<details class="agy-provider-card">
-					<summary class="agy-provider-summary">
-						<div class="agy-provider-summary-left">
-							<span class="agy-provider-chevron">
-								<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-							</span>
-							<span class="agy-provider-summary-title">OpenAI Codex</span>
-							<span class="agy-provider-summary-meta">(0 models)</span>
-						</div>
-						<div class="agy-provider-summary-right">
-							<span class="agy-provider-badge is-disabled">Disabled</span>
-						</div>
-					</summary>
-				</details>
+					<!-- Card 5: OpenAI Codex (Collapsed) -->
+					<div class="setting-item agy-provider-setting-container">
+						<details class="agy-provider-card">
+							<summary class="agy-provider-summary">
+								<div class="agy-provider-summary-left">
+									<span class="agy-provider-chevron">
+										<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+									</span>
+									<span class="agy-provider-summary-title">OpenAI Codex</span>
+								</div>
+								<div class="agy-provider-summary-right">
+									<span class="agy-provider-summary-meta">3 models</span>
+									<span class="agy-provider-badge is-disabled">Disabled</span>
+								</div>
+							</summary>
+						</details>
+					</div>
+				</div>
 			</div>
 		`;
 	});

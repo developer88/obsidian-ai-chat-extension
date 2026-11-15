@@ -81,14 +81,13 @@ export class AntigravitySettingTab extends PluginSettingTab {
 					const leftEl = summaryEl.createDiv({ cls: 'agy-provider-summary-left' });
 					const chevronEl = leftEl.createSpan({ cls: 'agy-provider-chevron' });
 					setIcon(chevronEl, 'chevron-right');
-
 					leftEl.createSpan({ cls: 'agy-provider-summary-title', text: provName });
-					const modelCountEl = leftEl.createSpan({
-						cls: 'agy-provider-summary-meta',
-						text: `(${modelsCount} model${modelsCount === 1 ? '' : 's'})`
-					});
 
 					const rightEl = summaryEl.createDiv({ cls: 'agy-provider-summary-right' });
+					const modelCountEl = rightEl.createSpan({
+						cls: 'agy-provider-summary-meta',
+						text: `${modelsCount} model${modelsCount === 1 ? '' : 's'}`
+					});
 					const badgeEl = rightEl.createSpan({
 						cls: `agy-provider-badge ${isEnabled ? 'is-enabled' : 'is-disabled'}`,
 						text: isEnabled ? 'Enabled' : 'Disabled'
@@ -185,7 +184,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 										const res = await this.plugin.cliService.fetchAvailableModels(provId);
 										if (res.success) {
 											new Notice(`Loaded ${res.models.length} models for ${provName}.`);
-											modelCountEl.setText(`(${res.models.length} model${res.models.length === 1 ? '' : 's'})`);
+											modelCountEl.setText(`${res.models.length} model${res.models.length === 1 ? '' : 's'}`);
 										} else {
 											const detail = res.error ? `: ${res.error}` : '';
 											new Notice(`Could not retrieve models for ${provName}${detail}`);

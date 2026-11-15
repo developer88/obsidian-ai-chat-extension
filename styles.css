@@ -912,35 +912,47 @@
 }
 
 /* AI Provider Collapsible Cards in Settings */
-.agy-provider-setting-container {
+.setting-item.agy-provider-setting-container {
+	display: block !important;
+	width: 100% !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	border: none !important;
 	border-top: none !important;
-	padding-top: 0 !important;
-	padding-bottom: 0 !important;
+	background: transparent !important;
+}
+
+.setting-item.agy-provider-setting-container:not(:first-child) {
+	border-top: 1px solid var(--divider-color) !important;
 }
 
 .agy-provider-card {
-	border: 1px solid var(--divider-color);
-	border-radius: var(--radius-m);
-	margin-bottom: var(--size-4-3);
-	background-color: var(--background-secondary);
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	border: none;
+	background: transparent;
 	overflow: hidden;
-	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	transition: background-color 0.15s ease;
 }
 
 .agy-provider-card[open] {
-	border-color: var(--interactive-accent);
+	background-color: var(--background-primary);
 }
 
 .agy-provider-summary {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	width: 100%;
+	box-sizing: border-box;
 	padding: var(--size-4-3) var(--size-4-4);
 	cursor: pointer;
 	font-weight: var(--font-medium);
 	font-size: var(--font-ui-medium);
 	user-select: none;
 	list-style: none;
+	transition: background-color 0.15s ease;
 }
 
 .agy-provider-summary::-webkit-details-marker {
@@ -955,48 +967,63 @@
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2);
+	min-width: 0;
 }
 
 .agy-provider-chevron {
 	display: inline-flex;
 	align-items: center;
-	transition: transform 0.2s ease;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
 	color: var(--text-muted);
+	transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), color 0.15s ease;
+	flex-shrink: 0;
+}
+
+.agy-provider-chevron svg {
+	width: 13px;
+	height: 13px;
+	display: block;
 }
 
 .agy-provider-card[open] .agy-provider-chevron {
 	transform: rotate(90deg);
+	color: var(--interactive-accent);
 }
 
 .agy-provider-summary-title {
 	font-weight: var(--font-semibold, 600);
 	color: var(--text-normal);
-}
-
-.agy-provider-summary-meta {
-	font-size: var(--font-ui-smaller, 12px);
-	color: var(--text-muted);
-	margin-left: var(--size-4-2);
+	white-space: nowrap;
 }
 
 .agy-provider-summary-right {
 	display: flex;
 	align-items: center;
-	gap: var(--size-4-2);
+	gap: var(--size-4-3);
+	flex-shrink: 0;
+}
+
+.agy-provider-summary-meta {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+	font-weight: var(--font-normal, 400);
 }
 
 .agy-provider-badge {
-	font-size: var(--font-ui-smaller, 11px);
+	font-size: 11px;
 	font-weight: var(--font-medium, 500);
 	padding: 2px 8px;
 	border-radius: var(--radius-pill, 12px);
-	line-height: 1.2;
+	line-height: 1.25;
+	letter-spacing: 0.02em;
 }
 
 .agy-provider-badge.is-enabled {
 	background-color: rgba(46, 160, 67, 0.15);
 	color: var(--text-success, #2ea043);
-	border: 1px solid rgba(46, 160, 67, 0.3);
+	border: 1px solid rgba(46, 160, 67, 0.35);
 }
 
 .agy-provider-badge.is-disabled {
@@ -1006,7 +1033,7 @@
 }
 
 .agy-provider-card-body {
-	padding: var(--size-4-2) var(--size-4-4) var(--size-4-4);
+	padding: var(--size-4-2) var(--size-4-4) var(--size-4-4) 40px;
 	border-top: 1px solid var(--divider-color);
 	background-color: var(--background-primary);
 }
