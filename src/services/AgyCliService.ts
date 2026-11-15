@@ -606,7 +606,56 @@ export class AgyCliService {
 			};
 		}
 		if (targetProvider === 'codex') {
-			const models = [...CODEX_DEFAULT_MODELS];
+			let models: ModelDefinition[] = [];
+			try {
+				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const cachePath = home ? path.join(home, '.codex', 'models_cache.json') : '';
+				if (cachePath && fs.existsSync(cachePath)) {
+					const cacheRaw = fs.readFileSync(cachePath, 'utf8');
+					interface RawCodexCacheModel {
+						slug: string;
+						display_name?: string;
+						visibility?: string;
+						supported_in_api?: boolean;
+						default_reasoning_level?: string;
+						supported_reasoning_levels?: Array<{ effort?: string }>;
+					}
+					interface RawCodexCache {
+						models?: RawCodexCacheModel[];
+					}
+					const cacheData = JSON.parse(cacheRaw) as RawCodexCache;
+					if (Array.isArray(cacheData?.models)) {
+						const visible = cacheData.models.filter(m =>
+							m.visibility !== 'hide' && m.supported_in_api !== false
+						);
+						models = visible.map(m => {
+							const efforts: string[] = Array.isArray(m.supported_reasoning_levels)
+								? m.supported_reasoning_levels.map((r) => {
+									const eff = String(r.effort || '');
+									return eff.charAt(0).toUpperCase() + eff.slice(1);
+								})
+								: [];
+							const defaultEffortRaw = m.default_reasoning_level ? String(m.default_reasoning_level) : '';
+							const defaultEffort = defaultEffortRaw
+								? defaultEffortRaw.charAt(0).toUpperCase() + defaultEffortRaw.slice(1)
+								: (efforts[0] || undefined);
+							return {
+								id: m.slug,
+								label: m.display_name || m.slug,
+								efforts,
+								defaultEffort
+							};
+						});
+					}
+				}
+			} catch (e) {
+				console.warn('[Sidecar AI] Error reading Codex models_cache.json:', e);
+			}
+
+			if (models.length === 0) {
+				models = [...CODEX_DEFAULT_MODELS];
+			}
+
 			try {
 				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
 				const configPath = home ? path.join(home, '.codex', 'config.toml') : '';

@@ -461,8 +461,7 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 			const result = await service.fetchAvailableModels('codex');
 			assert.equal(result.success, true);
 			assert.ok(result.models.some(m => m.id === 'gpt-6-luna'));
-			assert.ok(result.models.some(m => m.id === 'o3'));
-			assert.ok(result.models.some(m => m.id === 'o3-mini'));
+			assert.ok(result.models.some(m => m.id === 'gpt-5.6-luna' || m.id === 'gpt-5.6-terra'));
 		});
 
 		test('E2E: buildPromptArgs formats exec, resume, skip-git-repo-check, json, effort, and stdin -', () => {

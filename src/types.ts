@@ -199,36 +199,15 @@ export const CLAUDE_DEFAULT_MODELS: ModelDefinition[] = [
 export const CODEX_DEFAULT_MODELS: ModelDefinition[] = [
 	{
 		id: 'gpt-6-luna',
-		label: 'GPT-6 Luna (Recommended)',
-		efforts: ['Low', 'Medium', 'High'],
+		label: 'GPT-6-Luna (Recommended)',
+		efforts: ['Low', 'Medium', 'High', 'Xhigh', 'Max'],
 		defaultEffort: 'Low'
 	},
 	{
-		id: 'o3',
-		label: 'OpenAI o3',
-		efforts: ['Low', 'Medium', 'High'],
-		defaultEffort: 'Medium'
-	},
-	{
-		id: 'o3-mini',
-		label: 'OpenAI o3-mini',
-		efforts: ['Low', 'Medium', 'High'],
+		id: 'gpt-5.6-luna',
+		label: 'GPT-5.6-Luna',
+		efforts: ['Low', 'Medium', 'High', 'Xhigh', 'Max'],
 		defaultEffort: 'Low'
-	},
-	{
-		id: 'o1',
-		label: 'OpenAI o1',
-		efforts: []
-	},
-	{
-		id: 'gpt-4o',
-		label: 'GPT-4o',
-		efforts: []
-	},
-	{
-		id: 'gpt-4o-mini',
-		label: 'GPT-4o mini',
-		efforts: []
 	}
 ];
 
