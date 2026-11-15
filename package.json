@@ -8,6 +8,7 @@
     "build": "node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit --skipLibCheck",
     "test": "tsx --test tests/*.test.ts",
+    "test:visual": "node tests/visual/screenshot.mjs",
     "lint": "eslint ."
   },
   "keywords": [
@@ -21,11 +22,13 @@
   "author": "Andrey",
   "license": "MIT",
   "devDependencies": {
+    "@esbuild/linux-x64": "^0.28.2",
     "@types/node": "^20.14.9",
     "esbuild": "0.28.1",
     "eslint": "^9.39.5",
     "eslint-plugin-obsidianmd": "^0.4.2",
     "obsidian": "latest",
+    "playwright": "^1.65.1",
     "tslib": "2.6.3",
     "tsx": "^4.23.13",
     "typescript": "5.5.2"

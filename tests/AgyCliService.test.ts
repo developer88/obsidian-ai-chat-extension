@@ -1,7 +1,7 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
 import * as path from 'path';
-import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../src/services/AgyCliService';
+import { AgyCliService, formatPromptWithHistory, HistoryTurn, getUserHomeDir } from '../src/services/AgyCliService';
 import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
@@ -109,13 +109,11 @@ describe('AgyCliService - Path & Command Sanitization', () => {
 			assert.ok(linuxEnv.PATH?.includes('/home/user/bin'));
 
 			Object.defineProperty(process, 'platform', { value: 'win32' });
-			const origUserProfile = process.env.USERPROFILE;
-			process.env.USERPROFILE = 'C:\\Users\\testuser';
 			process.env.PATH = 'C:\\Windows\\system32;C:\\Windows';
 			const winEnv = AgyCliService.getSpawnEnvironment();
-			assert.ok(winEnv.PATH?.includes('C:\\Users\\testuser\\.pi\\agent\\bin'));
+			const expectedPiWinPath = path.win32.join(getUserHomeDir(), '.pi', 'agent', 'bin');
+			assert.ok(winEnv.PATH?.includes(expectedPiWinPath));
 			assert.ok(winEnv.PATH?.includes('C:\\Windows\\system32'));
-			process.env.USERPROFILE = origUserProfile;
 		} finally {
 			Object.defineProperty(process, 'platform', { value: originalPlatform });
 			process.env.PATH = originalPath;

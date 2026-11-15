@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Sidecar AI Visual Test Fixture</title>
+	<style>
+		:root {
+			--font-interface: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Ubuntu, sans-serif;
+			--font-monospace: "JetBrains Mono", Consolas, "Fira Code", monospace;
+			--font-ui-smaller: 11px;
+			--font-ui-small: 12px;
+			--font-ui-medium: 13px;
+			--font-ui-large: 15px;
+			--font-normal: 400;
+			--font-medium: 500;
+			--font-semibold: 600;
+			--font-bold: 700;
+			--radius-s: 4px;
+			--radius-m: 8px;
+			--radius-l: 12px;
+			--radius-pill: 9999px;
+			--size-4-1: 4px;
+			--size-4-2: 8px;
+			--size-4-3: 12px;
+			--size-4-4: 16px;
+			--size-4-6: 24px;
+			--size-4-7: 28px;
+			--input-height: 30px;
+			--color-green-rgb: 46, 160, 67;
+		}
+
+		.theme-dark {
+			--background-primary: #1e1e2e;
+			--background-secondary: #181825;
+			--background-secondary-alt: #11111b;
+			--background-modifier-form-field: #313244;
+			--background-modifier-hover: rgba(255, 255, 255, 0.08);
+			--text-normal: #cdd6f4;
+			--text-muted: #a6adc8;
+			--text-faint: #6c7086;
+			--text-accent: #89b4fa;
+			--text-success: #a6e3a1;
+			--text-error: #f38ba8;
+			--interactive-accent: #89b4fa;
+			--interactive-accent-hover: #b4befe;
+			--text-on-accent: #11111b;
+			--divider-color: #313244;
+			--color-base-10: #1e1e2e;
+			--color-base-20: #181825;
+			--color-base-30: #313244;
+		}
+
+		.theme-light {
+			--background-primary: #ffffff;
+			--background-secondary: #f8f9fa;
+			--background-secondary-alt: #f1f3f5;
+			--background-modifier-form-field: #e9ecef;
+			--background-modifier-hover: rgba(0, 0, 0, 0.05);
+			--text-normal: #212529;
+			--text-muted: #6c757d;
+			--text-faint: #adb5bd;
+			--text-accent: #4f46e5;
+			--text-success: #16a34a;
+			--text-error: #dc2626;
+			--interactive-accent: #4f46e5;
+			--interactive-accent-hover: #4338ca;
+			--text-on-accent: #ffffff;
+			--divider-color: #dee2e6;
+			--color-base-10: #ffffff;
+			--color-base-20: #f8f9fa;
+			--color-base-30: #dee2e6;
+		}
+
+		body {
+			margin: 0;
+			padding: 20px;
+			font-family: var(--font-interface);
+			background-color: var(--background-secondary-alt);
+			color: var(--text-normal);
+			box-sizing: border-box;
+		}
+
+		.test-container {
+			max-width: 480px;
+			margin: 0 auto;
+			box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+			border-radius: var(--radius-m);
+			overflow: hidden;
+			border: 1px solid var(--divider-color);
+			background-color: var(--background-primary);
+		}
+
+		.test-container.wide {
+			max-width: 720px;
+		}
+	</style>
+	<link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+	<div id="root"></div>
+</body>
+</html>

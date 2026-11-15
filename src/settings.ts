@@ -10,7 +10,7 @@ const PROVIDER_IDS: AiProviderId[] = ['antigravity', 'copilot', 'pi', 'claude', 
 export class AntigravitySettingTab extends PluginSettingTab {
 	plugin: AntigravityPlugin;
 	private openCards = new Set<AiProviderId>();
-	private refreshDebounceTimers = new Map<AiProviderId, ReturnType<typeof setTimeout>>();
+	private refreshDebounceTimers = new Map<AiProviderId, number>();
 
 	constructor(app: App, plugin: AntigravityPlugin) {
 		super(app, plugin);
@@ -19,12 +19,13 @@ export class AntigravitySettingTab extends PluginSettingTab {
 
 	private triggerDebouncedRefresh(provId: AiProviderId): void {
 		const existing = this.refreshDebounceTimers.get(provId);
-		if (existing) {
+		if (existing !== undefined) {
 			window.clearTimeout(existing);
 		}
-		this.refreshDebounceTimers.set(provId, window.setTimeout(() => {
+		const timer = window.setTimeout(() => {
 			void this.plugin.cliService.refreshAllActiveProviders(provId);
-		}, 600));
+		}, 600);
+		this.refreshDebounceTimers.set(provId, timer);
 	}
 
 	override getSettingDefinitions(): SettingDefinitionItem[] {
