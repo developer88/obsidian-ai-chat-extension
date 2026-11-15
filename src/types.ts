@@ -244,7 +244,7 @@ export interface AiChatPluginSettings {
 	autoAttachActiveNote: boolean;
 	autoIncludeSelection: boolean;
 	autoScrollChat: boolean;
-	showStatusBarItem: boolean;
+	showStatusBarItem?: boolean;
 	hasAcceptedProcessExecutionDisclaimer?: boolean;
 	enableContextAttachment: boolean;
 	autoAttachContext: boolean;
@@ -394,7 +394,6 @@ export const DEFAULT_SETTINGS: AiChatPluginSettings = {
 	autoAttachActiveNote: true,
 	autoIncludeSelection: true,
 	autoScrollChat: true,
-	showStatusBarItem: true,
 	hasAcceptedProcessExecutionDisclaimer: false,
 	enableContextAttachment: false,
 	autoAttachContext: true,

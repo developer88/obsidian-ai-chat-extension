@@ -869,30 +869,7 @@
 }
 
 
-/* Status Bar Item */
-.agy-status-bar-item {
-	cursor: pointer;
-	color: var(--text-muted);
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	transition: color 0.15s ease;
-}
 
-.agy-status-bar-icon {
-	display: inline-flex;
-	align-items: center;
-}
-
-.agy-status-bar-icon svg {
-	width: var(--icon-size-xs, 14px);
-	height: var(--icon-size-xs, 14px);
-	display: block;
-}
-
-.agy-status-bar-item:hover {
-	color: var(--text-normal);
-}
 
 /* Modal Suggestion Items */
 .agy-modal-suggestion-item {

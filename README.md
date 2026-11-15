@@ -56,7 +56,7 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 * 📋 **Message & Code Action Buttons**: 1-click header buttons to copy entire user prompts or assistant responses, insert responses directly into your active note, and copy individual code snippets.
 * 🛠️ **Custom CLI & Agent Support**: Plug in any custom coding agent or local CLI with configurable arguments templates (e.g. `tell {prompt}`).
 * 🌐 **Cross-Platform & WSL Support**: Native execution on Windows, macOS, Linux, and Windows Subsystem for Linux (`wsl`).
-* 🎯 **Unified Model & Reasoning Switcher**: A single fuzzy-search modal accessible from the chat header, the bottom status bar widget, and plugin settings to switch providers, models, and reasoning effort levels on the fly.
+* 🎯 **Unified Model & Reasoning Switcher**: A single fuzzy-search modal accessible from the chat header, command palette, and plugin settings to switch providers, models, and reasoning effort levels on the fly.
 * 📄 **Active Note & Selection Tracking**: Automatically references your currently focused note path (`The context: "<path>":`) and text selection as context.
 * 📚 **Additional Context Attachment**: Link an additional context file or entire vault folder to prompts with interactive sidebar pill controls and smart session deduplication.
 * 🏷️ **Clear Attribution**: Every assistant response clearly displays the provider, model, and reasoning effort used.
@@ -98,7 +98,6 @@ When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/m
 | **Context scope** | `Single file` | Choose whether to attach a single file or a whole folder. |
 | **Context path** | *(empty)* | Vault path to the context file or folder. Defaults to active note or folder if blank. |
 | **Auto-scroll chat** | `true` | Automatically scrolls the chat container as responses stream in. |
-| **Show status bar item** | `true` | Shows the active provider and model status bar widget. |
 
 ---
 

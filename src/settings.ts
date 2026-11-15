@@ -157,7 +157,6 @@ export class AntigravitySettingTab extends PluginSettingTab {
 								void (async () => {
 									this.plugin.settings.activeProvider = value as AiProviderId;
 									await this.plugin.saveSettings();
-									this.plugin.updateStatusBar();
 									this.update();
 								})();
 							});
@@ -317,23 +316,6 @@ export class AntigravitySettingTab extends PluginSettingTab {
 										void (async () => {
 											this.plugin.settings.autoScrollChat = value;
 											await this.plugin.saveSettings();
-										})();
-									}));
-						}
-					},
-					{
-						name: 'Show status bar item',
-						desc: 'Display current provider and model widget in the bottom status bar.',
-						render: (setting: Setting) => {
-							setting.setName('Show status bar item')
-								.setDesc('Display current provider and model widget in the bottom status bar.')
-								.addToggle(toggle => toggle
-									.setValue(this.plugin.settings.showStatusBarItem)
-									.onChange((value) => {
-										void (async () => {
-											this.plugin.settings.showStatusBarItem = value;
-											await this.plugin.saveSettings();
-											this.plugin.updateStatusBar();
 										})();
 									}));
 						}

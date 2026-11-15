@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, Notice, setIcon } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
 import {
 	AiChatPluginSettings,
 	DEFAULT_SETTINGS,
@@ -17,7 +17,6 @@ import { ModelSuggestModal } from './modals/ModelSuggestModal';
 export default class AntigravityPlugin extends Plugin {
 	settings: AiChatPluginSettings = DEFAULT_SETTINGS;
 	cliService!: AgyCliService;
-	private statusBarItemEl: HTMLElement | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -28,30 +27,8 @@ export default class AntigravityPlugin extends Plugin {
 			async (updated) => {
 				this.settings = updated;
 				await this.saveData(this.settings);
-				this.updateStatusBar();
 			}
 		);
-
-		// Status Bar Item
-		this.statusBarItemEl = this.addStatusBarItem();
-		this.statusBarItemEl.addClass('agy-status-bar-item');
-		this.statusBarItemEl.addEventListener('click', () => {
-			if (this.settings.activeProvider === 'custom') {
-				const appWithSetting = this.app as unknown as {
-					setting?: {
-						open(): void;
-						openTabById(id: string): void;
-					};
-				};
-				if (appWithSetting.setting) {
-					appWithSetting.setting.open();
-					appWithSetting.setting.openTabById(this.manifest.id);
-				}
-				return;
-			}
-			new ModelSuggestModal(this.app, this).open();
-		});
-		this.updateStatusBar();
 
 		// Register Chat View
 		this.registerView(
@@ -63,7 +40,6 @@ export default class AntigravityPlugin extends Plugin {
 				async (updated) => {
 					this.settings = updated;
 					await this.saveData(this.settings);
-					this.updateStatusBar();
 				},
 				() => {
 					const appWithSetting = this.app as unknown as {
@@ -129,48 +105,6 @@ export default class AntigravityPlugin extends Plugin {
 		this.addSettingTab(new AntigravitySettingTab(this.app, this));
 	}
 
-	public updateStatusBar(): void {
-		if (!this.statusBarItemEl) return;
-
-		if (!this.settings.showStatusBarItem) {
-			this.statusBarItemEl.setCssStyles({ display: 'none' });
-			return;
-		}
-
-		this.statusBarItemEl.setCssStyles({ display: '' });
-
-		const provId = this.settings.activeProvider || 'antigravity';
-		const provConfig = this.settings.providers?.[provId];
-
-		if (provId === 'custom') {
-			const cmd = provConfig?.cliCommand || 'super-ai';
-			this.statusBarItemEl.empty();
-			const iconSpan = this.statusBarItemEl.createSpan({ cls: 'agy-status-bar-icon' });
-			setIcon(iconSpan, 'bot');
-			this.statusBarItemEl.createSpan({ text: ` Custom (${cmd})` });
-			this.statusBarItemEl.setAttribute('aria-label', `Sidecar AI: Custom CLI (${cmd}) (Click to configure)`);
-			return;
-		}
-
-		const models = provConfig?.cachedModels || [];
-		const currentId = provConfig?.selectedModel || models[0]?.id || '';
-		const modelDef = models.find(m => m.id === currentId || currentId.startsWith(m.id));
-
-		const label = modelDef ? modelDef.label : (currentId || 'No model');
-		let effortSuffix = '';
-
-		if (modelDef && modelDef.efforts && modelDef.efforts.length > 1) {
-			const effort = provConfig?.modelEfforts?.[modelDef.id] || modelDef.defaultEffort || 'Medium';
-			effortSuffix = ` (${effort})`;
-		}
-
-		this.statusBarItemEl.empty();
-		const iconSpan = this.statusBarItemEl.createSpan({ cls: 'agy-status-bar-icon' });
-		setIcon(iconSpan, 'bot');
-		this.statusBarItemEl.createSpan({ text: ` ${label}${effortSuffix}` });
-		this.statusBarItemEl.setAttribute('aria-label', `Sidecar AI: ${label}${effortSuffix} (Click to switch)`);
-	}
-
 	public async switchModelForActiveProvider(modelId: string, effort?: string): Promise<void> {
 		const provId = this.settings.activeProvider || 'antigravity';
 
@@ -192,7 +126,6 @@ export default class AntigravityPlugin extends Plugin {
 		}
 
 		await this.saveData(this.settings);
-		this.updateStatusBar();
 
 		// Notify open chat views to update trigger label in real time
 		const leaves = this.app.workspace.getLeavesOfType(ANTIGRAVITY_CHAT_VIEW_TYPE);
@@ -309,7 +242,6 @@ export default class AntigravityPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
-		this.updateStatusBar();
 		const leaves = this.app.workspace.getLeavesOfType(ANTIGRAVITY_CHAT_VIEW_TYPE);
 		leaves.forEach((leaf) => {
 			if (leaf.view instanceof AntigravityChatView) {
