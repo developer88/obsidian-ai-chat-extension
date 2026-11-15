@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem, SettingGroupItem } from 'obsidian';
 import type AntigravityPlugin from './main';
 import {
 	AiProviderId,
@@ -131,7 +131,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			}
 		);
 
-		const definitions: SettingDefinitionItem[] = [
+		const providerAndCliItems: SettingGroupItem[] = [
 			{
 				name: 'Active AI provider',
 				desc: 'Select which AI CLI provider powers your chat sessions.',
@@ -166,7 +166,7 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		];
 
 		if (activeProvId !== 'custom') {
-			definitions.push({
+			providerAndCliItems.push({
 				name: 'Active model and reasoning effort',
 				desc: `Currently: ${currentModelLabel}${currentEffortStr}`,
 				render: (setting: Setting) => {
@@ -211,15 +211,17 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			});
 		}
 
-		definitions.push({
-			type: 'group',
-			heading: 'CLI configuration',
-			items: cliConfigItems
-		});
+		providerAndCliItems.push(...cliConfigItems);
 
-		definitions.push({
-			type: 'group',
-			heading: 'Vault integration and display',
+		const definitions: SettingDefinitionItem[] = [
+			{
+				type: 'group',
+				heading: 'AI provider and CLI configuration',
+				items: providerAndCliItems
+			},
+			{
+				type: 'group',
+				heading: 'Vault integration and display',
 				items: [
 					{
 						name: 'Auto-attach active note',
@@ -337,7 +339,8 @@ export class AntigravitySettingTab extends PluginSettingTab {
 						}
 					}
 				]
-			});
+			}
+		];
 
 		return definitions;
 	}
