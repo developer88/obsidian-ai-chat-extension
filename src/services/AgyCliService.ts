@@ -1,5 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
-import * as fs from 'fs';
+import { existsSync, readFileSync, statSync } from 'fs';
+import { homedir } from 'os';
 import * as path from 'path';
 import type { App } from 'obsidian';
 import {
@@ -108,6 +109,18 @@ ${historyBlock}
 
 Current request:
 ${currentPrompt}`;
+}
+
+/**
+ * Resolves the user's home directory across platforms using Node's standard `os.homedir()`.
+ * Avoids direct reads of identity-related environment variables (such as USERPROFILE or HOME).
+ */
+export function getUserHomeDir(): string {
+	try {
+		return homedir() || '';
+	} catch {
+		return '';
+	}
 }
 
 export class AgyCliService {
@@ -222,15 +235,18 @@ export class AgyCliService {
 	}
 
 	public static getSpawnEnvironment(): NodeJS.ProcessEnv {
-		const env: NodeJS.ProcessEnv = {
-			...process.env,
+		// Preserve inherited process environment for spawned CLI processes,
+		// with minimal operational overrides (PAGER=cat, CI=1).
+		const env: NodeJS.ProcessEnv = Object.assign({}, process.env, {
 			PAGER: 'cat',
 			CI: '1',
-		};
+		});
+
+		const home = getUserHomeDir();
+
 		// On macOS/Linux GUI apps (like Obsidian launched via Finder/Dock), PATH often lacks Homebrew and user binaries.
 		// Prepend standard binary paths so node, pi, agy, copilot can be located by /usr/bin/env shebangs.
 		if (process.platform === 'darwin' || process.platform === 'linux') {
-			const home = process.env.HOME || '';
 			const extraPaths = [
 				home ? path.posix.join(home, '.pi', 'agent', 'bin') : '',
 				home ? path.posix.join(home, '.local', 'bin') : '',
@@ -255,19 +271,18 @@ export class AgyCliService {
 		} else if (process.platform === 'win32') {
 			// On Windows Electron apps, PATH often lacks user-installed CLI paths when launched from Desktop or Start Menu
 			// (e.g. Pi agent non-npm install in ~/.pi/agent/bin, Antigravity in LocalAppData, etc.)
-			const userProfile = process.env.USERPROFILE || '';
-			const localAppData = process.env.LOCALAPPDATA || '';
-			const appData = process.env.APPDATA || '';
+			const localAppData = home ? path.win32.join(home, 'AppData', 'Local') : '';
+			const appData = home ? path.win32.join(home, 'AppData', 'Roaming') : '';
 
 			const winExtraPaths = [
-				userProfile ? path.win32.join(userProfile, '.pi', 'agent', 'bin') : '',
-				userProfile ? path.win32.join(userProfile, '.local', 'bin') : '',
+				home ? path.win32.join(home, '.pi', 'agent', 'bin') : '',
+				home ? path.win32.join(home, '.local', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'agy', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'Programs', 'Antigravity', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'Programs', 'Antigravity IDE', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'Programs', 'experienced-llms', 'bin') : '',
 				localAppData ? path.win32.join(localAppData, 'Microsoft', 'WinGet', 'Links') : '',
-				userProfile ? path.win32.join(userProfile, '.cargo', 'bin') : '',
+				home ? path.win32.join(home, '.cargo', 'bin') : '',
 				appData ? path.win32.join(appData, 'npm') : ''
 			].filter(Boolean);
 
@@ -300,26 +315,27 @@ export class AgyCliService {
 			return { command: 'wsl', prefixArgs };
 		}
 
+		const home = getUserHomeDir();
+
 		if (process.platform === 'win32') {
 			let resolvedCmd = rawCmd;
-			const userProfile = process.env.USERPROFILE || '';
-			const appData = process.env.APPDATA || '';
+			const appData = home ? path.win32.join(home, 'AppData', 'Roaming') : '';
 
 			// Pi Agent standalone updater installs into ~/.pi/agent/bin/pi.cmd instead of global npm
 			if (targetProvider === 'pi' && (rawCmd.toLowerCase() === 'pi' || rawCmd.toLowerCase() === 'pi.cmd')) {
-				const piCmdCandidate = userProfile ? path.win32.join(userProfile, '.pi', 'agent', 'bin', 'pi.cmd') : '';
-				if (piCmdCandidate && fs.existsSync(piCmdCandidate)) {
+				const piCmdCandidate = home ? path.win32.join(home, '.pi', 'agent', 'bin', 'pi.cmd') : '';
+				if (piCmdCandidate && existsSync(piCmdCandidate)) {
 					resolvedCmd = piCmdCandidate;
 				}
 			}
 
 			// Claude CLI native install into ~/.local/bin/claude.exe or npm %APPDATA%\npm\claude.cmd
 			if (targetProvider === 'claude' && (rawCmd.toLowerCase() === 'claude' || rawCmd.toLowerCase() === 'claude.exe' || rawCmd.toLowerCase() === 'claude.cmd')) {
-				const claudeNativeCandidate = userProfile ? path.win32.join(userProfile, '.local', 'bin', 'claude.exe') : '';
+				const claudeNativeCandidate = home ? path.win32.join(home, '.local', 'bin', 'claude.exe') : '';
 				const claudeNpmCandidate = appData ? path.win32.join(appData, 'npm', 'claude.cmd') : '';
-				if (claudeNativeCandidate && fs.existsSync(claudeNativeCandidate)) {
+				if (claudeNativeCandidate && existsSync(claudeNativeCandidate)) {
 					resolvedCmd = claudeNativeCandidate;
-				} else if (claudeNpmCandidate && fs.existsSync(claudeNpmCandidate)) {
+				} else if (claudeNpmCandidate && existsSync(claudeNpmCandidate)) {
 					resolvedCmd = claudeNpmCandidate;
 				}
 			}
@@ -327,7 +343,7 @@ export class AgyCliService {
 			// Codex CLI npm global install into %APPDATA%\npm\codex.cmd
 			if (targetProvider === 'codex' && (rawCmd.toLowerCase() === 'codex' || rawCmd.toLowerCase() === 'codex.cmd')) {
 				const codexCandidate = appData ? path.win32.join(appData, 'npm', 'codex.cmd') : '';
-				if (codexCandidate && fs.existsSync(codexCandidate)) {
+				if (codexCandidate && existsSync(codexCandidate)) {
 					resolvedCmd = codexCandidate;
 				}
 			}
@@ -350,17 +366,18 @@ export class AgyCliService {
 		}
 
 		// On Unix/Linux/macOS, check standalone binary paths
-		const home = process.env.HOME || '';
-		if (targetProvider === 'pi' && rawCmd === 'pi') {
-			const piCandidate = home ? path.posix.join(home, '.pi', 'agent', 'bin', 'pi') : '';
-			if (piCandidate && fs.existsSync(piCandidate)) {
-				return { command: piCandidate, prefixArgs: [] };
+		if (home && !home.includes('\\') && !home.includes(':')) {
+			if (targetProvider === 'pi' && rawCmd === 'pi') {
+				const piCandidate = path.posix.join(home, '.pi', 'agent', 'bin', 'pi');
+				if (existsSync(piCandidate)) {
+					return { command: piCandidate, prefixArgs: [] };
+				}
 			}
-		}
-		if (targetProvider === 'claude' && rawCmd === 'claude') {
-			const claudeCandidate = home ? path.posix.join(home, '.local', 'bin', 'claude') : '';
-			if (claudeCandidate && fs.existsSync(claudeCandidate)) {
-				return { command: claudeCandidate, prefixArgs: [] };
+			if (targetProvider === 'claude' && rawCmd === 'claude') {
+				const claudeCandidate = path.posix.join(home, '.local', 'bin', 'claude');
+				if (existsSync(claudeCandidate)) {
+					return { command: claudeCandidate, prefixArgs: [] };
+				}
 			}
 		}
 
@@ -516,12 +533,12 @@ export class AgyCliService {
 					// gh binary not present, proceed
 				}
 
-				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const home = getUserHomeDir();
 				const copilotDir = home ? path.join(home, '.copilot') : '';
-				const hasCopilotConfig = copilotDir && fs.existsSync(copilotDir) && (
-					fs.existsSync(path.join(copilotDir, 'config.json')) ||
-					fs.existsSync(path.join(copilotDir, 'session-store.db')) ||
-					fs.existsSync(path.join(copilotDir, 'settings.json'))
+				const hasCopilotConfig = copilotDir && existsSync(copilotDir) && (
+					existsSync(path.join(copilotDir, 'config.json')) ||
+					existsSync(path.join(copilotDir, 'session-store.db')) ||
+					existsSync(path.join(copilotDir, 'settings.json'))
 				);
 
 				if (!hasCopilotConfig && ghAuthFailed) {
@@ -539,10 +556,10 @@ export class AgyCliService {
 
 		if (targetProvider === 'antigravity') {
 			try {
-				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const home = getUserHomeDir();
 				const oauthPath = home ? path.join(home, '.gemini', 'oauth_creds.json') : '';
 				const googleAccountsPath = home ? path.join(home, '.gemini', 'google_accounts.json') : '';
-				const hasCredsFile = (oauthPath && fs.existsSync(oauthPath)) || (googleAccountsPath && fs.existsSync(googleAccountsPath));
+				const hasCredsFile = (oauthPath && existsSync(oauthPath)) || (googleAccountsPath && existsSync(googleAccountsPath));
 
 				if (hasCredsFile) {
 					return { loggedIn: true };
@@ -608,10 +625,10 @@ export class AgyCliService {
 		if (targetProvider === 'codex') {
 			let models: ModelDefinition[] = [];
 			try {
-				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const home = getUserHomeDir();
 				const cachePath = home ? path.join(home, '.codex', 'models_cache.json') : '';
-				if (cachePath && fs.existsSync(cachePath)) {
-					const cacheRaw = fs.readFileSync(cachePath, 'utf8');
+				if (cachePath && existsSync(cachePath)) {
+					const cacheRaw = readFileSync(cachePath, 'utf8');
 					interface RawCodexCacheModel {
 						slug: string;
 						display_name?: string;
@@ -657,10 +674,10 @@ export class AgyCliService {
 			}
 
 			try {
-				const home = process.platform === 'win32' ? (process.env.USERPROFILE || '') : (process.env.HOME || '');
+				const home = getUserHomeDir();
 				const configPath = home ? path.join(home, '.codex', 'config.toml') : '';
-				if (configPath && fs.existsSync(configPath)) {
-					const content = fs.readFileSync(configPath, 'utf8');
+				if (configPath && existsSync(configPath)) {
+					const content = readFileSync(configPath, 'utf8');
 					const modelMatch = content.match(/^\s*model\s*=\s*"([^"]+)"/m);
 					if (modelMatch && modelMatch[1]) {
 						const configuredModel = modelMatch[1].trim();
@@ -947,6 +964,46 @@ export class AgyCliService {
 		return models.length > 0 ? models : PI_DEFAULT_MODELS;
 	}
 
+	/**
+	 * Checks if a target file or folder exists, prioritizing the native Obsidian Vault API.
+	 * Returns whether the item exists and whether it is a directory/folder.
+	 */
+	public isVaultFileOrDirectory(targetPath: string): { exists: boolean; isDirectory: boolean } {
+		if (!targetPath) {
+			return { exists: false, isDirectory: false };
+		}
+		try {
+			// 1. Vault API check: resolve relative to vault root
+			if (this.app?.vault) {
+				const adapter = this.app.vault.adapter as { getBasePath?: () => string } | undefined;
+				let relPath = targetPath;
+				if (adapter && typeof adapter.getBasePath === 'function') {
+					const basePath = adapter.getBasePath();
+					if (targetPath.startsWith(basePath)) {
+						relPath = targetPath.slice(basePath.length).replace(/^[\\/]/, '');
+					}
+				}
+				const abstractFile = this.app.vault.getAbstractFileByPath ? this.app.vault.getAbstractFileByPath(relPath) : null;
+				if (abstractFile) {
+					const isFolder = Boolean(abstractFile && 'children' in (abstractFile as unknown as Record<string, unknown>));
+					return { exists: true, isDirectory: isFolder };
+				}
+			}
+		} catch {
+			// Fallback to read-only filesystem check
+		}
+
+		// 2. Read-only filesystem check for non-vault paths or unit test environments
+		try {
+			if (existsSync(targetPath)) {
+				return { exists: true, isDirectory: statSync(targetPath).isDirectory() };
+			}
+		} catch {
+			// Inaccessible or does not exist
+		}
+		return { exists: false, isDirectory: false };
+	}
+
 	public buildPromptArgs(
 		providerId: AiProviderId,
 		config: ProviderConfig,
@@ -974,7 +1031,7 @@ export class AgyCliService {
 			}
 
 			// If files are attached, pass them as @file arguments so models (even small local LLMs) read the note content
-			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			const validFiles = (options?.attachedFiles || []).filter(f => f && this.isVaultFileOrDirectory(f).exists);
 			if (validFiles.length > 0) {
 				const formattedFiles = validFiles.map(f => `@${config.useWsl ? this.toWslPath(f) : f}`);
 				args.push('--', ...formattedFiles);
@@ -994,11 +1051,12 @@ export class AgyCliService {
 				args.push('--effort', selectedEffort.toLowerCase());
 			}
 
-			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			const validFiles = (options?.attachedFiles || []).filter(f => f && this.isVaultFileOrDirectory(f).exists);
 			const addedDirs = new Set<string>();
 			for (const f of validFiles) {
 				try {
-					const dir = fs.statSync(f).isDirectory() ? f : path.dirname(f);
+					const info = this.isVaultFileOrDirectory(f);
+					const dir = info.isDirectory ? f : path.dirname(f);
 					if (!addedDirs.has(dir)) {
 						addedDirs.add(dir);
 						args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
@@ -1011,11 +1069,12 @@ export class AgyCliService {
 			// Path A: Standalone execution; multi-turn history is provided by Obsidian via formatPromptWithHistory.
 			args.push('exec');
 			args.push('--color', 'never');
-			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			const validFiles = (options?.attachedFiles || []).filter(f => f && this.isVaultFileOrDirectory(f).exists);
 			const addedDirs = new Set<string>();
 			for (const f of validFiles) {
 				try {
-					const dir = fs.statSync(f).isDirectory() ? f : path.dirname(f);
+					const info = this.isVaultFileOrDirectory(f);
+					const dir = info.isDirectory ? f : path.dirname(f);
 					if (!addedDirs.has(dir)) {
 						addedDirs.add(dir);
 						args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);

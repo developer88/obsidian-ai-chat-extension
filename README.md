@@ -104,11 +104,19 @@ When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/m
 
 ## 🔒 Security & System Permissions
 
-Sidecar AI uses a privacy-first, zero-telemetry architecture:
+Sidecar AI is designed with a privacy-first, zero-telemetry architecture complying with Obsidian's Community Plugin Security Guidelines:
 
-- **Shell Execution (`child_process.spawn`)**:
-  - The plugin spawns local CLI processes solely to communicate with your user-installed and authenticated AI CLI tools (`agy`, `copilot`, `pi`, `claude`, `codex`, or custom agent).
-  - It executes exclusively the command configured in Settings (prefixed with `wsl` if enabled), passing user prompts via standard CLI arguments and reading streaming output via stdout. No background scripts, remote downloads, or arbitrary commands are executed.
+- **Local Process Execution (`child_process.spawn`)**:
+  - **Desktop-Only**: The plugin is declared desktop-only (`"isDesktopOnly": true` in `manifest.json`) because mobile platforms cannot spawn local CLI processes.
+  - **No Shell Interpreter (`shell: false`)**: All process executions enforce `shell: false` to eliminate command injection vectors. Arguments are passed as structured arrays directly to the target executable.
+  - **Input Sanitization**: User commands and paths are verified and sanitized against shell metacharacters (`;&|`$<>` etc.).
+  - **User-Managed Binaries**: Spawns local CLI processes solely to communicate with your user-installed and authenticated AI CLI tools (`agy`, `copilot`, `pi`, `claude`, `codex`). No remote binaries or external scripts are downloaded or executed.
+- **Filesystem Access**:
+  - **Vault Files (`app.vault`)**: All note attachments and active context paths are verified and handled via Obsidian's native `app.vault` and `DataAdapter` APIs.
+  - **External Configuration Checks**: Direct filesystem access is strictly **read-only** (`existsSync`, `readFileSync`) and scoped exclusively to detecting local CLI tool installations (e.g. `~/.pi/agent/bin/pi.cmd`) and reading user configuration files (e.g. `~/.codex/config.toml`). The plugin **never writes** to the filesystem outside of the vault.
+- **Zero Fingerprinting & Identity Protection**:
+  - The plugin **does not read** system identity or fingerprinting information (`os.hostname`, `os.userInfo`, or identity environment variables).
+  - Directory resolution uses standard cross-platform Node APIs (`os.homedir()`) rather than identity environment variables.
 - **Clipboard Access (`navigator.clipboard.writeText`)**:
   - Clipboard access is strictly **write-only**.
   - It is triggered solely when you explicitly click a user-initiated copy action (such as the "Copy" button on code blocks, "Copy response" / "Copy message" buttons on message headers, or the right-click context menu "Copy" options).
