@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem, SettingGroupItem } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem, SettingGroupItem, Platform } from 'obsidian';
 import type AntigravityPlugin from './main';
 import {
 	AiProviderId,
@@ -91,8 +91,10 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			});
 		}
 
-		cliConfigItems.push(
-			{
+		const isWindows = (typeof Platform !== 'undefined' && Boolean(Platform?.isWin)) || (typeof process !== 'undefined' && process.platform === 'win32');
+
+		if (isWindows) {
+			cliConfigItems.push({
 				name: 'Run in WSL',
 				desc: `Execute ${provName} via Windows Subsystem for Linux (e.g. "wsl ${defaultCmd}"). Enable if installed in Ubuntu/WSL.`,
 				render: (setting: Setting) => {
@@ -109,27 +111,28 @@ export class AntigravitySettingTab extends PluginSettingTab {
 								})();
 							}));
 				}
-			},
-			{
-				name: 'Extra CLI flags',
-				desc: `Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`,
-				render: (setting: Setting) => {
-					setting.setName('Extra CLI flags')
-						.setDesc(`Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`)
-						.addText(text => text
-							.setPlaceholder(defaultExtraFlags)
-							.setValue(provConfig?.extraCliFlags || '')
-							.onChange((value) => {
-								void (async () => {
-									if (provConfig) {
-										provConfig.extraCliFlags = value.trim();
-										await this.plugin.saveSettings();
-									}
-								})();
-							}));
-				}
+			});
+		}
+
+		cliConfigItems.push({
+			name: 'Extra CLI flags',
+			desc: `Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`,
+			render: (setting: Setting) => {
+				setting.setName('Extra CLI flags')
+					.setDesc(`Additional flags passed to ${provName} on each invocation (e.g. "${defaultExtraFlags}").`)
+					.addText(text => text
+						.setPlaceholder(defaultExtraFlags)
+						.setValue(provConfig?.extraCliFlags || '')
+						.onChange((value) => {
+							void (async () => {
+								if (provConfig) {
+									provConfig.extraCliFlags = value.trim();
+									await this.plugin.saveSettings();
+								}
+							})();
+						}));
 			}
-		);
+		});
 
 		const providerAndCliItems: SettingGroupItem[] = [
 			{

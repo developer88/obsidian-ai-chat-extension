@@ -90,7 +90,7 @@ When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/m
 | **Active model and reasoning effort** | *(Dynamic)* | View current model and effort, search available models, or query the CLI dynamically (hidden for Custom CLI). |
 | **CLI command or path** | `agy` / `copilot` / `pi` / `claude` / `codex` / `super-ai` | Executable command name or absolute path for the selected provider. |
 | **Command arguments format** | `tell {prompt}` | *(Custom CLI only)* Template for passing the prompt. Use `{prompt}` as the placeholder. |
-| **Run in WSL** | `false` | Enable if the provider CLI is installed inside Ubuntu/WSL on Windows. |
+| **Run in WSL** | `false` | *(Windows only)* Enable if the provider CLI is installed inside Ubuntu/WSL. |
 | **Extra CLI flags** | *(empty)* | Custom arguments passed on each invocation (e.g. `--thinking high`, `--allow-all-tools`). |
 | **Auto-attach active note** | `true` | Automatically includes the active note file reference and selection in prompts. |
 | **Enable context link attachment** | `false` | Enable attaching an additional context file or folder reference when sending prompts. |
