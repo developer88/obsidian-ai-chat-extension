@@ -5,6 +5,34 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.12.0] - 2026-11-15
+
+### Added
+- **OpenAI Codex CLI Integration (`codex`)**:
+  - Full native support for OpenAI Codex CLI running locally on Windows, macOS, and Linux/WSL.
+  - Dynamic model discovery parsed directly from `~/.codex/models_cache.json`, displaying only genuine visible models (`GPT-6-Luna`, `GPT-5.6-Luna`, `GPT-5.6-Terra`) and their supported reasoning levels (`Low`, `Medium`, `High`, `Xhigh`, `Max`).
+  - Automatically respects user configuration in `~/.codex/config.toml` (e.g. `model`, `model_reasoning_effort`).
+  - Stdin prompt piping (`codex exec -`) preventing Windows `cmd.exe` newline truncation and the 8,191-character command line limit.
+- **Claude Code CLI Integration (`claude`)**:
+  - Full native support for Anthropic Claude Code CLI.
+  - Dual executable resolution detecting both standalone native binaries (`~/.local/bin/claude.exe`) and npm global wrappers (`claude.cmd`).
+  - Reasoning effort control (`--effort low|medium|high`) for extended thinking models.
+  - Stdin prompt streaming (`claude -p`) for robust multi-paragraph prompt delivery.
+- **Proactive Authentication Verification**:
+  - Pre-flight login checks across all providers (`antigravity`, `copilot`, `pi`, `claude`, `codex`).
+  - Surfaces friendly, actionable terminal commands (e.g. `codex login`, `copilot login`, `agy`) directly in chat if a tool is not authenticated.
+
+### Security & Dependencies
+- **Resolved Dependabot `minimatch` Vulnerability**:
+  - Pinned `minimatch` to `^11.0.1` (`11.0.8`) via npm `overrides` to resolve pattern amplification ReDoS vulnerability.
+  - Reduced `npm audit` vulnerabilities to 0.
+
+### Improved
+- **Settings & UI Refinements**:
+  - Removed redundant "Reset active session" setting in favor of the dedicated sidebar header icon.
+  - Sentence-case UI labels complying with Obsidian Community Plugin guidelines.
+  - Comprehensive end-to-end test suite covering all providers, model discovery, authentication checks, and prompt formatting (115 passing tests).
+
 ## [3.11.1] - 2026-10-29
 
 ### Security & Dependencies
