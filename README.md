@@ -1,6 +1,6 @@
 # Sidecar AI
 
-A native, privacy-first AI chat companion for **Obsidian** powered directly by your authenticated local CLI tools: **Google Antigravity** (`agy`), **GitHub Copilot** (`copilot`), **Pi Coding Agent** (`pi`), or any **Custom CLI** with **zero API keys, proxies, or per-token charges**.
+A native, privacy-first AI chat companion for **Obsidian** powered directly by your authenticated local CLI tools: **Google Antigravity** (`agy`), **GitHub Copilot** (`copilot`), **Pi Coding Agent** (`pi`), **Claude Code** (`claude`), **OpenAI Codex** (`codex`), or any **Custom CLI** with **zero API keys, proxies, or per-token charges**.
 
 ![Sidecar AI in Obsidian](images/screenshot.png)
 
@@ -10,7 +10,7 @@ A native, privacy-first AI chat companion for **Obsidian** powered directly by y
 
 Most AI plugins for Obsidian require you to manage paid third-party API tokens, configure proxies, or paste secret keys into plugin settings.
 
-**Sidecar AI** bridges your vault directly to the command-line agents already running on your machine. It utilizes your existing subscriptions (**Google AI subscriptions**, **GitHub Copilot**, **Pi Coding Agent**, or your own custom agent scripts) in a native sidebar designed to match Obsidian's interface.
+**Sidecar AI** bridges your vault directly to the command-line agents already running on your machine. It utilizes your existing subscriptions (**Google AI subscriptions**, **GitHub Copilot**, **Pi Coding Agent**, **Claude Code**, **OpenAI Codex**, or your own custom agent scripts) in a native sidebar designed to match Obsidian's interface.
 
 ---
 
@@ -21,6 +21,8 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
    - **Google Antigravity**: run `agy` in your terminal.
    - **GitHub Copilot**: run `copilot login` in your terminal.
    - **Pi Coding Agent**: install via `npm install -g @earendil-works/pi-coding-agent` and run `pi`.
+   - **Claude Code**: run `claude` (or install via Anthropic / npm) and authenticate.
+   - **OpenAI Codex**: install via `npm install -g @openai/codex` and run `codex login`.
    - **Custom CLI**: have your custom binary (e.g. `super-ai`) available in your terminal or PATH.
 3. **Open Sidecar AI**:
    - Click the **Sidecar AI bot icon** in the left ribbon, or
@@ -34,9 +36,11 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 
 | Provider | CLI Tool | Authentication / Subscription | Supported Models |
 | :--- | :--- | :--- | :--- |
-| **Google Antigravity** | `agy` | Google AI Subscription | Gemini 3.8 Flash, 3.7 Flash, 3.1 Pro, Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B |
-| **GitHub Copilot** | `copilot` | GitHub Copilot Subscription | GPT-5.2, GPT-5, Claude 3.7 Sonnet, Claude 3.5 Sonnet, OpenAI o1, OpenAI o3-mini |
-| **Pi Coding Agent** | `pi` | Local / Configured Providers | Configurable models with Thinking controls (`Off`, `Low`, `Medium`, `High`, `Max`) |
+| **Google Antigravity** | `agy` | Google AI Subscription | Gemini 4 Argon, Gemini 4 Hydrogen, Gemini 3.8 Flash, Claude Sonnet 5.5, Claude Opus 5.5, GPT-OSS 120B |
+| **GitHub Copilot** | `copilot` | GitHub Copilot Subscription | Dynamic model list (Claude 3.7 Sonnet, Claude 3.5 Sonnet, GPT-5, OpenAI o3-mini, auto tier) |
+| **Pi Coding Agent** | `pi` | Local Ollama / Google Providers | Dynamic discovery of Google and local Ollama models with Thinking controls (`Off`, `Low`, `Medium`, `High`, `Max`) |
+| **Claude Code** | `claude` | Anthropic Subscription / OAuth | Dynamic model aliases (`sonnet`, `opus`, `haiku`) with reasoning effort controls |
+| **OpenAI Codex** | `codex` | OpenAI Subscription / OAuth | Dynamic model discovery via `~/.codex/models_cache.json` (`GPT-6-Luna`, `GPT-5.6-Luna`, `GPT-5.6-Terra`) with reasoning effort levels |
 | **Custom CLI** | Configurable (e.g. `super-ai`) | Local binary / Custom script | Any CLI agent using arguments template (e.g. `super-ai tell "<prompt>"`) |
 
 ---
@@ -44,7 +48,8 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 ## 🚀 Key Features
 
 * 🔐 **Zero API Keys Needed**: Interacts directly with authenticated local CLI processes. No keys or billing details are ever stored in Obsidian.
-* 💬 **Multi-Turn Conversation Memory**: Subsequent messages within a chat session retain full dialogue history and note context across all providers.
+* 🛡️ **Proactive Login Verification**: Checks authentication status across all installed CLIs before sending prompts, providing clear terminal commands if login is needed.
+* 💬 **Multi-Turn Conversation Memory**: Subsequent messages within a chat session retain dialogue history and note context across all providers.
 * 🔗 **Clickable File Links & Deep Navigation**: `file://` links produced by the AI assistant are fully interactive. Clicking vault notes opens them directly in Obsidian and scrolls to referenced lines (e.g. `#L42`) or headings; clicking external files opens them in your system's default editor (e.g. VS Code).
 * 🖱️ **File Link Context Menu**: Right-click any file link in chat to **Open file**, **Open in new tab**, **Reveal in system folder** (Windows Explorer / macOS Finder), **Copy file path**, or **Copy link address**.
 * 📝 **Full Text Selection & Context Actions**: Select any text across messages and code blocks. Right-click selected text or full messages to **Copy** or **Insert into note** at the current cursor position.
@@ -56,7 +61,7 @@ Most AI plugins for Obsidian require you to manage paid third-party API tokens, 
 * 📚 **Additional Context Attachment**: Link an additional context file or entire vault folder to prompts with interactive sidebar pill controls and smart session deduplication.
 * 🏷️ **Clear Attribution**: Every assistant response clearly displays the provider, model, and reasoning effort used.
 * 🔘 **Quick Action Bar**: One-click prompt chips to **Summarize**, **Polish writing**, **Extract tasks**, and **Explain concepts** from your active note.
-* 🔄 **Session Management**: Dedicated *New session* button to clear conversation memory and restart context on demand.
+* 🔄 **Session Management**: Dedicated *New session* button in the sidebar header to clear conversation memory and restart context on demand.
 * 🎨 **Obsidian Native Design**: Strictly styled with Obsidian theme CSS variables for seamless Dark and Light mode support.
 
 ---
@@ -81,9 +86,9 @@ When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/m
 
 | Setting | Default | Description |
 | :--- | :--- | :--- |
-| **Active AI provider** | `Google Antigravity` | Choose between `Google Antigravity`, `GitHub Copilot`, `Pi Coding Agent`, and `Custom CLI`. |
+| **Active AI provider** | `Google Antigravity` | Choose between `Google Antigravity`, `GitHub Copilot`, `Pi Coding Agent`, `Claude Code`, `OpenAI Codex`, and `Custom CLI`. |
 | **Active model and reasoning effort** | *(Dynamic)* | View current model and effort, search available models, or query the CLI dynamically (hidden for Custom CLI). |
-| **CLI command or path** | `agy` / `copilot` / `pi` / `super-ai` | Executable command name or absolute path for the selected provider. |
+| **CLI command or path** | `agy` / `copilot` / `pi` / `claude` / `codex` / `super-ai` | Executable command name or absolute path for the selected provider. |
 | **Command arguments format** | `tell {prompt}` | *(Custom CLI only)* Template for passing the prompt. Use `{prompt}` as the placeholder. |
 | **Run in WSL** | `false` | Enable if the provider CLI is installed inside Ubuntu/WSL on Windows. |
 | **Extra CLI flags** | *(empty)* | Custom arguments passed on each invocation (e.g. `--thinking high`, `--allow-all-tools`). |
@@ -102,7 +107,7 @@ When AI coding assistants generate file links (e.g. `[main.ts](file:///path/to/m
 Sidecar AI uses a privacy-first, zero-telemetry architecture:
 
 - **Shell Execution (`child_process.spawn`)**:
-  - The plugin spawns local CLI processes solely to communicate with your user-installed and authenticated AI CLI tools (`agy`, `copilot`, `pi`, or custom agent).
+  - The plugin spawns local CLI processes solely to communicate with your user-installed and authenticated AI CLI tools (`agy`, `copilot`, `pi`, `claude`, `codex`, or custom agent).
   - It executes exclusively the command configured in Settings (prefixed with `wsl` if enabled), passing user prompts via standard CLI arguments and reading streaming output via stdout. No background scripts, remote downloads, or arbitrary commands are executed.
 - **Clipboard Access (`navigator.clipboard.writeText`)**:
   - Clipboard access is strictly **write-only**.
