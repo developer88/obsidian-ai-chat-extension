@@ -152,7 +152,6 @@ export class AntigravitySettingTab extends PluginSettingTab {
 							dropdown.addOption('pi', 'Pi Coding Agent (pi)');
 							dropdown.addOption('claude', 'Claude Code (claude)');
 							dropdown.addOption('codex', 'OpenAI Codex (codex)');
-							dropdown.addOption('custom', 'Custom CLI (custom agent)');
 							dropdown.setValue(activeProvId);
 							dropdown.onChange((value: string) => {
 								void (async () => {

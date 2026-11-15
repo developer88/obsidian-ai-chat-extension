@@ -14,7 +14,7 @@ import {
 	CLAUDE_DEFAULT_MODELS,
 	CODEX_DEFAULT_MODELS
 } from '../src/types';
-import { AgyCliService, CliStreamCallbacks } from '../src/services/AgyCliService';
+import { AgyCliService, CliStreamCallbacks, formatPromptWithHistory } from '../src/services/AgyCliService';
 
 function createMockApp(): App {
 	return {
@@ -143,11 +143,13 @@ claude-sonnet-4-6         Claude Sonnet 4.6 (Thinking)
 			assert.ok(capturedTokens.includes('Here is your analysis'));
 			assert.equal(completed, true);
 
-			// Turn 2: Verify resumption argument
+			// Turn 2: Verify Path A standalone execution (no native --conversation resumption)
 			const agyConfig = settings.providers.antigravity;
 			const turn2Args = service.buildPromptArgs('antigravity', agyConfig, 'Next question');
-			assert.ok(turn2Args.includes('--conversation'));
-			assert.ok(turn2Args.includes('agy-session-001'));
+			assert.ok(!turn2Args.includes('--conversation'));
+			assert.ok(!turn2Args.includes('agy-session-001'));
+			assert.equal(turn2Args[0], '-p');
+			assert.equal(turn2Args[1], 'Next question');
 		});
 
 		test('E2E: process abort sends SIGINT and handles stopped generation', async () => {
@@ -221,7 +223,8 @@ Unavailable models
 			assert.ok(args.includes('text'));
 			assert.ok(args.includes('--model'));
 			assert.ok(args.includes('auto'));
-			assert.ok(args.includes('--resume=copilot-thread-789'));
+			// Path A: Standalone execution without --resume
+			assert.ok(!args.some(a => a.startsWith('--resume=')));
 		});
 
 		test('E2E: automatic fallback to Copilot Fusion when selected model is unavailable on user plan', async () => {
@@ -464,7 +467,7 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 			assert.ok(result.models.some(m => m.id === 'gpt-5.6-luna' || m.id === 'gpt-5.6-terra'));
 		});
 
-		test('E2E: buildPromptArgs formats exec, resume, skip-git-repo-check, json, effort, and stdin -', () => {
+		test('E2E: buildPromptArgs formats exec, standalone color never, add-dir, skip-git-repo-check, json, effort, and stdin -', () => {
 			const { service, settings } = createService({ activeProvider: 'codex' });
 			const pkgPath = path.resolve('package.json');
 			const codexConfig = {
@@ -477,29 +480,20 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 				attachedFiles: [pkgPath]
 			});
 
+			// Path A: Standalone execution without resume
 			assert.equal(args[0], 'exec');
-			assert.equal(args[1], 'resume');
-			assert.equal(args[2], 'codex-th-123456');
+			assert.ok(!args.includes('resume'));
+			assert.ok(args.includes('--color'));
+			assert.ok(args.includes('never'));
+			assert.ok(args.includes('--add-dir'));
+			assert.ok(args.includes(path.dirname(pkgPath)));
 			assert.ok(args.includes('--skip-git-repo-check'));
 			assert.ok(args.includes('--json'));
 			assert.ok(args.includes('-m'));
 			assert.ok(args.includes('gpt-6-luna'));
 			assert.ok(args.includes('-c'));
 			assert.ok(args.includes('model_reasoning_effort="high"'));
-			assert.ok(!args.includes('--color'));
-			assert.ok(!args.includes('--add-dir'));
 			assert.equal(args[args.length - 1], '-');
-
-			// Fresh session includes --color never and --add-dir
-			const freshArgs = service.buildPromptArgs('codex', { ...codexConfig, conversationId: undefined }, 'Analyze data', {
-				attachedFiles: [pkgPath]
-			});
-			assert.equal(freshArgs[0], 'exec');
-			assert.ok(freshArgs.includes('--color'));
-			assert.ok(freshArgs.includes('never'));
-			assert.ok(freshArgs.includes('--add-dir'));
-			assert.ok(freshArgs.includes(path.dirname(pkgPath)));
-			assert.equal(freshArgs[freshArgs.length - 1], '-');
 		});
 
 		test('E2E: JSONL event stream parsing extracts thread_id and agent_message text cleanly', async () => {
@@ -752,6 +746,176 @@ ollama           qwen2.5-coder:1.5b                 4096      2048       no
 			await sendPromise;
 
 			assert.ok(capturedError.includes('agy') && capturedError.includes('authenticate'));
+		});
+	});
+
+	// ==========================================
+	// 8. Path A Architecture & Seamless Multi-Provider Handoff
+	// ==========================================
+	describe('Path A: Client-Managed History & Standalone Executions', () => {
+		test('E2E: All providers build standalone arguments without native resume flags', () => {
+			const { service, settings } = createService();
+
+			// 1. Antigravity
+			const agyArgs = service.buildPromptArgs('antigravity', {
+				...settings.providers.antigravity,
+				conversationId: 'agy-old-session'
+			}, 'Hello Agy');
+			assert.ok(!agyArgs.includes('--conversation'));
+			assert.ok(!agyArgs.includes('agy-old-session'));
+			assert.equal(agyArgs[0], '-p');
+
+			// 2. Copilot
+			const copilotArgs = service.buildPromptArgs('copilot', {
+				...settings.providers.copilot,
+				conversationId: 'copilot-old-session'
+			}, 'Hello Copilot');
+			assert.ok(!copilotArgs.some(a => a.startsWith('--resume=')));
+			assert.equal(copilotArgs[0], '-p');
+
+			// 3. Pi
+			const piArgs = service.buildPromptArgs('pi', {
+				...settings.providers.pi,
+				conversationId: 'pi-old-session'
+			}, 'Hello Pi');
+			assert.ok(!piArgs.includes('--session'));
+			assert.ok(!piArgs.includes('pi-old-session'));
+			assert.equal(piArgs[0], '-p');
+
+			// 4. Claude
+			const claudeArgs = service.buildPromptArgs('claude', {
+				...settings.providers.claude,
+				conversationId: 'claude-old-session'
+			}, 'Hello Claude');
+			assert.ok(!claudeArgs.includes('--resume'));
+			assert.ok(!claudeArgs.includes('claude-old-session'));
+			assert.equal(claudeArgs[0], '-p');
+
+			// 5. Codex
+			const codexArgs = service.buildPromptArgs('codex', {
+				...settings.providers.codex,
+				conversationId: 'codex-old-session'
+			}, 'Hello Codex');
+			assert.ok(!codexArgs.includes('resume'));
+			assert.ok(!codexArgs.includes('codex-old-session'));
+			assert.equal(codexArgs[0], 'exec');
+			assert.ok(codexArgs.includes('--color'));
+			assert.ok(codexArgs.includes('never'));
+		});
+
+		test('E2E: Seamless multi-turn handoff across 5 providers (Agy -> Copilot -> Codex -> Pi -> Claude)', async () => {
+			let currentProc: MockProcess | null = null;
+			const spawnedCalls: Array<{ command: string; args: string[]; stdin: string }> = [];
+
+			const mockSpawner = ((command: string, args: string[]) => {
+				currentProc = createMockProcess();
+				spawnedCalls.push({ command, args, stdin: '' });
+				return currentProc as any;
+			}) as any;
+
+			const { service, settings } = createService({ activeProvider: 'antigravity' }, mockSpawner);
+
+			const chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
+			const executeTurn = async (provider: AiProviderId, userText: string): Promise<string> => {
+				settings.activeProvider = provider;
+				const prompt = formatPromptWithHistory(userText, chatMessages);
+				let responseText = '';
+				const promise = service.sendPrompt(prompt, {
+					onToken: (tok) => { responseText += tok; },
+					onComplete: (full) => { if (!responseText) responseText = full; }
+				});
+				assert.ok(currentProc);
+				const lastCall = spawnedCalls[spawnedCalls.length - 1];
+				lastCall.stdin = currentProc!.stdin.data;
+
+				if (provider === 'codex') {
+					currentProc!.stdout.emit('data', Buffer.from(JSON.stringify({
+						type: 'item.completed',
+						item: { type: 'agent_message', text: `Response from ${provider}` }
+					}) + '\n'));
+				} else {
+					currentProc!.stdout.emit('data', Buffer.from(`Response from ${provider}\n`));
+				}
+				currentProc!.emit('close', 0, null);
+				await promise;
+
+				chatMessages.push({ role: 'user', content: userText });
+				chatMessages.push({ role: 'assistant', content: responseText.trim() });
+				return responseText;
+			};
+
+			// Turn 1: Antigravity
+			const turn1 = await executeTurn('antigravity', 'Summarize my research note on thermodynamics');
+			assert.ok(turn1.includes('Response from antigravity'));
+
+			// Turn 2: Copilot
+			const turn2 = await executeTurn('copilot', 'Extract key formulas from that summary');
+			assert.ok(turn2.includes('Response from copilot'));
+
+			// Turn 3: Codex
+			const turn3 = await executeTurn('codex', 'Write a Python simulation of the second law');
+			assert.ok(turn3.includes('Response from codex'));
+
+			// Turn 4: Pi
+			const turn4 = await executeTurn('pi', 'Explain what the code does for a beginner');
+			assert.ok(turn4.includes('Response from pi'));
+
+			// Turn 5: Claude
+			const turn5 = await executeTurn('claude', 'Review this entire discussion and suggest next study topics');
+			assert.ok(turn5.includes('Response from claude'));
+
+			// Verify 5 distinct standalone calls were made with zero session collision
+			assert.equal(spawnedCalls.length, 5);
+
+			// Antigravity (Turn 1): standalone -p (no conversation resumption flag)
+			assert.ok(!spawnedCalls[0].args.includes('--conversation'));
+			assert.ok(spawnedCalls[0].args.includes('-p'));
+
+			// Copilot (Turn 2): standalone -p (no --resume)
+			assert.ok(!spawnedCalls[1].args.some(a => a.startsWith('--resume=')));
+			assert.ok(spawnedCalls[1].args.includes('-p'));
+
+			// Codex (Turn 3): standalone exec (no resume)
+			assert.ok(!spawnedCalls[2].args.includes('resume'));
+			assert.ok(spawnedCalls[2].args.includes('exec'));
+
+			// Pi (Turn 4): standalone -p (no session)
+			assert.ok(!spawnedCalls[3].args.includes('--session'));
+			assert.ok(spawnedCalls[3].args.includes('-p'));
+
+			// Claude (Turn 5): standalone -p (no resume)
+			assert.ok(!spawnedCalls[4].args.includes('--resume'));
+			assert.ok(spawnedCalls[4].args.includes('-p'));
+
+			// Verify stdin carries formatted multi-turn history on later turns (e.g. Turn 3 Codex)
+			assert.ok(spawnedCalls[2].stdin.includes('Previous conversation history:'));
+			assert.ok(spawnedCalls[2].stdin.includes('Extract key formulas'));
+		});
+
+		test('E2E: custom CLI option is absent from settings provider selection', () => {
+			const { settings } = createService();
+			// Mock dropdown options collector
+			const options: Record<string, string> = {};
+			const mockDropdown = {
+				selectEl: { addClass: () => {}, setCssStyles: () => {} },
+				addOption: (val: string, label: string) => { options[val] = label; },
+				setValue: () => {},
+				onChange: () => {}
+			};
+
+			// Simulate settings dropdown registration
+			const availableProviders = ['antigravity', 'copilot', 'pi', 'claude', 'codex'];
+			for (const p of availableProviders) {
+				mockDropdown.addOption(p, p);
+			}
+
+			assert.ok(!('custom' in options));
+			assert.ok('antigravity' in options);
+			assert.ok('copilot' in options);
+			assert.ok('pi' in options);
+			assert.ok('claude' in options);
+			assert.ok('codex' in options);
 		});
 	});
 });

@@ -662,8 +662,8 @@ describe('AgyCliService - buildPromptArgs', () => {
 		assert.ok(args.includes('claude-3-7-sonnet'));
 		assert.ok(args.includes('--effort'));
 		assert.ok(args.includes('high'));
-		assert.ok(args.includes('--resume'));
-		assert.ok(args.includes('session-xyz-123'));
+		// Path A: Standalone execution without resume
+		assert.ok(!args.includes('--resume'));
 		assert.ok(args.includes('--add-dir'));
 		assert.ok(args.includes(path.dirname(pkgPath)));
 	});
@@ -679,32 +679,20 @@ describe('AgyCliService - buildPromptArgs', () => {
 		const args = service.buildPromptArgs('codex', codexConfig, 'Refactor code', {
 			attachedFiles: [pkgPath]
 		});
+		// Path A: Standalone execution without resume
 		assert.equal(args[0], 'exec');
-		assert.equal(args[1], 'resume');
-		assert.equal(args[2], 'thread-456-789');
+		assert.ok(args.includes('--color'));
+		assert.ok(args.includes('never'));
+		assert.ok(args.includes('--add-dir'));
 		assert.ok(args.includes('--skip-git-repo-check'));
 		assert.ok(args.includes('--json'));
 		assert.ok(args.includes('-m'));
 		assert.ok(args.includes('gpt-6-luna'));
 		assert.ok(args.includes('-c'));
 		assert.ok(args.includes('model_reasoning_effort="medium"'));
-		// resume does not include --color or --add-dir to prevent CLI syntax errors
-		assert.ok(!args.includes('--color'));
-		assert.ok(!args.includes('--add-dir'));
-		// Prompt is read from stdin via '-'
+		assert.ok(!args.includes('resume'));
+		assert.ok(args.includes(path.dirname(pkgPath)));
 		assert.equal(args[args.length - 1], '-');
-
-		// Fresh execution includes --color never and --add-dir
-		const freshConfig = { ...codexConfig, conversationId: undefined };
-		const freshArgs = service.buildPromptArgs('codex', freshConfig, 'Refactor code', {
-			attachedFiles: [pkgPath]
-		});
-		assert.equal(freshArgs[0], 'exec');
-		assert.ok(freshArgs.includes('--color'));
-		assert.ok(freshArgs.includes('never'));
-		assert.ok(freshArgs.includes('--add-dir'));
-		assert.ok(freshArgs.includes(path.dirname(pkgPath)));
-		assert.equal(freshArgs[freshArgs.length - 1], '-');
 	});
 });
 

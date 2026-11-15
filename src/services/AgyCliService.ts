@@ -973,10 +973,6 @@ export class AgyCliService {
 				args.push('--thinking', 'off');
 			}
 
-			if (config.conversationId) {
-				args.push('--session', config.conversationId);
-			}
-
 			// If files are attached, pass them as @file arguments so models (even small local LLMs) read the note content
 			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
 			if (validFiles.length > 0) {
@@ -984,6 +980,7 @@ export class AgyCliService {
 				args.push('--', ...formattedFiles);
 			}
 		} else if (providerId === 'claude') {
+			// Path A: Standalone execution; multi-turn history is provided by Obsidian via formatPromptWithHistory.
 			args.push('-p');
 			args.push('--output-format', 'text');
 			args.push('--dangerously-skip-permissions');
@@ -995,10 +992,6 @@ export class AgyCliService {
 			const selectedEffort = config.modelEfforts?.[config.selectedModel];
 			if (selectedEffort) {
 				args.push('--effort', selectedEffort.toLowerCase());
-			}
-
-			if (config.conversationId) {
-				args.push('--resume', config.conversationId);
 			}
 
 			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
@@ -1015,23 +1008,20 @@ export class AgyCliService {
 				}
 			}
 		} else if (providerId === 'codex') {
-			if (config.conversationId) {
-				args.push('exec', 'resume', config.conversationId);
-			} else {
-				args.push('exec');
-				args.push('--color', 'never');
-				const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
-				const addedDirs = new Set<string>();
-				for (const f of validFiles) {
-					try {
-						const dir = fs.statSync(f).isDirectory() ? f : path.dirname(f);
-						if (!addedDirs.has(dir)) {
-							addedDirs.add(dir);
-							args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
-						}
-					} catch {
-						// ignore filesystem errors
+			// Path A: Standalone execution; multi-turn history is provided by Obsidian via formatPromptWithHistory.
+			args.push('exec');
+			args.push('--color', 'never');
+			const validFiles = (options?.attachedFiles || []).filter(f => f && fs.existsSync(f));
+			const addedDirs = new Set<string>();
+			for (const f of validFiles) {
+				try {
+					const dir = fs.statSync(f).isDirectory() ? f : path.dirname(f);
+					if (!addedDirs.has(dir)) {
+						addedDirs.add(dir);
+						args.push('--add-dir', config.useWsl ? this.toWslPath(dir) : dir);
 					}
+				} catch {
+					// ignore filesystem errors
 				}
 			}
 
@@ -1051,6 +1041,7 @@ export class AgyCliService {
 			args.push('-');
 		} else {
 			// Standard providers (Copilot, Antigravity) use -p <prompt>
+			// Path A: Standalone execution; multi-turn history is provided by Obsidian via formatPromptWithHistory.
 			args.push('-p', prompt);
 
 			if (providerId === 'copilot') {
@@ -1063,11 +1054,6 @@ export class AgyCliService {
 					args.push('--model', config.selectedModel);
 				} else {
 					args.push('--model', 'auto');
-				}
-
-				// Resume session if exists
-				if (config.conversationId) {
-					args.push(`--resume=${config.conversationId}`);
 				}
 			} else {
 				// Antigravity CLI flags
@@ -1085,11 +1071,6 @@ export class AgyCliService {
 					}
 
 					args.push('--model', exactCliModelId);
-				}
-
-				// Resume session if exists
-				if (config.conversationId) {
-					args.push('--conversation', config.conversationId);
 				}
 			}
 		}
