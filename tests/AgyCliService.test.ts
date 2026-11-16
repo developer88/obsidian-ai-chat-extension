@@ -297,6 +297,17 @@ Unavailable models
 		assert.equal(parsed[0].label, 'Copilot Fusion (Auto - Recommended)');
 	});
 
+	test('parseCopilotModels restricts choices to Copilot Fusion on free plan', () => {
+		const configText = `
+  \`model\`: AI model to use
+    - "claude-sonnet-4.6"
+    - "gpt-5.4-mini"
+`;
+		const parsed = parserService.parseCopilotModels(configText, true);
+		assert.deepEqual(parsed.map((m: any) => m.id), ['auto']);
+		assert.equal(parsed[0].label, 'Copilot Fusion (Auto - Recommended)');
+	});
+
 	test('getModelDiscoveryArgs returns appropriate CLI arguments per provider', () => {
 		assert.deepEqual(parserService.getModelDiscoveryArgs('copilot'), ['help', 'config']);
 		assert.deepEqual(parserService.getModelDiscoveryArgs('pi'), ['--list-models']);

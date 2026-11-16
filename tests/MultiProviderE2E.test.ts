@@ -171,27 +171,21 @@ describe('Multi-Provider E2E & Dynamic Switching', () => {
 
 			const provName = PROVIDER_METADATA[provId]?.name || provId;
 			for (const m of conf.cachedModels) {
-				if (m.efforts && m.efforts.length > 1) {
-					for (const effort of m.efforts) {
-						items.push({
-							providerId: provId,
-							providerName: provName,
-							itemText: `${provName} - ${m.label} (${effort} effort)`
-						});
-					}
-				} else {
-					items.push({
-						providerId: provId,
-						providerName: provName,
-						itemText: `${provName} - ${m.label}`
-					});
-				}
+				const currentEffort = conf.modelEfforts?.[m.id] || m.defaultEffort;
+				const effortPart = currentEffort ? ` (${currentEffort})` : '';
+				items.push({
+					providerId: provId,
+					providerName: provName,
+					itemText: `${provName} - ${m.label}${effortPart}`
+				});
 			}
 		}
 
-		// Copilot and Claude items are present
+		// Copilot and Claude items are present exactly 1:1 with cached models
 		assert.ok(items.some(i => i.providerId === 'copilot'));
 		assert.ok(items.some(i => i.providerId === 'claude'));
+		assert.equal(items.filter(i => i.providerId === 'copilot').length, settings.providers.copilot.cachedModels.length);
+		assert.equal(items.filter(i => i.providerId === 'claude').length, settings.providers.claude.cachedModels.length);
 
 		// Antigravity, Pi, Codex items are strictly excluded
 		assert.ok(!items.some(i => i.providerId === 'antigravity'));

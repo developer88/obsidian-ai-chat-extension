@@ -11,13 +11,14 @@ export interface ModelChoiceItem {
 	modelId: string;
 	modelLabel: string;
 	effort?: string;
+	availableEfforts?: string[];
 	isActive: boolean;
 }
 
 export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 	constructor(app: App, private plugin: AntigravityPlugin) {
 		super(app);
-		this.setPlaceholder('Search models and reasoning effort...');
+		this.setPlaceholder('Search provider and model...');
 	}
 
 	getItems(): ModelChoiceItem[] {
@@ -39,45 +40,31 @@ export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 			const models = provConfig.cachedModels || [];
 
 			for (const model of models) {
-				if (model.efforts && model.efforts.length > 1) {
-					const currentEffort = provConfig.modelEfforts?.[model.id] || model.defaultEffort || 'Medium';
-					for (const effort of model.efforts) {
-						const isThisActive = (provId === activeProvId && model.id === currentActiveModelId && effort.toLowerCase() === currentEffort.toLowerCase());
-						items.push({
-							providerId: provId,
-							providerName: provName,
-							modelId: model.id,
-							modelLabel: model.label,
-							effort: effort,
-							isActive: isThisActive
-						});
-					}
-				} else {
-					const singleEffort = model.efforts && model.efforts.length === 1 ? model.efforts[0] : undefined;
-					const isThisActive = (provId === activeProvId && model.id === currentActiveModelId);
-					items.push({
-						providerId: provId,
-						providerName: provName,
-						modelId: model.id,
-						modelLabel: model.label,
-						effort: singleEffort,
-						isActive: isThisActive
-					});
-				}
+				const currentEffort = provConfig.modelEfforts?.[model.id] || model.defaultEffort;
+				const isThisActive = (provId === activeProvId && model.id === currentActiveModelId);
+				items.push({
+					providerId: provId,
+					providerName: provName,
+					modelId: model.id,
+					modelLabel: model.label,
+					effort: currentEffort,
+					availableEfforts: model.efforts,
+					isActive: isThisActive
+				});
 			}
 		}
 
 		if (items.length === 0) {
 			this.setPlaceholder('No providers enabled. Enable at least one provider in settings.');
 		} else {
-			this.setPlaceholder('Search provider - model and reasoning effort...');
+			this.setPlaceholder('Search provider and model...');
 		}
 
 		return items;
 	}
 
 	getItemText(item: ModelChoiceItem): string {
-		const effortPart = item.effort ? ` (${item.effort} effort)` : '';
+		const effortPart = item.effort ? ` (${item.effort})` : '';
 		return `${item.providerName} - ${item.modelLabel}${effortPart}`;
 	}
 
@@ -97,7 +84,71 @@ export class ModelSuggestModal extends FuzzySuggestModal<ModelChoiceItem> {
 	}
 
 	onChooseItem(item: ModelChoiceItem): void {
-		void this.plugin.switchProviderAndModel(item.providerId, item.modelId, item.effort);
+		if (item.availableEfforts && item.availableEfforts.length > 1) {
+			new EffortSuggestModal(
+				this.app,
+				this.plugin,
+				item.providerId,
+				item.providerName,
+				item.modelId,
+				item.modelLabel,
+				item.availableEfforts,
+				item.effort
+			).open();
+		} else {
+			void this.plugin.switchProviderAndModel(item.providerId, item.modelId, item.effort);
+		}
+	}
+}
+
+export interface EffortChoiceItem {
+	effort: string;
+	isCurrent: boolean;
+}
+
+export class EffortSuggestModal extends FuzzySuggestModal<EffortChoiceItem> {
+	constructor(
+		app: App,
+		private plugin: AntigravityPlugin,
+		private providerId: AiProviderId,
+		private providerName: string,
+		private modelId: string,
+		private modelLabel: string,
+		private efforts: string[],
+		private currentEffort?: string
+	) {
+		super(app);
+		this.setPlaceholder(`Select reasoning effort for ${modelLabel}...`);
+	}
+
+	getItems(): EffortChoiceItem[] {
+		return this.efforts.map(eff => ({
+			effort: eff,
+			isCurrent: Boolean(this.currentEffort && eff.toLowerCase() === this.currentEffort.toLowerCase())
+		}));
+	}
+
+	getItemText(item: EffortChoiceItem): string {
+		const currentSuffix = item.isCurrent ? ' (Current)' : '';
+		return `${item.effort}${currentSuffix}`;
+	}
+
+	renderSuggestion(match: FuzzyMatch<EffortChoiceItem>, el: HTMLElement): void {
+		el.addClass('agy-modal-suggestion-item');
+		const textContainer = el.createDiv({ cls: 'agy-modal-suggestion-text' });
+		const titleEl = textContainer.createSpan({ cls: 'agy-modal-suggestion-title' });
+		super.renderSuggestion(match, titleEl);
+
+		if (match.item.isCurrent) {
+			el.createSpan({
+				cls: 'agy-modal-active-badge',
+				text: 'Current'
+			});
+		}
+	}
+
+	onChooseItem(item: EffortChoiceItem): void {
+		void this.plugin.switchProviderAndModel(this.providerId, this.modelId, item.effort);
 	}
 }
 

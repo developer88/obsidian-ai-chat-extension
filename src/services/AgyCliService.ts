@@ -1,5 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
 import { existsSync, readFileSync, statSync } from 'fs';
+import * as http from 'http';
 import { homedir } from 'os';
 import * as path from 'path';
 import type { App } from 'obsidian';
@@ -649,7 +650,7 @@ export class AgyCliService {
 					const cacheData = JSON.parse(cacheRaw) as RawCodexCache;
 					if (Array.isArray(cacheData?.models)) {
 						const visible = cacheData.models.filter(m =>
-							m.visibility !== 'hide' && m.supported_in_api !== false
+							(m.visibility === 'list' || (m.visibility !== 'hide' && m.visibility !== undefined)) && m.supported_in_api !== false
 						);
 						models = visible.map(m => {
 							const efforts: string[] = Array.isArray(m.supported_reasoning_levels)
@@ -721,7 +722,11 @@ export class AgyCliService {
 			? ANTIGRAVITY_MODELS
 			: (targetProvider === 'pi'
 				? PI_DEFAULT_MODELS
-				: (targetProvider === 'copilot' ? COPILOT_DEFAULT_MODELS : []));
+				: (targetProvider === 'copilot'
+					? (this.getCopilotPlanStatus().isFree
+						? [{ id: 'auto', label: 'Copilot Fusion (Auto - Recommended)', efforts: [] }]
+						: COPILOT_DEFAULT_MODELS)
+					: []));
 
 		const fallbackModels = config.cachedModels && config.cachedModels.length > 0
 			? config.cachedModels
@@ -767,7 +772,14 @@ export class AgyCliService {
 						if (code === 0 && output.trim()) {
 							let parsed: ModelDefinition[] = [];
 							if (targetProvider === 'copilot') {
-								parsed = this.parseCopilotModels(output);
+								const planStatus = this.getCopilotPlanStatus();
+								parsed = this.parseCopilotModels(output, planStatus.isFree);
+								const localModels = await this.getLocalCopilotModels();
+								for (const lm of localModels) {
+									if (!parsed.some(m => m.id === lm.id)) {
+										parsed.push(lm);
+									}
+								}
 							} else if (targetProvider === 'pi') {
 								parsed = this.parsePiModels(output);
 							} else {
@@ -894,7 +906,118 @@ export class AgyCliService {
 		return results as Record<AiProviderId, ModelDiscoveryResult>;
 	}
 
-	private parseCopilotModels(rawOutput: string): ModelDefinition[] {
+	public getCopilotUserCachePath(): string | null {
+		const home = getUserHomeDir();
+		const candidates: string[] = [];
+
+		if (process.platform === 'win32' && process.env.LOCALAPPDATA) {
+			candidates.push(path.join(process.env.LOCALAPPDATA, 'copilot', 'copilot-user-cache.json'));
+		}
+		if (home) {
+			candidates.push(path.join(home, 'AppData', 'Local', 'copilot', 'copilot-user-cache.json'));
+			candidates.push(path.join(home, 'Library', 'Caches', 'copilot', 'copilot-user-cache.json'));
+			candidates.push(path.join(home, '.cache', 'copilot', 'copilot-user-cache.json'));
+		}
+
+		for (const p of candidates) {
+			if (existsSync(p)) return p;
+		}
+		return null;
+	}
+
+	public getCopilotPlanStatus(): { isFree: boolean } {
+		try {
+			const cachePath = this.getCopilotUserCachePath();
+			if (cachePath && existsSync(cachePath)) {
+				const raw = readFileSync(cachePath, 'utf8');
+				const cleaned = raw.replace(/^\s*\/\/.*$/gm, '');
+				interface CopilotUserCacheEntry {
+					response?: {
+						access_type_sku?: string;
+						quota_snapshots?: {
+							premium_interactions?: {
+								has_quota?: boolean;
+								entitlement?: number;
+							};
+						};
+					};
+				}
+				interface CopilotUserCacheFile {
+					copilotUserCache?: Record<string, CopilotUserCacheEntry>;
+				}
+				const data = JSON.parse(cleaned) as CopilotUserCacheFile;
+				const cacheMap = data?.copilotUserCache;
+				if (cacheMap && typeof cacheMap === 'object') {
+					for (const entry of Object.values(cacheMap)) {
+						const resp = entry?.response;
+						if (resp) {
+							if (resp.access_type_sku === 'free_limited_copilot' || resp.quota_snapshots?.premium_interactions?.has_quota === false) {
+								return { isFree: true };
+							}
+						}
+					}
+				}
+			}
+		} catch {
+			// ignore error
+		}
+		return { isFree: false };
+	}
+
+	public async getLocalCopilotModels(): Promise<ModelDefinition[]> {
+		return new Promise((resolve) => {
+			try {
+				const req = http.get('http://127.0.0.1:11434/api/tags', { timeout: 600 }, (res) => {
+					if (res.statusCode !== 200) {
+						resolve([]);
+						return;
+					}
+					let body = '';
+					res.on('data', (chunk: Buffer | string) => { body += chunk.toString(); });
+					res.on('end', () => {
+						try {
+							interface OllamaTagsResponse {
+								models?: Array<{ name?: string }>;
+							}
+							const data = JSON.parse(body) as OllamaTagsResponse;
+							if (Array.isArray(data?.models)) {
+								const models: ModelDefinition[] = data.models
+									.map(m => m.name?.trim())
+									.filter((n): n is string => Boolean(n))
+									.map(name => ({
+										id: name,
+										label: `${name} (Local)`,
+										efforts: []
+									}));
+								resolve(models);
+								return;
+							}
+						} catch {
+							// ignore
+						}
+						resolve([]);
+					});
+				});
+				req.on('error', () => resolve([]));
+				req.on('timeout', () => {
+					req.destroy();
+					resolve([]);
+				});
+			} catch {
+				resolve([]);
+			}
+		});
+	}
+
+	public parseCopilotModels(rawOutput: string, isFreePlan = false): ModelDefinition[] {
+		if (isFreePlan) {
+			return [{
+				id: 'auto',
+				label: 'Copilot Fusion (Auto - Recommended)',
+				efforts: []
+			}];
+		}
+
 		const models: ModelDefinition[] = [];
 
 		// If the output contains an 'Unavailable models' section (e.g. from copilot /model output),

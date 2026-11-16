@@ -273,7 +273,7 @@ async function runScreenshotTests() {
 									<span class="agy-provider-summary-title">GitHub Copilot</span>
 								</div>
 								<div class="agy-provider-summary-right">
-									<span class="agy-provider-summary-meta">32 models</span>
+									<span class="agy-provider-summary-meta">2 models</span>
 									<span class="agy-provider-badge is-enabled">Enabled</span>
 								</div>
 							</summary>
@@ -381,32 +381,32 @@ async function runScreenshotTests() {
 						<!-- Item 1 (Selected / Active) -->
 						<div class="suggestion-item is-selected" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: var(--background-modifier-hover); cursor: pointer;">
 							<div class="suggestion-content" style="font-size: 12.5px; font-weight: 500;">
-								<span>Google Antigravity - <span style="color: var(--text-accent); font-weight: 600;">Gemini</span> 3.8 Flash (Medium effort)</span>
+								<span>Google Antigravity - <span style="color: var(--text-accent); font-weight: 600;">Gemini</span> 3.8 Flash (Medium)</span>
 							</div>
 							<span class="agy-modal-active-badge">Active</span>
 						</div>
 						<!-- Item 2 -->
 						<div class="suggestion-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; cursor: pointer;">
 							<div class="suggestion-content" style="font-size: 12.5px;">
-								<span>Google Antigravity - <span style="color: var(--text-accent); font-weight: 600;">Gemini</span> 3.8 Flash (Low effort)</span>
+								<span>Google Antigravity - <span style="color: var(--text-accent); font-weight: 600;">Gemini</span> 4 Argon (Medium)</span>
 							</div>
 						</div>
 						<!-- Item 3 -->
 						<div class="suggestion-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; cursor: pointer;">
 							<div class="suggestion-content" style="font-size: 12.5px;">
-								<span>Google Antigravity - <span style="color: var(--text-accent); font-weight: 600;">Gemini</span> 3.8 Flash (High effort)</span>
+								<span>OpenAI Codex - GPT-6-Luna (Low)</span>
 							</div>
 						</div>
 						<!-- Item 4 -->
 						<div class="suggestion-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; cursor: pointer;">
 							<div class="suggestion-content" style="font-size: 12.5px;">
-								<span>Google Antigravity - <span style="color: var(--text-accent); font-weight: 600;">Gemini</span> 3.1 Pro (Low effort)</span>
+								<span>OpenAI Codex - GPT-5.6-Terra (Medium)</span>
 							</div>
 						</div>
 						<!-- Item 5: From another enabled provider -->
 						<div class="suggestion-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; cursor: pointer;">
 							<div class="suggestion-content" style="font-size: 12.5px;">
-								<span>GitHub Copilot - Claude Sonnet 4.5</span>
+								<span>GitHub Copilot - Copilot Fusion (Auto)</span>
 							</div>
 						</div>
 					</div>

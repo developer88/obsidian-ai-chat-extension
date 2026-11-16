@@ -336,11 +336,10 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				items: [
 					{
 						name: 'Buy me a coffee',
-						desc: 'If you find Sidecar AI useful and want to support its ongoing development, feel free to buy me a coffee!',
+						desc: 'Support the ongoing development of this plugin with a coffee!',
 						render: (setting: Setting) => {
 							setting.setName('Buy me a coffee')
-								// eslint-disable-next-line obsidianmd/ui/sentence-case
-								.setDesc('If you find Sidecar AI useful and want to support its ongoing development, feel free to buy me a coffee!');
+								.setDesc('Support the ongoing development of this plugin with a coffee!');
 							const container = setting.controlEl.createDiv({ cls: 'agy-kofi-container' });
 							const link = container.createEl('a', {
 								cls: 'agy-kofi-link',
