@@ -156,6 +156,14 @@ For instructions on building from source, manual installation from GitHub releas
 
 ---
 
+## ⚖️ Disclaimer
+
+Sidecar AI is an independent community plugin and has **no affiliation with, sponsorship from, or endorsement by** any of the supported AI providers, including Google, GitHub, Anthropic, OpenAI, or their affiliates. All product names, logos, and brands are property of their respective owners.
+
+This extension ships **as-is**, without warranty of any kind, express or implied.
+
+---
+
 ## 📄 License
 
 Licensed under the [MIT License](LICENSE).

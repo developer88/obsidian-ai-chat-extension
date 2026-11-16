@@ -188,7 +188,26 @@ async function runScreenshotTests() {
 		const root = document.getElementById('root');
 		root.innerHTML = `
 			<div class="test-container wide" style="padding: 24px;">
-				<h2 style="margin-top: 0; font-size: 18px; padding-bottom: 8px;">AI providers</h2>
+				<!-- Group 1: Support development -->
+				<div class="setting-item setting-item-heading" style="margin-top: 0; padding-bottom: 8px; border-bottom: 1px solid var(--divider-color);">
+					<div class="setting-item-name" style="font-size: 16px; font-weight: 600; color: var(--text-normal);">Support development</div>
+				</div>
+				<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0 20px 0; border-bottom: 1px solid var(--divider-color);">
+					<div class="setting-item-info">
+						<div class="setting-item-name" style="font-weight: 500; font-size: 14px;">Buy me a coffee</div>
+						<div class="setting-item-description" style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">Support the ongoing development of this plugin with a coffee!</div>
+					</div>
+					<div class="setting-item-control">
+						<div class="agy-kofi-container">
+							<a class="agy-kofi-link" href="https://ko-fi.com/O5K12AQJGT" target="_blank" rel="noopener noreferrer">
+								<img class="agy-kofi-img" height="36" src="https://storage.ko-fi.com/cdn/kofi4.png?v=6" alt="Buy Me a Coffee at ko-fi.com">
+							</a>
+						</div>
+					</div>
+				</div>
+
+				<!-- Group 2: AI providers -->
+				<h2 style="margin-top: 24px; font-size: 18px; padding-bottom: 8px;">AI providers</h2>
 				<p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">Configure multiple AI CLI providers simultaneously. Enable the providers you use and switch between them dynamically.</p>
 
 				<div class="setting-group-items" style="border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden; background: var(--background-secondary);">
@@ -332,24 +351,6 @@ async function runScreenshotTests() {
 								</div>
 							</summary>
 						</details>
-					</div>
-				</div>
-
-				<!-- Group 2: Support development -->
-				<div class="setting-item setting-item-heading" style="margin-top: 24px; padding-bottom: 8px; border-bottom: 1px solid var(--divider-color);">
-					<div class="setting-item-name" style="font-size: 16px; font-weight: 600; color: var(--text-normal);">Support development</div>
-				</div>
-				<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0;">
-					<div class="setting-item-info">
-						<div class="setting-item-name" style="font-weight: 500; font-size: 14px;">Buy me a coffee</div>
-						<div class="setting-item-description" style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">If you find Sidecar AI useful and want to support its ongoing development, feel free to buy me a coffee!</div>
-					</div>
-					<div class="setting-item-control">
-						<div class="agy-kofi-container">
-							<a class="agy-kofi-link" href="https://ko-fi.com/O5K12AQJGT" target="_blank" rel="noopener noreferrer">
-								<img class="agy-kofi-img" height="36" src="https://storage.ko-fi.com/cdn/kofi4.png?v=6" alt="Buy Me a Coffee at ko-fi.com">
-							</a>
-						</div>
 					</div>
 				</div>
 			</div>

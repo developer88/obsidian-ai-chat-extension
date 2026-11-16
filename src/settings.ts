@@ -206,6 +206,38 @@ export class AntigravitySettingTab extends PluginSettingTab {
 		const definitions: SettingDefinitionItem[] = [
 			{
 				type: 'group',
+				heading: 'Support development',
+				items: [
+					{
+						name: 'Buy me a coffee',
+						desc: 'Support the ongoing development of this plugin with a coffee!',
+						render: (setting: Setting) => {
+							setting.setName('Buy me a coffee')
+								.setDesc('Support the ongoing development of this plugin with a coffee!');
+							const container = setting.controlEl.createDiv({ cls: 'agy-kofi-container' });
+							const link = container.createEl('a', {
+								cls: 'agy-kofi-link',
+								href: 'https://ko-fi.com/O5K12AQJGT',
+								attr: {
+									target: '_blank',
+									rel: 'noopener noreferrer',
+									'aria-label': 'Buy Me a Coffee at ko-fi.com'
+								}
+							});
+							link.createEl('img', {
+								cls: 'agy-kofi-img',
+								attr: {
+									src: 'https://storage.ko-fi.com/cdn/kofi4.png?v=6',
+									alt: 'Buy Me a Coffee at ko-fi.com',
+									height: '36'
+								}
+							});
+						}
+					}
+				]
+			},
+			{
+				type: 'group',
 				heading: 'AI providers',
 				items: providerItems
 			},
@@ -332,32 +364,14 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			},
 			{
 				type: 'group',
-				heading: 'Support development',
+				heading: 'Disclaimer',
 				items: [
 					{
-						name: 'Buy me a coffee',
-						desc: 'Support the ongoing development of this plugin with a coffee!',
+						name: 'Affiliation and warranty',
+						desc: 'This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.',
 						render: (setting: Setting) => {
-							setting.setName('Buy me a coffee')
-								.setDesc('Support the ongoing development of this plugin with a coffee!');
-							const container = setting.controlEl.createDiv({ cls: 'agy-kofi-container' });
-							const link = container.createEl('a', {
-								cls: 'agy-kofi-link',
-								href: 'https://ko-fi.com/O5K12AQJGT',
-								attr: {
-									target: '_blank',
-									rel: 'noopener noreferrer',
-									'aria-label': 'Buy Me a Coffee at ko-fi.com'
-								}
-							});
-							link.createEl('img', {
-								cls: 'agy-kofi-img',
-								attr: {
-									src: 'https://storage.ko-fi.com/cdn/kofi4.png?v=6',
-									alt: 'Buy Me a Coffee at ko-fi.com',
-									height: '36'
-								}
-							});
+							setting.setName('Affiliation and warranty')
+								.setDesc('This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.');
 						}
 					}
 				]

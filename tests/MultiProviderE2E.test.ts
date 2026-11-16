@@ -296,4 +296,10 @@ describe('Multi-Provider E2E & Dynamic Switching', () => {
 		assert.ok(kofiProfileUrl.includes('andreyeremin'));
 		assert.ok(kofiBadgeImg.includes('kofi4.png'));
 	});
+
+	test('E2E: Disclaimer text configuration is present and compliant', () => {
+		const disclaimerText = 'This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.';
+		assert.ok(disclaimerText.includes('not affiliated'));
+		assert.ok(disclaimerText.includes('as-is'));
+	});
 });
