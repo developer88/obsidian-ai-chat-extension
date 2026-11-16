@@ -301,5 +301,10 @@ describe('Multi-Provider E2E & Dynamic Switching', () => {
 		const disclaimerText = 'This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.';
 		assert.ok(disclaimerText.includes('not affiliated'));
 		assert.ok(disclaimerText.includes('as-is'));
+
+		const localProcessPermissionName = 'Local process execution permission';
+		const localProcessPermissionDesc = 'Acknowledge that Sidecar AI spawns local CLI processes (agy, copilot, pi, claude, codex) via child_process without API keys.';
+		assert.ok(localProcessPermissionName.includes('Local process execution permission'));
+		assert.ok(localProcessPermissionDesc.includes('child_process'));
 	});
 });

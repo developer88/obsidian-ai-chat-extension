@@ -343,6 +343,20 @@ export class AntigravitySettingTab extends PluginSettingTab {
 										})();
 									}));
 						}
+					}
+				]
+			},
+			{
+				type: 'group',
+				heading: 'Disclaimer',
+				items: [
+					{
+						name: 'Affiliation and warranty',
+						desc: 'This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.',
+						render: (setting: Setting) => {
+							setting.setName('Affiliation and warranty')
+								.setDesc('This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.');
+						}
 					},
 					{
 						name: 'Local process execution permission',
@@ -358,20 +372,6 @@ export class AntigravitySettingTab extends PluginSettingTab {
 											await this.plugin.saveSettings();
 										})();
 									}));
-						}
-					}
-				]
-			},
-			{
-				type: 'group',
-				heading: 'Disclaimer',
-				items: [
-					{
-						name: 'Affiliation and warranty',
-						desc: 'This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.',
-						render: (setting: Setting) => {
-							setting.setName('Affiliation and warranty')
-								.setDesc('This extension is not affiliated with, sponsored, or endorsed by any AI provider. It ships as-is without warranty of any kind.');
 						}
 					}
 				]
