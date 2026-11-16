@@ -5,6 +5,33 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-11-16
+
+### Added
+- **Simultaneous Multi-Provider Architecture**:
+  - Configure and maintain independent settings for all 5 CLI providers (`Google Antigravity`, `GitHub Copilot`, `Pi Coding Agent`, `Claude Code`, and `OpenAI Codex`) simultaneously.
+  - Native collapsible cards for each provider with full-width Obsidian list styling, individual enable toggles, custom CLI paths, WSL toggles, extra CLI flags, and cached model counts with status badges (`Enabled` / `Disabled`).
+  - Unified dynamic model selector in the chat view: switch between any enabled provider, model, and reasoning effort in a single click in `Provider - Model (Effort)` format.
+  - 5-minute TTL model caching with parallel discovery and automatic refresh on settings update, plus targeted user feedback for the provider currently being edited.
+  - Send guard preventing message dispatch when no model is selected or the active provider is disabled, prompting the user with an actionable selector.
+- **Client-Managed Multi-Turn Conversation History**:
+  - Full client-side conversation memory management eliminating dependency on external CLI session files.
+  - Robust multi-turn prompt delivery using standard input piping and streaming.
+- **Support & Disclaimer Sections**:
+  - Prominent "Support development" section at the top of plugin settings with a Ko-fi "Buy me a coffee" badge.
+  - Transparent "Disclaimer" section at the end of settings and in documentation detailing provider non-affiliation and as-is warranty.
+  - Grouped local process execution consent toggle cleanly within the Disclaimer section.
+
+### Improved
+- **Platform-Aware Settings**:
+  - "Run in WSL" configuration toggle is shown exclusively on Windows environments, keeping macOS and Linux settings clean.
+- **Enhanced Copilot & Codex Model Discovery**:
+  - Automatic filtering of unavailable plan models in GitHub Copilot CLI.
+  - Deduplicated reasoning effort entries in model selectors.
+- **E2E & Automated Screenshot Testing**:
+  - Comprehensive multi-provider end-to-end test suite (130 automated tests).
+  - Playwright visual regression and screenshot testing suite covering light, dark, settings, and modal states.
+
 ## [3.12.0] - 2026-11-15
 
 ### Added
