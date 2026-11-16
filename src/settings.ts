@@ -329,6 +329,39 @@ export class AntigravitySettingTab extends PluginSettingTab {
 						}
 					}
 				]
+			},
+			{
+				type: 'group',
+				heading: 'Support development',
+				items: [
+					{
+						name: 'Buy me a coffee',
+						desc: 'If you find Sidecar AI useful and want to support its ongoing development, feel free to buy me a coffee!',
+						render: (setting: Setting) => {
+							setting.setName('Buy me a coffee')
+								// eslint-disable-next-line obsidianmd/ui/sentence-case
+								.setDesc('If you find Sidecar AI useful and want to support its ongoing development, feel free to buy me a coffee!');
+							const container = setting.controlEl.createDiv({ cls: 'agy-kofi-container' });
+							const link = container.createEl('a', {
+								cls: 'agy-kofi-link',
+								href: 'https://ko-fi.com/O5K12AQJGT',
+								attr: {
+									target: '_blank',
+									rel: 'noopener noreferrer',
+									'aria-label': 'Buy Me a Coffee at ko-fi.com'
+								}
+							});
+							link.createEl('img', {
+								cls: 'agy-kofi-img',
+								attr: {
+									src: 'https://storage.ko-fi.com/cdn/kofi4.png?v=6',
+									alt: 'Buy Me a Coffee at ko-fi.com',
+									height: '36'
+								}
+							});
+						}
+					}
+				]
 			}
 		];
 

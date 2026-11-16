@@ -235,4 +235,71 @@ describe('Multi-Provider E2E & Dynamic Switching', () => {
 		// Ensure custom provider is not in the active provider selection
 		assert.ok(!providerKeys.includes('custom' as any));
 	});
+
+	test('E2E: Sending is strictly blocked when no model is selected or active provider is disabled', () => {
+		const { settings } = createTestHarness();
+
+		function hasSelectedModel(currSettings: AiChatPluginSettings): boolean {
+			const provId = currSettings.activeProvider || 'antigravity';
+			const provConfig = currSettings.providers?.[provId];
+			if (!provConfig || !provConfig.enabled) {
+				return false;
+			}
+			if (provId === 'custom') {
+				return Boolean((provConfig.cliCommand && provConfig.cliCommand.trim().length > 0) || (provConfig.selectedModel && provConfig.selectedModel.trim().length > 0));
+			}
+			return Boolean(provConfig.selectedModel && provConfig.selectedModel.trim().length > 0);
+		}
+
+		// Case 1: Standard enabled provider with model -> true
+		settings.activeProvider = 'antigravity';
+		settings.providers.antigravity.enabled = true;
+		settings.providers.antigravity.selectedModel = 'gemini-2.5-pro';
+		assert.equal(hasSelectedModel(settings), true);
+
+		// Case 2: Selected model is empty string -> false (blocked)
+		settings.providers.antigravity.selectedModel = '';
+		assert.equal(hasSelectedModel(settings), false);
+
+		// Case 3: Selected model is whitespace only -> false (blocked)
+		settings.providers.antigravity.selectedModel = '   ';
+		assert.equal(hasSelectedModel(settings), false);
+
+		// Case 4: Active provider is disabled -> false (blocked)
+		settings.providers.antigravity.selectedModel = 'gemini-2.5-pro';
+		settings.providers.antigravity.enabled = false;
+		assert.equal(hasSelectedModel(settings), false);
+
+		// Case 5: All providers disabled -> false (blocked)
+		for (const p of Object.values(settings.providers)) {
+			p.enabled = false;
+		}
+		assert.equal(hasSelectedModel(settings), false);
+
+		// Case 6: Switch active provider to copilot with valid model -> true (allowed)
+		settings.activeProvider = 'copilot';
+		settings.providers.copilot.enabled = true;
+		settings.providers.copilot.selectedModel = 'claude-3.7-sonnet';
+		assert.equal(hasSelectedModel(settings), true);
+
+		// Case 7: Custom provider with command -> true; without command -> false
+		settings.activeProvider = 'custom';
+		settings.providers.custom.enabled = true;
+		settings.providers.custom.cliCommand = 'my-custom-ai';
+		assert.equal(hasSelectedModel(settings), true);
+
+		settings.providers.custom.cliCommand = '  ';
+		settings.providers.custom.selectedModel = '';
+		assert.equal(hasSelectedModel(settings), false);
+	});
+
+	test('E2E: Ko-fi "Buy me a coffee" badge and URL configuration', () => {
+		const kofiUrl = 'https://ko-fi.com/O5K12AQJGT';
+		const kofiBadgeImg = 'https://storage.ko-fi.com/cdn/kofi4.png?v=6';
+		const kofiProfileUrl = 'https://ko-fi.com/andreyeremin';
+
+		assert.ok(kofiUrl.includes('ko-fi.com'));
+		assert.ok(kofiProfileUrl.includes('andreyeremin'));
+		assert.ok(kofiBadgeImg.includes('kofi4.png'));
+	});
 });

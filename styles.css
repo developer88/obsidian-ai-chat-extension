@@ -859,7 +859,8 @@
 	opacity: 0.85;
 }
 
-.agy-submit-btn:disabled {
+.agy-submit-btn:disabled,
+.agy-submit-btn.is-disabled {
 	opacity: 0.35;
 	cursor: not-allowed;
 }
@@ -1046,4 +1047,29 @@
 .agy-provider-card-body .setting-item:first-child {
 	border-top: none;
 	padding-top: var(--size-4-2);
+}
+
+/* Support Development / Ko-fi */
+.agy-kofi-container {
+	display: inline-flex;
+	align-items: center;
+}
+
+.agy-kofi-link {
+	display: inline-block;
+	line-height: 0;
+	border-radius: var(--radius-s);
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.agy-kofi-link:hover {
+	opacity: 0.9;
+	transform: translateY(-1px);
+}
+
+.agy-kofi-img {
+	height: 36px;
+	border: 0;
+	display: block;
+	vertical-align: middle;
 }

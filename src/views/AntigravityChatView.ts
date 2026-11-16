@@ -207,6 +207,30 @@ export class AntigravityChatView extends ItemView {
 		this.customProviderBadge.setCssStyles({ display: 'none' });
 	}
 
+	public hasSelectedModel(): boolean {
+		const settings = this.getSettings();
+		const provId = settings.activeProvider || 'antigravity';
+		const provConfig = settings.providers?.[provId];
+		if (!provConfig || !provConfig.enabled) {
+			return false;
+		}
+		if (provId === 'custom') {
+			return Boolean((provConfig.cliCommand && provConfig.cliCommand.trim().length > 0) || (provConfig.selectedModel && provConfig.selectedModel.trim().length > 0));
+		}
+		return Boolean(provConfig.selectedModel && provConfig.selectedModel.trim().length > 0);
+	}
+
+	private promptSelectModelOrOpenSettings(): void {
+		const anyActive = Object.values(this.getSettings().providers || {}).some(p => p.enabled);
+		if (!anyActive) {
+			new Notice('No AI provider is enabled. Please enable a provider in settings.');
+			this.openSettingsTab();
+		} else {
+			new Notice('Please select an active AI model before sending messages.');
+			this.openModelSelector();
+		}
+	}
+
 	public updateModelSelectionFromSettings(): void {
 		const settings = this.getSettings();
 		const provId = settings.activeProvider || 'antigravity';
@@ -238,24 +262,42 @@ export class AntigravityChatView extends ItemView {
 			if (this.modelTriggerLabel) {
 				this.modelTriggerLabel.setText('No provider enabled (click to configure)');
 			}
+			this.setSendButtonState(this.isStreaming);
 			return;
 		}
 
 		const provName = PROVIDER_METADATA[provId]?.name || provId;
-		const models = provConfig?.cachedModels || [];
-		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
+		if (!provConfig?.enabled) {
+			if (this.modelTriggerLabel) {
+				this.modelTriggerLabel.setText('Active provider disabled (click to select model)');
+			}
+			this.setSendButtonState(this.isStreaming);
+			return;
+		}
+
+		const currentModelId = provConfig.selectedModel?.trim() || '';
+		if (!currentModelId) {
+			if (this.modelTriggerLabel) {
+				this.modelTriggerLabel.setText(`${provName} - No model selected (click to select)`);
+			}
+			this.setSendButtonState(this.isStreaming);
+			return;
+		}
+
+		const models = provConfig.cachedModels || [];
 		const modelDef = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
-		const label = modelDef ? modelDef.label : (currentModelId || 'No model selected');
+		const label = modelDef ? modelDef.label : currentModelId;
 
 		let effortStr = '';
 		if (modelDef && modelDef.efforts && modelDef.efforts.length > 1) {
-			const effort = provConfig?.modelEfforts?.[modelDef.id] || modelDef.defaultEffort || 'Medium';
+			const effort = provConfig.modelEfforts?.[modelDef.id] || modelDef.defaultEffort || 'Medium';
 			effortStr = ` (${effort})`;
 		}
 
 		if (this.modelTriggerLabel) {
 			this.modelTriggerLabel.setText(`${provName} - ${label}${effortStr}`);
 		}
+		this.setSendButtonState(this.isStreaming);
 	}
 
 	private async refreshAvailableModels(showNotice = true): Promise<void> {
@@ -351,6 +393,10 @@ export class AntigravityChatView extends ItemView {
 			chip.addEventListener('click', () => {
 				if (this.isStreaming) {
 					new Notice('Sidecar AI is currently generating a response. Click the stop button (■) if you want to cancel.');
+					return;
+				}
+				if (!this.hasSelectedModel()) {
+					this.promptSelectModelOrOpenSettings();
 					return;
 				}
 				this.inputEl.value = action.prompt;
@@ -513,6 +559,10 @@ export class AntigravityChatView extends ItemView {
 					new Notice('Sidecar AI is still generating a response. Click the stop button (■) if you want to cancel.');
 					return;
 				}
+				if (!this.hasSelectedModel()) {
+					this.promptSelectModelOrOpenSettings();
+					return;
+				}
 				void this.handleSend();
 			}
 		});
@@ -606,6 +656,11 @@ export class AntigravityChatView extends ItemView {
 			return;
 		}
 
+		if (!this.hasSelectedModel()) {
+			this.promptSelectModelOrOpenSettings();
+			return;
+		}
+
 		const userText = this.inputEl.value.trim();
 		if (!userText) return;
 
@@ -625,6 +680,20 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	private async executePromptSend(userText: string): Promise<void> {
+		const settings = this.getSettings();
+		const provId = settings.activeProvider || 'antigravity';
+		const provConfig = settings.providers?.[provId];
+		if (!provConfig || !provConfig.enabled) {
+			this.promptSelectModelOrOpenSettings();
+			return;
+		}
+
+		const models = provConfig.cachedModels || [];
+		const currentModelId = provConfig.selectedModel?.trim() || (provId === 'custom' ? (provConfig.cliCommand || '') : '');
+		if (!currentModelId && provId !== 'custom') {
+			this.promptSelectModelOrOpenSettings();
+			return;
+		}
 
 		let noteContextPrefix = '';
 		let attachedNotePath: string | undefined;
@@ -649,7 +718,6 @@ export class AntigravityChatView extends ItemView {
 		let attachedContextTitle: string | undefined;
 		let attachedContextScope: 'file' | 'folder' | undefined;
 
-		const settings = this.getSettings();
 		if (settings.enableContextAttachment && this.includeContext && !this.contextSentInSession) {
 			const contextTarget = this.resolveContextTarget();
 			if (contextTarget) {
@@ -698,12 +766,8 @@ export class AntigravityChatView extends ItemView {
 		this.appendMessage(userMsg);
 
 		// Provider and model info for this response
-		const provId = settings.activeProvider || 'antigravity';
-		const provConfig = settings.providers?.[provId];
 		const provName = PROVIDER_METADATA[provId]?.name || (provId === 'copilot' ? 'GitHub Copilot' : (provId === 'pi' ? 'Pi Coding Agent' : (provId === 'claude' ? 'Claude Code' : (provId === 'codex' ? 'OpenAI Codex' : (provId === 'custom' ? 'Custom CLI' : 'Google Antigravity')))));
 
-		const models = provConfig?.cachedModels || [];
-		const currentModelId = provConfig?.selectedModel || models[0]?.id || '';
 		const modelDef = models.find(m => m.id === currentModelId || currentModelId.startsWith(m.id));
 		const currentModelLabel = provId === 'custom' ? (provConfig?.cliCommand || 'Custom CLI') : (modelDef ? modelDef.label : currentModelId);
 		const currentEffort = (provId !== 'custom' && modelDef && modelDef.efforts && modelDef.efforts.length > 1)
@@ -775,8 +839,12 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	private setSendButtonState(streaming: boolean): void {
+		if (!this.sendBtnEl) return;
+
 		if (streaming) {
 			this.sendBtnEl.addClass('is-stopping');
+			this.sendBtnEl.removeClass('is-disabled');
+			this.sendBtnEl.removeAttribute('disabled');
 			this.sendBtnEl.setAttribute('aria-label', 'Stop generation');
 			setIcon(this.sendBtnEl, 'square');
 			if (this.inputContainerEl) {
@@ -787,13 +855,26 @@ export class AntigravityChatView extends ItemView {
 			}
 		} else {
 			this.sendBtnEl.removeClass('is-stopping');
-			this.sendBtnEl.setAttribute('aria-label', 'Send prompt');
+			const canSend = this.hasSelectedModel();
+			if (!canSend) {
+				this.sendBtnEl.addClass('is-disabled');
+				this.sendBtnEl.setAttribute('disabled', 'true');
+				this.sendBtnEl.setAttribute('aria-label', 'Please select an AI model before sending');
+			} else {
+				this.sendBtnEl.removeClass('is-disabled');
+				this.sendBtnEl.removeAttribute('disabled');
+				this.sendBtnEl.setAttribute('aria-label', 'Send prompt');
+			}
 			setIcon(this.sendBtnEl, 'arrow-up');
 			if (this.inputContainerEl) {
 				this.inputContainerEl.removeClass('is-generating');
 			}
 			if (this.inputEl) {
-				this.inputEl.setAttribute('placeholder', 'Ask Sidecar AI... (Enter to send, Shift+Enter for newline)');
+				if (!canSend) {
+					this.inputEl.setAttribute('placeholder', 'Please select an AI model first... (Click header dropdown)');
+				} else {
+					this.inputEl.setAttribute('placeholder', 'Ask Sidecar AI... (Enter to send, Shift+Enter for newline)');
+				}
 			}
 		}
 	}
