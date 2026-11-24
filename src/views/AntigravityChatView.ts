@@ -17,7 +17,6 @@ import {
 import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../services/AgyCliService';
 import {
 	DictationService,
-	getOsDictationHint,
 	insertTextAtCursor,
 	resolveDictationMode
 } from '../services/DictationService';
@@ -1359,8 +1358,10 @@ export class AntigravityChatView extends ItemView {
 
 		if (mode === 'os') {
 			this.inputEl?.focus();
-			const hint = getOsDictationHint();
-			new Notice(hint.message, 4500);
+			const result = await this.dictationService.triggerOsDictation();
+			if (!result.triggered && result.message) {
+				new Notice(result.message, 4500);
+			}
 			return;
 		}
 

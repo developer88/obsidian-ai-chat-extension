@@ -226,6 +226,44 @@ describe('DictationService - Process & Spawner Tests', () => {
 		service.abort();
 		assert.equal(child.killedWith, 'SIGTERM');
 	});
+
+	test('triggerOsDictation launches hidden PowerShell Win+H on win32 and returns triggered=true on exit 0', async () => {
+		let capturedCmd = '';
+		let capturedArgs: string[] = [];
+		let capturedOpts: SpawnOptions | undefined;
+
+		const service = new DictationService((cmd, args, opts) => {
+			capturedCmd = cmd;
+			capturedArgs = args;
+			capturedOpts = opts;
+			const child = createMockChildProcess();
+			queueMicrotask(() => child.emit('close', 0));
+			return child;
+		});
+
+		const result = await service.triggerOsDictation('win32');
+		assert.equal(result.triggered, true);
+		assert.equal(capturedCmd, 'powershell.exe');
+		assert.ok(capturedArgs.includes('-EncodedCommand'));
+		assert.equal(capturedOpts?.windowsHide, true);
+		assert.equal(capturedOpts?.shell, false);
+	});
+
+	test('triggerOsDictation falls back to hint message on spawn error or unsupported OS', async () => {
+		const failingService = new DictationService(() => {
+			const child = createMockChildProcess();
+			queueMicrotask(() => child.emit('error', new Error('spawn failed')));
+			return child;
+		});
+
+		const winFail = await failingService.triggerOsDictation('win32');
+		assert.equal(winFail.triggered, false);
+		assert.ok(winFail.message.includes('Win + H'));
+
+		const linuxFallback = await failingService.triggerOsDictation('linux');
+		assert.equal(linuxFallback.triggered, false);
+		assert.ok(linuxFallback.message.length > 0);
+	});
 });
 
 describe('DictationService - Real Child Process E2E', () => {

@@ -174,6 +174,57 @@ export class DictationService {
 	}
 
 	/**
+	 * Attempts to trigger the operating system's native dictation shortcut into the currently focused input.
+	 * Falls back with `{ triggered: false, message }` if the platform is unsupported or OS invocation fails.
+	 */
+	public triggerOsDictation(platform: NodeJS.Platform = process.platform): Promise<{ triggered: boolean; message: string }> {
+		const hint = getOsDictationHint(platform);
+
+		let command = '';
+		let args: string[] = [];
+
+		if (platform === 'win32') {
+			const psScript = [
+				'Add-Type -TypeDefinition \'using System; using System.Runtime.InteropServices; public class WinH { [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo); public static void Trigger() { keybd_event(0x5B, 0, 0, UIntPtr.Zero); keybd_event(0x48, 0, 0, UIntPtr.Zero); keybd_event(0x48, 0, 2, UIntPtr.Zero); keybd_event(0x5B, 0, 2, UIntPtr.Zero); } }\'',
+				'[WinH]::Trigger()'
+			].join('\n');
+			const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+			command = 'powershell.exe';
+			args = ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-EncodedCommand', encoded];
+		} else if (platform === 'darwin') {
+			command = 'osascript';
+			args = [
+				'-e', 'tell application "System Events" to key code 63',
+				'-e', 'delay 0.1',
+				'-e', 'tell application "System Events" to key code 63'
+			];
+		} else {
+			return Promise.resolve({ triggered: false, message: hint.message });
+		}
+
+		return new Promise((resolve) => {
+			let settled = false;
+			const finish = (triggered: boolean) => {
+				if (settled) return;
+				settled = true;
+				resolve(triggered ? { triggered: true, message: '' } : { triggered: false, message: hint.message });
+			};
+
+			try {
+				const child = this.spawner(command, args, {
+					windowsHide: true,
+					shell: false,
+					stdio: 'ignore'
+				});
+				child.on('error', () => finish(false));
+				child.on('close', (code: number | null) => finish(code === 0));
+			} catch {
+				finish(false);
+			}
+		});
+	}
+
+	/**
 	 * Runs the configured local STT CLI against an audio file path and returns trimmed stdout.
 	 */
 	public transcribeAudioFile(
