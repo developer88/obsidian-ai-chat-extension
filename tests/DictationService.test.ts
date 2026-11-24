@@ -249,6 +249,33 @@ describe('DictationService - Process & Spawner Tests', () => {
 		assert.equal(capturedOpts?.shell, false);
 	});
 
+	test('triggerOsDictation invokes osascript Edit > Start Dictation on darwin and falls back on permission error', async () => {
+		let capturedCmd = '';
+		let capturedArgs: string[] = [];
+
+		const service = new DictationService((cmd, args) => {
+			capturedCmd = cmd;
+			capturedArgs = args;
+			const child = createMockChildProcess();
+			queueMicrotask(() => child.emit('close', 0));
+			return child;
+		});
+
+		const result = await service.triggerOsDictation('darwin');
+		assert.equal(result.triggered, true);
+		assert.equal(capturedCmd, 'osascript');
+		assert.ok(capturedArgs.some((a) => a.includes('Start Dictation')));
+
+		const deniedService = new DictationService(() => {
+			const child = createMockChildProcess();
+			queueMicrotask(() => child.emit('close', 1));
+			return child;
+		});
+		const deniedResult = await deniedService.triggerOsDictation('darwin');
+		assert.equal(deniedResult.triggered, false);
+		assert.ok(deniedResult.message.includes('Start Dictation'));
+	});
+
 	test('triggerOsDictation falls back to hint message on spawn error or unsupported OS', async () => {
 		const failingService = new DictationService(() => {
 			const child = createMockChildProcess();

@@ -194,9 +194,22 @@ export class DictationService {
 		} else if (platform === 'darwin') {
 			command = 'osascript';
 			args = [
-				'-e', 'tell application "System Events" to key code 63',
+				'-e', 'tell application "System Events"',
+				'-e', 'set frontApp to first application process whose frontmost is true',
+				'-e', 'tell frontApp',
+				'-e', 'try',
+				'-e', 'click menu item "Start Dictation…" of menu "Edit" of menu bar 1',
+				'-e', 'on error',
+				'-e', 'try',
+				'-e', 'click menu item "Start Dictation" of menu "Edit" of menu bar 1',
+				'-e', 'on error',
+				'-e', 'key code 63',
 				'-e', 'delay 0.1',
-				'-e', 'tell application "System Events" to key code 63'
+				'-e', 'key code 63',
+				'-e', 'end try',
+				'-e', 'end try',
+				'-e', 'end tell',
+				'-e', 'end tell'
 			];
 		} else {
 			return Promise.resolve({ triggered: false, message: hint.message });
