@@ -151,7 +151,10 @@ async function runScreenshotTests() {
 					<div class="agy-footer">
 						<div class="agy-input-container">
 							<textarea class="agy-input" placeholder="Ask AI about notes/overview.md..." rows="2"></textarea>
-							<div class="agy-input-actions">
+							<div class="agy-input-actions" style="display: flex; align-items: flex-end; gap: 6px;">
+								<button class="agy-mic-btn" title="Dictate prompt">
+									<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+								</button>
 								<button class="agy-submit-btn" title="Send prompt">
 									<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
 								</button>
@@ -165,6 +168,11 @@ async function runScreenshotTests() {
 
 	const chatDarkPath = path.join(screenshotsDir, '01_chat_view_dark.png');
 	const container1 = await page.$('.test-container');
+	const micBox = await (await page.$('.agy-mic-btn')).boundingBox();
+	const sendBox = await (await page.$('.agy-submit-btn')).boundingBox();
+	if (!micBox || !sendBox || micBox.x >= sendBox.x) {
+		throw new Error(`Expected .agy-mic-btn to be rendered to the left of .agy-submit-btn (micBox=${JSON.stringify(micBox)}, sendBox=${JSON.stringify(sendBox)})`);
+	}
 	await container1.screenshot({ path: chatDarkPath });
 	console.log(`[Visual E2E] Saved: ${chatDarkPath}`);
 

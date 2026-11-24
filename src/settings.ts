@@ -2,6 +2,7 @@ import { App, PluginSettingTab, Setting, Notice, SettingDefinitionItem, SettingG
 import type AntigravityPlugin from './main';
 import {
 	AiProviderId,
+	DictationMode,
 	PROVIDER_METADATA
 } from './types';
 
@@ -339,6 +340,80 @@ export class AntigravitySettingTab extends PluginSettingTab {
 									.onChange((value) => {
 										void (async () => {
 											this.plugin.settings.autoScrollChat = value;
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					}
+				]
+			},
+			{
+				type: 'group',
+				heading: 'Dictation',
+				items: [
+					{
+						name: 'Dictation mode',
+						desc: 'Choose between system dictation (default, zero setup) or a user-installed local speech-to-text CLI.',
+						render: (setting: Setting) => {
+							setting.setName('Dictation mode')
+								.setDesc('Choose between system dictation (default, zero setup) or a user-installed local speech-to-text CLI.')
+								.addDropdown(drop => drop
+									.addOption('os', 'System dictation (default)')
+									.addOption('local-cli', 'Local speech-to-text CLI')
+									.setValue(this.plugin.settings.dictationMode || 'os')
+									.onChange((value: string) => {
+										void (async () => {
+											this.plugin.settings.dictationMode = value as DictationMode;
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Local speech-to-text CLI command',
+						desc: 'Path or command to your installed speech-to-text CLI (e.g. whisper-cli). Sidecar AI does not install this for you.',
+						render: (setting: Setting) => {
+							setting.setName('Local speech-to-text CLI command')
+								.setDesc('Path or command to your installed speech-to-text CLI (e.g. whisper-cli). Sidecar AI does not install this for you.')
+								.addText(text => text
+									.setPlaceholder('whisper-cli')
+									.setValue(this.plugin.settings.sttCliCommand || '')
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.sttCliCommand = value.trim();
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Local speech-to-text CLI arguments',
+						desc: 'Arguments passed to the speech-to-text CLI. Use {file} where the temporary audio file path should be inserted.',
+						render: (setting: Setting) => {
+							setting.setName('Local speech-to-text CLI arguments')
+								.setDesc('Arguments passed to the speech-to-text CLI. Use {file} where the temporary audio file path should be inserted.')
+								.addText(text => text
+									.setPlaceholder('{file}')
+									.setValue(this.plugin.settings.sttCliArgs ?? '{file}')
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.sttCliArgs = value.trim() || '{file}';
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'Run speech-to-text CLI in WSL',
+						desc: 'Execute the local speech-to-text CLI inside Ubuntu WSL (Windows only).',
+						render: (setting: Setting) => {
+							setting.setName('Run speech-to-text CLI in WSL')
+								.setDesc('Execute the local speech-to-text CLI inside Ubuntu WSL (Windows only).')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.sttUseWsl ?? false)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.sttUseWsl = value;
 											await this.plugin.saveSettings();
 										})();
 									}));

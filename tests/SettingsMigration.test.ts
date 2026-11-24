@@ -180,4 +180,24 @@ describe('Settings & Migration', () => {
 		assert.equal(settings.providers.copilot.cachedModels[0].id, 'auto');
 		assert.equal(settings.providers.copilot.selectedModel, 'auto');
 	});
+
+	test('initializes default dictation settings to OS dictation and preserves existing configs on migration', () => {
+		const defaults = migrateSettings(null);
+		assert.equal(defaults.dictationMode, 'os');
+		assert.equal(defaults.sttCliCommand, '');
+		assert.equal(defaults.sttCliArgs, '{file}');
+		assert.equal(defaults.sttUseWsl, false);
+
+		const legacyData = {
+			activeProvider: 'claude' as AiProviderId,
+			autoScrollChat: false
+		};
+		const migrated = migrateSettings(legacyData);
+		assert.equal(migrated.dictationMode, 'os');
+		assert.equal(migrated.sttCliCommand, '');
+		assert.equal(migrated.sttCliArgs, '{file}');
+		assert.equal(migrated.sttUseWsl, false);
+		assert.equal(migrated.activeProvider, 'claude');
+		assert.equal(migrated.autoScrollChat, false);
+	});
 });

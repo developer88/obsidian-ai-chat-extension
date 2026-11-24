@@ -15,6 +15,12 @@ import {
 	PROVIDER_METADATA
 } from '../types';
 import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../services/AgyCliService';
+import {
+	DictationService,
+	getOsDictationHint,
+	insertTextAtCursor,
+	resolveDictationMode
+} from '../services/DictationService';
 import { ProcessExecutionNoticeModal } from '../modals/ModelSuggestModal';
 import {
 	isFileUrl,
@@ -32,7 +38,13 @@ export class AntigravityChatView extends ItemView {
 	private messagesContainerEl!: HTMLElement;
 	private inputContainerEl!: HTMLElement;
 	private inputEl!: HTMLTextAreaElement;
+	private micBtnEl!: HTMLButtonElement;
 	private sendBtnEl!: HTMLButtonElement;
+	private dictationService = new DictationService();
+	private dictationState: 'idle' | 'recording' | 'transcribing' = 'idle';
+	private mediaRecorder: MediaRecorder | null = null;
+	private mediaStream: MediaStream | null = null;
+	private recordedChunks: Blob[] = [];
 	private contextPillEl!: HTMLElement;
 	private modelTriggerBtn!: HTMLElement;
 	private modelTriggerLabel!: HTMLElement;
@@ -565,6 +577,18 @@ export class AntigravityChatView extends ItemView {
 				}
 				void this.handleSend();
 			}
+		});
+
+		this.micBtnEl = this.inputContainerEl.createEl('button', {
+			cls: 'agy-mic-btn',
+			attr: {
+				'aria-label': 'Dictate prompt',
+				'type': 'button'
+			}
+		});
+		setIcon(this.micBtnEl, 'mic');
+		this.micBtnEl.addEventListener('click', () => {
+			void this.handleMicClick();
 		});
 
 		this.sendBtnEl = this.inputContainerEl.createEl('button', {
@@ -1285,7 +1309,177 @@ export class AntigravityChatView extends ItemView {
 		}
 	}
 
+	private setMicButtonState(state: 'idle' | 'recording' | 'transcribing'): void {
+		this.dictationState = state;
+		if (!this.micBtnEl) return;
+
+		this.micBtnEl.removeClass('is-recording', 'is-transcribing');
+		this.micBtnEl.removeAttribute('disabled');
+
+		if (state === 'recording') {
+			this.micBtnEl.addClass('is-recording');
+			this.micBtnEl.setAttribute('aria-label', 'Stop recording and transcribe');
+			setIcon(this.micBtnEl, 'square');
+		} else if (state === 'transcribing') {
+			this.micBtnEl.addClass('is-transcribing');
+			this.micBtnEl.setAttribute('disabled', 'true');
+			this.micBtnEl.setAttribute('aria-label', 'Transcribing audio...');
+			setIcon(this.micBtnEl, 'loader');
+		} else {
+			this.micBtnEl.setAttribute('aria-label', 'Dictate prompt');
+			setIcon(this.micBtnEl, 'mic');
+		}
+	}
+
+	private cleanupMediaRecorder(): void {
+		if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+			try {
+				this.mediaRecorder.stop();
+			} catch {
+				// Ignore recorder stop errors during teardown
+			}
+		}
+		this.mediaRecorder = null;
+		if (this.mediaStream) {
+			for (const track of this.mediaStream.getTracks()) {
+				track.stop();
+			}
+			this.mediaStream = null;
+		}
+		this.recordedChunks = [];
+	}
+
+	private async handleMicClick(): Promise<void> {
+		if (this.dictationState === 'transcribing') {
+			return;
+		}
+
+		const settings = this.getSettings();
+		const mode = resolveDictationMode(settings);
+
+		if (mode === 'os') {
+			this.inputEl?.focus();
+			const hint = getOsDictationHint();
+			new Notice(hint.message, 4500);
+			return;
+		}
+
+		if (this.dictationState === 'recording') {
+			await this.stopLocalRecordingAndTranscribe();
+			return;
+		}
+
+		await this.startLocalRecording();
+	}
+
+	private async startLocalRecording(): Promise<void> {
+		const settings = this.getSettings();
+		if (!settings.sttCliCommand?.trim()) {
+			new Notice('Please configure a Local STT CLI command in Sidecar AI settings, or switch Dictation mode to OS dictation.');
+			return;
+		}
+
+		if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function' || typeof MediaRecorder === 'undefined') {
+			new Notice('Microphone recording is not available in this environment.');
+			return;
+		}
+
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			this.mediaStream = stream;
+			this.recordedChunks = [];
+
+			const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+				? 'audio/webm;codecs=opus'
+				: (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+
+			const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+			this.mediaRecorder = recorder;
+
+			recorder.addEventListener('dataavailable', (event: BlobEvent) => {
+				if (event.data && event.data.size > 0) {
+					this.recordedChunks.push(event.data);
+				}
+			});
+
+			recorder.start();
+			this.setMicButtonState('recording');
+		} catch (err) {
+			this.cleanupMediaRecorder();
+			this.setMicButtonState('idle');
+			const message = err instanceof Error ? err.message : String(err);
+			new Notice(`Could not start microphone recording: ${message}`);
+		}
+	}
+
+	private async stopLocalRecordingAndTranscribe(): Promise<void> {
+		const recorder = this.mediaRecorder;
+		if (!recorder) {
+			this.cleanupMediaRecorder();
+			this.setMicButtonState('idle');
+			return;
+		}
+
+		this.setMicButtonState('transcribing');
+
+		try {
+			const audioBlob = await new Promise<Blob>((resolve) => {
+				const handleStop = () => {
+					const mimeType = recorder.mimeType || 'audio/webm';
+					resolve(new Blob(this.recordedChunks, { type: mimeType }));
+				};
+				if (recorder.state === 'inactive') {
+					handleStop();
+				} else {
+					recorder.addEventListener('stop', handleStop, { once: true });
+					recorder.stop();
+				}
+			});
+
+			// Release microphone stream immediately once recording stops
+			if (this.mediaStream) {
+				for (const track of this.mediaStream.getTracks()) {
+					track.stop();
+				}
+				this.mediaStream = null;
+			}
+			this.mediaRecorder = null;
+			this.recordedChunks = [];
+
+			if (audioBlob.size === 0) {
+				new Notice('No audio was captured.');
+				return;
+			}
+
+			const arrayBuffer = await audioBlob.arrayBuffer();
+			const ext = audioBlob.type.includes('wav') ? 'wav' : 'webm';
+			const transcript = await this.dictationService.transcribeBuffer(arrayBuffer, ext, this.getSettings());
+
+			if (!transcript) {
+				new Notice('Speech-to-text returned empty output.');
+				return;
+			}
+
+			if (this.inputEl) {
+				const { nextValue, nextCursorPos } = insertTextAtCursor(this.inputEl, transcript);
+				this.inputEl.value = nextValue;
+				this.inputEl.selectionStart = nextCursorPos;
+				this.inputEl.selectionEnd = nextCursorPos;
+				this.inputEl.dispatchEvent(new Event('input'));
+				this.inputEl.focus();
+			}
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			new Notice(`Transcription failed: ${message}`);
+		} finally {
+			this.cleanupMediaRecorder();
+			this.setMicButtonState('idle');
+		}
+	}
+
 	async onClose(): Promise<void> {
+		this.cleanupMediaRecorder();
+		this.dictationService.abort();
 		this.cliService.abort();
 	}
 }

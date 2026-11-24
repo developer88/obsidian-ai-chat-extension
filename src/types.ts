@@ -1,4 +1,5 @@
 export type AiProviderId = 'antigravity' | 'copilot' | 'pi' | 'claude' | 'codex' | 'custom';
+export type DictationMode = 'os' | 'local-cli';
 
 export interface ModelDefinition {
 	id: string;
@@ -252,6 +253,10 @@ export interface AiChatPluginSettings {
 	autoAttachContext: boolean;
 	contextScope: 'file' | 'folder';
 	contextPath: string;
+	dictationMode: DictationMode;
+	sttCliCommand: string;
+	sttCliArgs: string;
+	sttUseWsl: boolean;
 
 	// Legacy backward-compatibility fields (migrated to active provider)
 	cliCommand?: string;
@@ -408,7 +413,11 @@ export const DEFAULT_SETTINGS: AiChatPluginSettings = {
 	enableContextAttachment: false,
 	autoAttachContext: true,
 	contextScope: 'file',
-	contextPath: ''
+	contextPath: '',
+	dictationMode: 'os',
+	sttCliCommand: '',
+	sttCliArgs: '{file}',
+	sttUseWsl: false
 };
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'error';

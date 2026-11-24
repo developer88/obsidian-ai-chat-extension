@@ -836,6 +836,51 @@
 	color: var(--text-faint);
 }
 
+.agy-mic-btn {
+	background-color: transparent;
+	color: var(--text-muted);
+	border: none;
+	border-radius: var(--radius-s);
+	width: 26px;
+	height: 26px;
+	min-width: 26px;
+	min-height: 26px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	flex-shrink: 0;
+	padding: 0;
+	margin: 0;
+	transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.agy-mic-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.agy-mic-btn.is-recording {
+	background-color: var(--text-error);
+	color: var(--text-on-accent);
+	animation: agy-mic-pulse 1.2s ease-in-out infinite;
+}
+
+.agy-mic-btn.is-transcribing,
+.agy-mic-btn:disabled {
+	opacity: 0.45;
+	cursor: wait;
+}
+
+@keyframes agy-mic-pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.65;
+	}
+}
+
 .agy-submit-btn {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
