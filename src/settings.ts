@@ -352,6 +352,14 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				heading: 'Dictation',
 				items: [
 					{
+						name: 'System dictation note',
+						desc: 'The dictation user experience is not that smooth due to technical limitations of Obsidian\'s architecture.',
+						render: (setting: Setting) => {
+							setting.setName('System dictation note')
+								.setDesc('The dictation user experience is not that smooth due to technical limitations of Obsidian\'s architecture.');
+						}
+					},
+					{
 						name: 'Enable dictation',
 						desc: 'Show the microphone button in the chat input bar.',
 						render: (setting: Setting) => {
@@ -365,14 +373,6 @@ export class AntigravitySettingTab extends PluginSettingTab {
 											await this.plugin.saveSettings();
 										})();
 									}));
-						}
-					},
-					{
-						name: 'System dictation note',
-						desc: 'Built-in system dictation is not fully straightforward due to operating system restrictions.',
-						render: (setting: Setting) => {
-							setting.setName('System dictation note')
-								.setDesc('Built-in system dictation is not fully straightforward due to operating system restrictions.');
 						}
 					},
 					{
