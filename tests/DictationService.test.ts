@@ -10,6 +10,7 @@ import {
 	DictationService,
 	getOsDictationHint,
 	insertTextAtCursor,
+	isDictationEnabled,
 	resolveDictationMode,
 	resolveSttExecution,
 	toWslAudioPath
@@ -39,6 +40,12 @@ function createMockChildProcess(): ChildProcess & {
 }
 
 describe('DictationService - Unit & Helper Tests', () => {
+	test('isDictationEnabled defaults to false and respects setting toggle', () => {
+		assert.equal(isDictationEnabled(DEFAULT_SETTINGS), false);
+		assert.equal(isDictationEnabled({ enableDictation: false }), false);
+		assert.equal(isDictationEnabled({ enableDictation: true }), true);
+	});
+
 	test('resolveDictationMode defaults to os and respects local-cli', () => {
 		assert.equal(resolveDictationMode(DEFAULT_SETTINGS), 'os');
 		assert.equal(resolveDictationMode({ dictationMode: 'os' }), 'os');

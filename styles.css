@@ -881,6 +881,10 @@
 	}
 }
 
+.agy-mic-btn.agy-hidden {
+	display: none;
+}
+
 .agy-submit-btn {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);

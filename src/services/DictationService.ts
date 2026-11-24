@@ -65,6 +65,13 @@ export function buildSttArgs(template: string | undefined, audioFilePath: string
 }
 
 /**
+ * Returns whether the microphone dictation button is enabled in settings.
+ */
+export function isDictationEnabled(settings: Pick<AiChatPluginSettings, 'enableDictation'>): boolean {
+	return Boolean(settings.enableDictation);
+}
+
+/**
  * Resolves the effective dictation mode from plugin settings.
  */
 export function resolveDictationMode(settings: Pick<AiChatPluginSettings, 'dictationMode'>): DictationMode {

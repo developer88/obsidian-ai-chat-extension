@@ -18,6 +18,7 @@ import { AgyCliService, formatPromptWithHistory, HistoryTurn } from '../services
 import {
 	DictationService,
 	insertTextAtCursor,
+	isDictationEnabled,
 	resolveDictationMode
 } from '../services/DictationService';
 import { ProcessExecutionNoticeModal } from '../modals/ModelSuggestModal';
@@ -589,6 +590,7 @@ export class AntigravityChatView extends ItemView {
 		this.micBtnEl.addEventListener('click', () => {
 			void this.handleMicClick();
 		});
+		this.updateDictationVisibility();
 
 		this.sendBtnEl = this.inputContainerEl.createEl('button', {
 			cls: 'agy-submit-btn',
@@ -1306,6 +1308,12 @@ export class AntigravityChatView extends ItemView {
 		if (this.getSettings().autoScrollChat && this.messagesContainerEl) {
 			this.messagesContainerEl.scrollTop = this.messagesContainerEl.scrollHeight;
 		}
+	}
+
+	public updateDictationVisibility(): void {
+		if (!this.micBtnEl) return;
+		const enabled = isDictationEnabled(this.getSettings());
+		this.micBtnEl.toggleClass('agy-hidden', !enabled);
 	}
 
 	private setMicButtonState(state: 'idle' | 'recording' | 'transcribing'): void {

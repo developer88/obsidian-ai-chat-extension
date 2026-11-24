@@ -352,6 +352,30 @@ export class AntigravitySettingTab extends PluginSettingTab {
 				heading: 'Dictation',
 				items: [
 					{
+						name: 'Enable dictation',
+						desc: 'Show the microphone button in the chat input bar.',
+						render: (setting: Setting) => {
+							setting.setName('Enable dictation')
+								.setDesc('Show the microphone button in the chat input bar.')
+								.addToggle(toggle => toggle
+									.setValue(this.plugin.settings.enableDictation ?? false)
+									.onChange((value) => {
+										void (async () => {
+											this.plugin.settings.enableDictation = value;
+											await this.plugin.saveSettings();
+										})();
+									}));
+						}
+					},
+					{
+						name: 'System dictation note',
+						desc: 'Built-in system dictation is not fully straightforward due to operating system restrictions.',
+						render: (setting: Setting) => {
+							setting.setName('System dictation note')
+								.setDesc('Built-in system dictation is not fully straightforward due to operating system restrictions.');
+						}
+					},
+					{
 						name: 'Dictation mode',
 						desc: 'Choose between system dictation (default, zero setup) or a user-installed local speech-to-text CLI.',
 						render: (setting: Setting) => {

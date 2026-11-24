@@ -253,6 +253,7 @@ export interface AiChatPluginSettings {
 	autoAttachContext: boolean;
 	contextScope: 'file' | 'folder';
 	contextPath: string;
+	enableDictation: boolean;
 	dictationMode: DictationMode;
 	sttCliCommand: string;
 	sttCliArgs: string;
@@ -414,6 +415,7 @@ export const DEFAULT_SETTINGS: AiChatPluginSettings = {
 	autoAttachContext: true,
 	contextScope: 'file',
 	contextPath: '',
+	enableDictation: false,
 	dictationMode: 'os',
 	sttCliCommand: '',
 	sttCliArgs: '{file}',

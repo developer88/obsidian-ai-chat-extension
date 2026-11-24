@@ -269,6 +269,7 @@ export default class AntigravityPlugin extends Plugin {
 		leaves.forEach((leaf) => {
 			if (leaf.view instanceof AntigravityChatView) {
 				leaf.view.updateActiveDocumentContext();
+				leaf.view.updateDictationVisibility();
 			}
 		});
 	}

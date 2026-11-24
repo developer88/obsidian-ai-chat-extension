@@ -183,6 +183,7 @@ describe('Settings & Migration', () => {
 
 	test('initializes default dictation settings to OS dictation and preserves existing configs on migration', () => {
 		const defaults = migrateSettings(null);
+		assert.equal(defaults.enableDictation, false);
 		assert.equal(defaults.dictationMode, 'os');
 		assert.equal(defaults.sttCliCommand, '');
 		assert.equal(defaults.sttCliArgs, '{file}');
@@ -193,6 +194,7 @@ describe('Settings & Migration', () => {
 			autoScrollChat: false
 		};
 		const migrated = migrateSettings(legacyData);
+		assert.equal(migrated.enableDictation, false);
 		assert.equal(migrated.dictationMode, 'os');
 		assert.equal(migrated.sttCliCommand, '');
 		assert.equal(migrated.sttCliArgs, '{file}');
