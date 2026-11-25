@@ -349,14 +349,17 @@ export class AntigravitySettingTab extends PluginSettingTab {
 			},
 			{
 				type: 'group',
-				heading: 'Dictation',
+				heading: 'Dictation (experimental)',
 				items: [
 					{
-						name: 'System dictation note',
+						name: 'Experimental feature',
 						desc: 'The dictation user experience is not that smooth due to technical limitations of Obsidian\'s architecture.',
 						render: (setting: Setting) => {
-							setting.setName('System dictation note')
+							setting.setName('Experimental feature')
 								.setDesc('The dictation user experience is not that smooth due to technical limitations of Obsidian\'s architecture.');
+							const iconSpan = createSpan({ cls: 'agy-warning-icon' });
+							setIcon(iconSpan, 'alert-triangle');
+							setting.nameEl.prepend(iconSpan);
 						}
 					},
 					{

@@ -885,6 +885,19 @@
 	display: none;
 }
 
+.agy-warning-icon {
+	display: inline-flex;
+	align-items: center;
+	vertical-align: middle;
+	margin-right: 6px;
+	color: var(--text-warning);
+}
+
+.agy-warning-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
 .agy-submit-btn {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
