@@ -5,6 +5,17 @@ All notable changes to the **Sidecar AI** Obsidian plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-11-27
+
+### Added
+- **Experimental Voice Dictation**:
+  - Added an off-by-default **Enable dictation** toggle under **Dictation (experimental)** in plugin settings, with a warning note explaining Obsidian architectural limitations.
+  - Added a microphone button to the left of the Send button in the chat input bar when dictation is enabled.
+  - **System Dictation (Default)**: Clicking the microphone button focuses the input box and toggles native OS dictation on/off (Windows Voice Typing via `Win + H` / `Esc`, macOS Dictation via `Edit → Start/Stop Dictation` with `Fn × 2` / `Esc` fallback).
+  - **Local Speech-to-Text CLI (Optional)**: Supports user-installed local STT CLIs (such as `whisper-cli` or `whisper`, with optional WSL support) by capturing microphone audio, transcribing via the configured CLI, inserting text at the cursor, and cleaning up temporary audio files.
+- **Automated Tests**:
+  - Added unit, mocked-process, and real child-process E2E tests in `tests/DictationService.test.ts` (148 total passing tests), plus settings migration and Playwright visual layout assertions.
+
 ## [4.0.0] - 2026-11-16
 
 ### Added
