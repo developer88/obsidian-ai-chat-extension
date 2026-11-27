@@ -298,6 +298,35 @@ describe('DictationService - Process & Spawner Tests', () => {
 		assert.equal(linuxFallback.triggered, false);
 		assert.ok(linuxFallback.message.length > 0);
 	});
+
+	test('stopOsDictation sends StopWinDictation on win32, Stop Dictation on darwin, and false on linux', async () => {
+		let capturedCmd = '';
+		let capturedArgs: string[] = [];
+
+		const winService = new DictationService((cmd, args) => {
+			capturedCmd = cmd;
+			capturedArgs = args;
+			const child = createMockChildProcess();
+			queueMicrotask(() => child.emit('close', 0));
+			return child;
+		});
+		assert.equal(await winService.stopOsDictation('win32'), true);
+		assert.equal(capturedCmd, 'powershell.exe');
+		assert.ok(capturedArgs.includes('-EncodedCommand'));
+
+		const macService = new DictationService((cmd, args) => {
+			capturedCmd = cmd;
+			capturedArgs = args;
+			const child = createMockChildProcess();
+			queueMicrotask(() => child.emit('close', 0));
+			return child;
+		});
+		assert.equal(await macService.stopOsDictation('darwin'), true);
+		assert.equal(capturedCmd, 'osascript');
+		assert.ok(capturedArgs.some((a) => a.includes('Stop Dictation')));
+
+		assert.equal(await winService.stopOsDictation('linux'), false);
+	});
 });
 
 describe('DictationService - Real Child Process E2E', () => {

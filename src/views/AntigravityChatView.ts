@@ -1365,9 +1365,18 @@ export class AntigravityChatView extends ItemView {
 		const mode = resolveDictationMode(settings);
 
 		if (mode === 'os') {
+			if (this.dictationState === 'recording') {
+				await this.dictationService.stopOsDictation();
+				this.setMicButtonState('idle');
+				this.inputEl?.focus();
+				return;
+			}
+
 			this.inputEl?.focus();
 			const result = await this.dictationService.triggerOsDictation();
-			if (!result.triggered && result.message) {
+			if (result.triggered) {
+				this.setMicButtonState('recording');
+			} else if (result.message) {
 				new Notice(result.message, 4500);
 			}
 			return;
@@ -1487,6 +1496,9 @@ export class AntigravityChatView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		if (this.dictationState === 'recording' && resolveDictationMode(this.getSettings()) === 'os') {
+			void this.dictationService.stopOsDictation();
+		}
 		this.cleanupMediaRecorder();
 		this.dictationService.abort();
 		this.cliService.abort();

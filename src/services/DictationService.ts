@@ -245,6 +245,65 @@ export class DictationService {
 	}
 
 	/**
+	 * Attempts to stop an active OS-native dictation session (Windows Voice Typing or macOS Dictation).
+	 */
+	public stopOsDictation(platform: NodeJS.Platform = process.platform): Promise<boolean> {
+		let command = '';
+		let args: string[] = [];
+
+		if (platform === 'win32') {
+			const psScript = [
+				'Add-Type -TypeDefinition \'using System; using System.Diagnostics; using System.Runtime.InteropServices; public class StopWinDictation { public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam); [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam); [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId); [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd); [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo); public static void Stop() { var procs = Process.GetProcessesByName("TextInputHost"); if (procs.Length == 0) return; var pids = new System.Collections.Generic.HashSet<uint>(); foreach (var p in procs) pids.Add((uint)p.Id); IntPtr target = IntPtr.Zero; EnumWindows((hWnd, lParam) => { if (!IsWindowVisible(hWnd)) return true; uint pid; GetWindowThreadProcessId(hWnd, out pid); if (pids.Contains(pid)) { target = hWnd; return false; } return true; }, IntPtr.Zero); if (target != IntPtr.Zero) { SetForegroundWindow(target); System.Threading.Thread.Sleep(50); keybd_event(0x1B, 0, 0, UIntPtr.Zero); keybd_event(0x1B, 0, 2, UIntPtr.Zero); } } }\'',
+				'[StopWinDictation]::Stop()'
+			].join('\n');
+			const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+			command = 'powershell.exe';
+			args = ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-EncodedCommand', encoded];
+		} else if (platform === 'darwin') {
+			command = 'osascript';
+			args = [
+				'-e', 'tell application "System Events"',
+				'-e', 'set frontApp to first application process whose frontmost is true',
+				'-e', 'tell frontApp',
+				'-e', 'try',
+				'-e', 'click menu item "Stop Dictation" of menu "Edit" of menu bar 1',
+				'-e', 'on error',
+				'-e', 'try',
+				'-e', 'click menu item "Stop Dictation…" of menu "Edit" of menu bar 1',
+				'-e', 'on error',
+				'-e', 'key code 53',
+				'-e', 'end try',
+				'-e', 'end try',
+				'-e', 'end tell',
+				'-e', 'end tell'
+			];
+		} else {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			let settled = false;
+			const finish = (stopped: boolean) => {
+				if (settled) return;
+				settled = true;
+				resolve(stopped);
+			};
+
+			try {
+				const child = this.spawner(command, args, {
+					windowsHide: true,
+					shell: false,
+					stdio: 'ignore'
+				});
+				child.on('error', () => finish(false));
+				child.on('close', (code: number | null) => finish(code === 0));
+			} catch {
+				finish(false);
+			}
+		});
+	}
+
+	/**
 	 * Runs the configured local STT CLI against an audio file path and returns trimmed stdout.
 	 */
 	public transcribeAudioFile(
